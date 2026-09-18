@@ -1,7 +1,14 @@
 import { describe } from 'vitest';
 
 import { esperarAceptacion, esperarRechazo, test } from '../base';
-import { type Escenario, crearNegocio, escenario, telefono, unico } from '../escenario';
+import {
+  type Escenario,
+  codigoPublico,
+  crearNegocio,
+  escenario,
+  telefono,
+  unico,
+} from '../escenario';
 
 describe('INV-9 · un codigo rotativo se consume una sola vez', () => {
   const CONSUMIR =
@@ -41,13 +48,14 @@ describe('INV-9 · un codigo rotativo se consume una sola vez', () => {
 });
 
 describe('INV-20 · telefono en E.164, unico a nivel global', () => {
-  const CLIENTE = `INSERT INTO cliente (telefono, nombre, semilla_totp) VALUES ($1, 'Ana', 's')`;
+  const CLIENTE = `INSERT INTO cliente (telefono, nombre, semilla_totp, codigo_publico)
+                   VALUES ($1, 'Ana', 's', $2)`;
   const ADMIN = `INSERT INTO admin_plataforma (telefono, nombre) VALUES ($1, 'Admin')`;
 
   test('INV-20 · rechaza dos clientes con el mismo telefono', async ({ db }) => {
     const tel = telefono();
-    await db.query(CLIENTE, [tel]);
-    await esperarRechazo(db, 'cliente_telefono_key', CLIENTE, [tel]);
+    await db.query(CLIENTE, [tel, codigoPublico()]);
+    await esperarRechazo(db, 'cliente_telefono_key', CLIENTE, [tel, codigoPublico()]);
   });
 
   test.for([
@@ -56,7 +64,10 @@ describe('INV-20 · telefono en E.164, unico a nivel global', () => {
     ['con guiones', '+591-71234567'],
     ['empezando en cero', '+0591712345'],
   ])('INV-20 · rechaza un telefono de cliente %s', async ([, tel], { db }) => {
-    await esperarRechazo(db, 'cliente_telefono_e164_chk', CLIENTE, [tel]);
+    await esperarRechazo(db, 'cliente_telefono_e164_chk', CLIENTE, [
+      tel,
+      codigoPublico(),
+    ]);
   });
 
   test('INV-20 · rechaza dos administradores con el mismo telefono', async ({ db }) => {
@@ -79,6 +90,31 @@ describe('INV-20 · telefono en E.164, unico a nivel global', () => {
       `INSERT INTO usuario_negocio (negocio_id, rol, telefono, nombre) VALUES ($1, 'supervisor', '71234567', 'x')`,
       [a.id],
     );
+  });
+});
+
+describe('Codigo publico del cliente', () => {
+  const CLIENTE = `INSERT INTO cliente (telefono, nombre, semilla_totp, codigo_publico)
+                   VALUES ($1, 'Ana', 's', $2)`;
+
+  test('Codigo publico · rechaza dos clientes con el mismo codigo', async ({ db }) => {
+    const codigo = codigoPublico();
+    await db.query(CLIENTE, [telefono(), codigo]);
+    await esperarRechazo(db, 'cliente_codigo_publico_key', CLIENTE, [telefono(), codigo]);
+  });
+
+  test.for([
+    ['en minusculas', 'k7q4m'],
+    ['corto', 'K7Q4'],
+    ['largo', 'K7Q4MN'],
+    ['con la letra O, que se confunde con el cero', 'K7Q4O'],
+    ['con el digito 1, que se confunde con la I', 'K7Q41'],
+    ['con un guion adentro', 'K7Q-M'],
+  ])('Codigo publico · rechaza uno %s', async ([, codigo], { db }) => {
+    await esperarRechazo(db, 'cliente_codigo_publico_formato_chk', CLIENTE, [
+      telefono(),
+      codigo,
+    ]);
   });
 });
 

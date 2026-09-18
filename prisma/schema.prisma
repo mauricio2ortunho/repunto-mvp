@@ -353,6 +353,14 @@ model Cliente {
   id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   /// E.164, unico a nivel global, no por negocio (INV-20).
   telefono            String   @unique
+  /// Lo que el cliente muestra en caja delante del codigo rotativo:
+  /// K7Q4M-418329. Cinco posiciones de un alfabeto sin caracteres ambiguos
+  /// —sin 0, O, 1, I, L, 5 ni S— en mayusculas
+  /// (CHECK cliente_codigo_publico_formato_chk). Identifica, no autentica: el
+  /// TOTP es lo que autentica. Un prefijo que no resuelve y un TOTP
+  /// equivocado devuelven el mismo CODIGO_INVALIDO, para no dejar enumerar
+  /// clientes.
+  codigo_publico      String   @unique
   /// Opcional. Se pide despues, no en el registro.
   email               String?
   /// Para que el cajero pueda saludarlo.

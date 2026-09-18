@@ -197,10 +197,27 @@ export async function crearAdmin(db: Db): Promise<string> {
 export async function crearCliente(db: Db): Promise<string> {
   return insertar(
     db,
-    `INSERT INTO cliente (telefono, nombre, semilla_totp)
-     VALUES ($1, 'Juan', 'semilla-cifrada') RETURNING id`,
-    [telefono()],
+    `INSERT INTO cliente (telefono, nombre, semilla_totp, codigo_publico)
+     VALUES ($1, 'Juan', 'semilla-cifrada', $2) RETURNING id`,
+    [telefono(), codigoPublico()],
   );
+}
+
+// Alfabeto sin ambiguos, igual que el CHECK. El dominio genera estos codigos
+// en produccion; aca solo hacen falta distintos entre si.
+const ALFABETO = 'ABCDEFGHJKMNPQRTUVWXYZ2346789';
+let ultimoCodigo = 0;
+
+/** Codigo publico valido y distinto en cada llamada. */
+export function codigoPublico(): string {
+  ultimoCodigo += 1;
+  let resto = ultimoCodigo;
+  let codigo = '';
+  for (let i = 0; i < 5; i += 1) {
+    codigo += ALFABETO[resto % ALFABETO.length];
+    resto = Math.floor(resto / ALFABETO.length);
+  }
+  return codigo;
 }
 
 /** Tarjeta activa, sin sellos: sin reloj ni vencimiento. */

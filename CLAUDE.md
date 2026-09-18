@@ -131,7 +131,10 @@ preguntar.
 - **INV-13** — Con el primer sello, `vence_el` = fin del día en `America/La_Paz`
   del mismo día del mes siguiente. Mes calendario, no 30 días.
 - **INV-14** — Al canjear, la tarjeta nueva reinicia el reloj: `reloj_desde` es la
-  fecha del canje, no la del sello sobrante más viejo.
+  fecha del canje, no la del sello sobrante más viejo. **INV-12 tiene
+  precedencia:** si el canje no arrastra sobrantes, la tarjeta nueva nace vacía y
+  el reloj no arranca. Leídos por separado los dos invariantes se contradicen;
+  manda INV-12, porque una tarjeta sin sellos no vence.
 - **INV-15** — Los sellos sobrantes de un canje se reasignan a la tarjeta nueva
   conservando su fecha y local originales. Nunca se borran.
 - **INV-16** — Un canje solo procede sobre una tarjeta `activa` con progreso
@@ -188,6 +191,13 @@ funciones puras.
 - **Vigencia de la tarjeta:** 1 mes calendario desde el primer sello, al fin del
   día en La Paz. Configurable por programa; nulo significa que no vence.
 - **Ventana del código:** 30 segundos. Se acepta la actual y la anterior.
+- **Código que el cliente muestra en caja:** `K7Q4M-418329`. Las cinco primeras
+  posiciones son su `codigo_publico`, estable y único global, de un alfabeto sin
+  caracteres ambiguos —sin 0, O, 1, I, L, 5 ni S—; las seis siguientes son un
+  TOTP de su semilla. El prefijo identifica y el TOTP autentica. Se valida
+  insensible a mayúsculas, espacios y guiones. Un prefijo que no existe y un
+  TOTP equivocado devuelven el mismo `CODIGO_INVALIDO`: distinguirlos permitiría
+  enumerar clientes.
 - **Deshacer sello:** 5 minutos, solo el último sello del propio cajero. El
   supervisor puede anular cualquier sello de su local.
 - **Cliente activo:** al menos un sello en los últimos 60 días.
@@ -252,6 +262,12 @@ menos: `CODIGO_INVALIDO`, `CODIGO_YA_USADO`, `DEMASIADO_PRONTO`,
 `TARJETA_COMPLETA`, `TARJETA_VENCIDA`, `LOCAL_NO_AUTORIZADO`,
 `DISPOSITIVO_REVOCADO`, `NEGOCIO_SUSPENDIDO`. El mensaje que ve el cajero le dice
 qué hacer, no qué falló internamente.
+
+La lista vive en `packages/dominio` (`CODIGOS_DE_ERROR`) y agrega cuatro:
+`TURNO_CERRADO`; `PROMO_NO_CONFIGURADA`, que es un error del dueño y cuyo mensaje
+le dice al cajero que avise, no que reintente; y `TARJETA_INCOMPLETA` y
+`CANJE_EN_OTRO_LOCAL`, del canje. Un local dado de baja es
+`LOCAL_NO_AUTORIZADO`.
 
 **Idempotencia.** Todo endpoint que crea algo (sello, canje, registro, envío de
 código) acepta `Idempotency-Key` y devuelve el mismo resultado ante reintento. El

@@ -98,15 +98,17 @@ que apunta.
 
 ## Teléfonos y acceso
 
-| Restricción                              | Tabla              | Tipo   | Definición                            | Invariante | Qué impide                                                                                                   |
-| ---------------------------------------- | ------------------ | ------ | ------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------ |
-| `cliente_telefono_key`                   | `cliente`          | UNIQUE | `(telefono)`                          | INV-20     | Dos cuentas de cliente con el mismo teléfono, aunque sean de negocios distintos.                             |
-| `cliente_telefono_e164_chk`              | `cliente`          | CHECK  | `telefono ~ '^\+[1-9][0-9]{7,14}$'`   | INV-20     | Guardar un teléfono sin normalizar a E.164.                                                                  |
-| `admin_plataforma_telefono_key`          | `admin_plataforma` | UNIQUE | `(telefono)`                          | INV-20     | Dos administradores con el mismo teléfono.                                                                   |
-| `admin_plataforma_telefono_e164_chk`     | `admin_plataforma` | CHECK  | `telefono ~ '^\+[1-9][0-9]{7,14}$'`   | INV-20     | Teléfono de administrador sin normalizar.                                                                    |
-| `usuario_negocio_telefono_key`           | `usuario_negocio`  | UNIQUE | `(telefono)`, los nulos no chocan     | INV-20     | Dos usuarios de panel con el mismo teléfono, en cualquier negocio. Cajeros sin teléfono, todos los que haya. |
-| `usuario_negocio_telefono_e164_chk`      | `usuario_negocio`  | CHECK  | nulo, o `~ '^\+[1-9][0-9]{7,14}$'`    | INV-20     | Teléfono de usuario sin normalizar.                                                                          |
-| `usuario_negocio_dueno_con_telefono_chk` | `usuario_negocio`  | CHECK  | `rol <> 'dueno'` o `telefono` no nulo | Sección 5  | Un dueño sin teléfono: el dueño entra por teléfono y código. Supervisor y cajero entran por PIN.             |
+| Restricción                              | Tabla              | Tipo   | Definición                                | Invariante | Qué impide                                                                                                               |
+| ---------------------------------------- | ------------------ | ------ | ----------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `cliente_telefono_key`                   | `cliente`          | UNIQUE | `(telefono)`                              | INV-20     | Dos cuentas de cliente con el mismo teléfono, aunque sean de negocios distintos.                                         |
+| `cliente_telefono_e164_chk`              | `cliente`          | CHECK  | `telefono ~ '^\+[1-9][0-9]{7,14}$'`       | INV-20     | Guardar un teléfono sin normalizar a E.164.                                                                              |
+| `cliente_codigo_publico_key`             | `cliente`          | UNIQUE | `(codigo_publico)`                        | Sección 6  | Dos clientes con el mismo código público: el prefijo que el cliente muestra en caja tiene que resolver a uno solo.       |
+| `cliente_codigo_publico_formato_chk`     | `cliente`          | CHECK  | cinco caracteres de `A-HJKMNP-RT-Z2-46-9` | Sección 6  | Un código con caracteres que se confunden a un metro del mostrador (0, O, 1, I, L, 5, S), en minúsculas o de otro largo. |
+| `admin_plataforma_telefono_key`          | `admin_plataforma` | UNIQUE | `(telefono)`                              | INV-20     | Dos administradores con el mismo teléfono.                                                                               |
+| `admin_plataforma_telefono_e164_chk`     | `admin_plataforma` | CHECK  | `telefono ~ '^\+[1-9][0-9]{7,14}$'`       | INV-20     | Teléfono de administrador sin normalizar.                                                                                |
+| `usuario_negocio_telefono_key`           | `usuario_negocio`  | UNIQUE | `(telefono)`, los nulos no chocan         | INV-20     | Dos usuarios de panel con el mismo teléfono, en cualquier negocio. Cajeros sin teléfono, todos los que haya.             |
+| `usuario_negocio_telefono_e164_chk`      | `usuario_negocio`  | CHECK  | nulo, o `~ '^\+[1-9][0-9]{7,14}$'`        | INV-20     | Teléfono de usuario sin normalizar.                                                                                      |
+| `usuario_negocio_dueno_con_telefono_chk` | `usuario_negocio`  | CHECK  | `rol <> 'dueno'` o `telefono` no nulo     | Sección 5  | Un dueño sin teléfono: el dueño entra por teléfono y código. Supervisor y cajero entran por PIN.                         |
 
 ## Caja y vinculación de tablets
 
