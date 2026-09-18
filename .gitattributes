@@ -1,0 +1,17 @@
+# El repo es LF en todas las plataformas. Sin esto, el core.autocrlf=true que
+# trae Git para Windows convierte a CRLF al hacer checkout: prettier --check
+# falla y el contenido de las migraciones de Prisma deja de coincidir con lo
+# aplicado en la base.
+* text=auto eol=lf
+
+# Binarios: nunca tocar fines de linea. Sin esta linea, Git trato el PDF del
+# modelo de datos como texto y lo habria corrompido en el primer checkout.
+*.pdf   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.webp  binary
+*.gif   binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary
