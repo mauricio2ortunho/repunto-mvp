@@ -14,7 +14,7 @@
 //    Son la mitad de una FK compuesta que sostiene un invariante. Ver CLAUDE.md
 //    seccion 14 antes de tocarlas.
 //  - Lo que Prisma no sabe expresar (indices parciales y CHECK) vive como SQL
-//    en la migracion. El inventario completo esta al final de este archivo.
+//    en las migraciones. El inventario completo esta al final de este archivo.
 
 generator client {
   provider     = "prisma-client"
@@ -84,10 +84,12 @@ model Negocio {
   /// Si es falso, el premio solo se canjea donde se acumulo. Por defecto, en
   /// cualquier sucursal (especificacion funcional, seccion 7).
   canje_cualquier_local Boolean       @default(true)
-  /// URL en R2. Nunca el archivo en la base (INV-22).
-  logo_url              String
-  /// URL en R2. Nunca el archivo en la base (INV-22).
-  portada_url           String
+  /// URL en R2. Nunca el archivo en la base (INV-22). Nulo mientras el dueno
+  /// no la entrega: el alta manual suele hacerse antes de tener las imagenes.
+  /// Sin logo, la app dibuja la inicial del nombre sobre color_principal.
+  logo_url              String?
+  /// URL en R2. Nunca el archivo en la base (INV-22). Nulo hasta que llegue.
+  portada_url           String?
   /// Hex #RRGGBB (CHECK negocio_color_principal_hex_chk). El color del texto
   /// encima se calcula por contraste, no se guarda.
   color_principal       String
@@ -124,12 +126,13 @@ model Local {
   activo     Boolean  @default(true)
   creado_el  DateTime @default(now()) @db.Timestamptz(3)
 
-  negocio      Negocio           @relation(fields: [negocio_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  usuarios     UsuarioLocal[]
-  dispositivos DispositivoCaja[]
-  tarjetas     Tarjeta[]
-  sellos       Sello[]
-  canjes       Canje[]
+  negocio       Negocio                @relation(fields: [negocio_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  usuarios      UsuarioLocal[]
+  dispositivos  DispositivoCaja[]
+  vinculaciones VinculacionPendiente[]
+  tarjetas      Tarjeta[]
+  sellos        Sello[]
+  canjes        Canje[]
 
   /// Destino de FK compuesta, no una restriccion de negocio. Existe para que
   /// usuario_local, tarjeta, sello y canje puedan exigir que su local sea del
@@ -149,7 +152,8 @@ model UsuarioNegocio {
   /// supervisor y cajero entran por PIN. Limitacion conocida: una persona no
   /// puede ser duena de dos negocios con el mismo telefono (CLAUDE.md, 14).
   telefono   String?    @unique
-  /// PIN de 4 digitos, hasheado. Identifica, no autentica.
+  /// PIN de 4 digitos, hasheado. Confirma al usuario elegido de la lista; no
+  /// lo identifica. NO es unico, ni por local ni global (CLAUDE.md, seccion 5).
   pin_hash   String?
   /// Aparece en la auditoria de cada sello.
   nombre     String
@@ -157,9 +161,10 @@ model UsuarioNegocio {
   activo     Boolean    @default(true)
   creado_el  DateTime   @default(now()) @db.Timestamptz(3)
 
-  negocio     Negocio          @relation(fields: [negocio_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  locales     UsuarioLocal[]
-  condiciones CondicionSello[]
+  negocio               Negocio                @relation(fields: [negocio_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  locales               UsuarioLocal[]
+  condiciones           CondicionSello[]
+  vinculaciones_creadas VinculacionPendiente[]
 
   /// Destino de FK compuesta, no una restriccion de negocio. Existe para que
   /// usuario_local y condicion_sello puedan exigir que el usuario sea del
@@ -215,6 +220,31 @@ model DispositivoCaja {
   @@map("dispositivo_caja")
 }
 
+/// Codigo de un solo uso para vincular una tablet a un local. Vence en
+/// minutos. El dispositivo_caja se crea recien cuando la vinculacion se
+/// completa; hasta entonces, esto es todo lo que existe.
+model VinculacionPendiente {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Lo que se escribe en la tablet. Unico global: la tablet todavia no sabe
+  /// de que negocio es. El generador reintenta ante colision. Nunca al log.
+  codigo                String    @unique
+  /// El local al que queda atada la tablet, y de ahi cada sello (INV-2).
+  local_id              String    @db.Uuid
+  creado_por_usuario_id String    @db.Uuid
+  /// Vence en minutos. Usarlo despues es imposible en la base
+  /// (CHECK vinculacion_pendiente_uso_antes_de_expirar_chk).
+  expira_el             DateTime  @db.Timestamptz(3)
+  /// Un solo uso: se marca al completar la vinculacion.
+  usado_el              DateTime? @db.Timestamptz(3)
+  creado_el             DateTime  @default(now()) @db.Timestamptz(3)
+
+  local      Local          @relation(fields: [local_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  creado_por UsuarioNegocio @relation(fields: [creado_por_usuario_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([local_id, creado_el])
+  @@map("vinculacion_pendiente")
+}
+
 /// Quien esta en la caja. Se abre con PIN sobre un dispositivo ya vinculado.
 model TurnoCaja {
   id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -229,10 +259,11 @@ model TurnoCaja {
   cerrado_el     DateTime? @db.Timestamptz(3)
   creado_el      DateTime  @default(now()) @db.Timestamptz(3)
 
-  dispositivo DispositivoCaja @relation(fields: [dispositivo_id, local_id], references: [id, local_id], onDelete: Restrict, onUpdate: Restrict, map: "turno_caja_dispositivo_mismo_local_fkey")
-  asignacion  UsuarioLocal    @relation(fields: [usuario_id, local_id], references: [usuario_id, local_id], onDelete: Restrict, onUpdate: Restrict, map: "turno_caja_usuario_asignado_al_local_fkey")
-  sellos      Sello[]
-  canjes      Canje[]
+  dispositivo     DispositivoCaja @relation(fields: [dispositivo_id, local_id], references: [id, local_id], onDelete: Restrict, onUpdate: Restrict, map: "turno_caja_dispositivo_mismo_local_fkey")
+  asignacion      UsuarioLocal    @relation(fields: [usuario_id, local_id], references: [usuario_id, local_id], onDelete: Restrict, onUpdate: Restrict, map: "turno_caja_usuario_asignado_al_local_fkey")
+  sellos          Sello[]         @relation("sello_otorgado")
+  sellos_anulados Sello[]         @relation("sello_anulado")
+  canjes          Canje[]
 
   /// Destino de FK compuesta, no una restriccion de negocio. Existe para que
   /// sello y canje puedan exigir que su local sea el del turno, y por lo tanto
@@ -387,36 +418,42 @@ model Tarjeta {
 /// Un registro por compra, con su auditoria. No es un contador: el progreso se
 /// cuenta (INV-10). Nunca se borra, se anula (INV-17).
 model Sello {
-  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   /// Cambia si el sello pasa como sobrante a la tarjeta nueva (INV-15).
-  tarjeta_id   String    @db.Uuid
+  tarjeta_id       String    @db.Uuid
   /// FK compuesta, no redundancia: es el negocio de la tarjeta, y obliga a que
   /// local y condicion sean de ese mismo negocio (INV-8, INV-18). CLAUDE.md,
   /// seccion 14.
-  negocio_id   String    @db.Uuid
+  negocio_id       String    @db.Uuid
   /// Sale del dispositivo, no del request. La FK (turno_id, local_id) lo
   /// obliga a ser el local del turno (INV-2).
-  local_id     String    @db.Uuid
+  local_id         String    @db.Uuid
   /// De aca salen el cajero y el equipo.
-  turno_id     String    @db.Uuid
+  turno_id         String    @db.Uuid
   /// Que condicion regia. Permite ver que producto movio mas sellos.
-  condicion_id String    @db.Uuid
+  condicion_id     String    @db.Uuid
   /// Opcional. Habilita comparar el ticket de un cliente fiel.
-  monto        Decimal?  @db.Decimal(12, 2)
-  /// El boton de deshacer marca, no borra.
-  anulado      Boolean   @default(false)
-  anulado_el   DateTime? @db.Timestamptz(3)
-  creado_el    DateTime  @default(now()) @db.Timestamptz(3)
+  monto            Decimal?  @db.Decimal(12, 2)
+  /// El boton de deshacer marca, no borra. anulado, anulado_el y
+  /// anulado_turno_id van los tres juntos (CHECK sello_anulacion_completa_chk).
+  anulado          Boolean   @default(false)
+  anulado_el       DateTime? @db.Timestamptz(3)
+  /// Turno desde el que se anulo. Igual que turno_id: de ahi salen el usuario
+  /// y el equipo. Alimenta la senal de anulaciones altas por local.
+  anulado_turno_id String?   @db.Uuid
+  creado_el        DateTime  @default(now()) @db.Timestamptz(3)
 
-  tarjeta   Tarjeta        @relation(fields: [tarjeta_id, negocio_id], references: [id, negocio_id], onDelete: Restrict, onUpdate: Restrict, map: "sello_tarjeta_mismo_negocio_fkey")
-  local     Local          @relation(fields: [local_id, negocio_id], references: [id, negocio_id], onDelete: Restrict, onUpdate: Restrict, map: "sello_local_mismo_negocio_fkey")
-  turno     TurnoCaja      @relation(fields: [turno_id, local_id], references: [id, local_id], onDelete: Restrict, onUpdate: Restrict, map: "sello_turno_mismo_local_fkey")
-  condicion CondicionSello @relation(fields: [condicion_id, negocio_id], references: [id, negocio_id], onDelete: Restrict, onUpdate: Restrict, map: "sello_condicion_mismo_negocio_fkey")
+  tarjeta       Tarjeta        @relation(fields: [tarjeta_id, negocio_id], references: [id, negocio_id], onDelete: Restrict, onUpdate: Restrict, map: "sello_tarjeta_mismo_negocio_fkey")
+  local         Local          @relation(fields: [local_id, negocio_id], references: [id, negocio_id], onDelete: Restrict, onUpdate: Restrict, map: "sello_local_mismo_negocio_fkey")
+  turno         TurnoCaja      @relation("sello_otorgado", fields: [turno_id, local_id], references: [id, local_id], onDelete: Restrict, onUpdate: Restrict, map: "sello_turno_mismo_local_fkey")
+  anulado_turno TurnoCaja?     @relation("sello_anulado", fields: [anulado_turno_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "sello_anulado_turno_id_fkey")
+  condicion     CondicionSello @relation(fields: [condicion_id, negocio_id], references: [id, negocio_id], onDelete: Restrict, onUpdate: Restrict, map: "sello_condicion_mismo_negocio_fkey")
 
   @@index([tarjeta_id, creado_el])
   @@index([local_id, creado_el])
   @@index([negocio_id, creado_el])
   @@index([turno_id])
+  @@index([anulado_turno_id])
   @@index([condicion_id])
   @@map("sello")
 }
@@ -473,9 +510,10 @@ model CodigoUsado {
 }
 
 // ---------------------------------------------------------------------------
-// Inventario de lo que vive en SQL crudo, en la migracion inicial, porque
+// Inventario de lo que vive en SQL crudo dentro de prisma/migrations, porque
 // Prisma no lo sabe expresar. Si una migracion futura intenta dropear alguno
-// de estos, esta mal generada.
+// de estos, esta mal generada. Toda restriccion nueva de este tipo se suma
+// aca y al test de inventario de la integracion.
 //
 // Indices unicos parciales:
 //   tarjeta_una_activa_por_cliente_negocio   INV-11
@@ -495,9 +533,11 @@ model CodigoUsado {
 //   programa_vigencia_meses_positiva_chk             cordura
 //   condicion_sello_monto_minimo_no_negativo_chk     cordura
 //   tarjeta_vence_solo_con_reloj_chk                 INV-12
-//   sello_anulado_con_fecha_chk                      INV-17
+//   sello_anulacion_completa_chk                     INV-17
 //   sello_monto_no_negativo_chk                      cordura
 //   turno_caja_cierre_posterior_chk                  cordura
 //   dispositivo_caja_revocado_posterior_chk          cordura
 //   codigo_usado_ventana_no_negativa_chk             cordura
+//   vinculacion_pendiente_expira_posterior_chk       cordura
+//   vinculacion_pendiente_uso_antes_de_expirar_chk   el codigo vence en minutos
 // ---------------------------------------------------------------------------

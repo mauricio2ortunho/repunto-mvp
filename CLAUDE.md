@@ -169,8 +169,14 @@ notificaciones. Los guards se testean por rol, no se revisan a ojo.
 
 **Caja: se autentica el equipo, no la persona.** La tablet se vincula una vez con
 un código de vinculación y su sesión no vence hasta que se revoque. Sobre ella,
-cada cajero abre turno con un PIN de cuatro dígitos. El PIN identifica; la
-autoridad la tiene el dispositivo. Revocar un dispositivo lo invalida al instante.
+cada cajero abre turno tocando su nombre en la lista del dispositivo y escribiendo
+su PIN de cuatro dígitos. El nombre identifica, el PIN confirma y la autoridad la
+tiene el dispositivo. Revocar un dispositivo lo invalida al instante.
+
+**El PIN no es único, y no hay que hacerlo único.** Dos cajeros del mismo local
+pueden tener el mismo PIN: como primero se elige el nombre, no hay ambigüedad. No
+imponer unicidad en ningún alcance —local, negocio ni global— y no buscar al
+cajero por PIN. Con hash con sal tampoco se podría verificar en la base.
 
 ---
 
@@ -262,6 +268,15 @@ se calcula por contraste y se elige blanco o negro. Nunca se deja elegir.
 `produccion`. Ningún dato real en staging. `pnpm db:seed` crea un negocio de demo
 con clientes ficticios, usable para mostrarle la app a un negocio que todavía no
 tiene clientes.
+
+**Postgres de Repunto en local: puerto 5434.** Ni 5432 ni 5433. En la máquina de
+desarrollo el 5432 lo ocupa un PostgreSQL nativo de Windows (servicio
+`postgresql-x64-16`) y el 5433 el contenedor de otro proyecto. Lo peligroso no es
+el choque, es que no se nota: Windows dejó a Docker escuchar en el 5432 a la par
+del servicio nativo, `docker compose up` arrancó sin error y Prisma se conectó en
+silencio a la base equivocada. El único síntoma fue un `P1000 Authentication
+failed` con credenciales correctas. Después de levantar la base, verificar con una
+conexión real, no con que el contenedor haya arrancado.
 
 ---
 
@@ -375,7 +390,7 @@ asignado *hoy* lo verifica el código al abrir turno.
 ### Lo que Prisma no expresa
 
 Los índices únicos parciales (INV-5, INV-11) y los CHECK viven como SQL crudo al
-final de la migración inicial, inventariados al final de `schema.prisma`.
+final de cada `migration.sql`, inventariados al final de `schema.prisma`.
 
 Verificado con Prisma 7.10: `migrate dev` los ignora al calcular diferencias y
 no intenta dropearlos, ni siquiera ante cambios sobre las mismas tablas o sobre
