@@ -14,7 +14,7 @@
     "lint": "eslint . --max-warnings=0 && prettier --check .",
     "format": "prettier --write .",
     "test": "vitest run --project unitarios",
-    "test:integration": "vitest run --project integracion --passWithNoTests",
+    "test:integration": "vitest run --project integracion",
     "db:migrate": "prisma migrate dev && prisma generate",
     "db:generate": "prisma generate",
     "db:seed": "node scripts/seed-pendiente.mjs"

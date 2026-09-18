@@ -289,7 +289,14 @@ con cuidado.
   definición de la sección 6 tiene su test.
 - **Integración:** contra Postgres real, no mocks ni SQLite. Obligatorio para
   sellado, canje, vencimiento, registro asistido, vinculación de dispositivo y los
-  guards por rol.
+  guards por rol. Viven en `apps/api/test/`. Cada corrida borra y recrea
+  `repunto_test` con `prisma migrate deploy` (nunca `db push`: omitiría el SQL
+  crudo), cada test corre en su transacción y la deshace, y antes de cada test se
+  exige que la base esté vacía. Si Postgres no responde, fallan: no se saltean.
+- **Esquema:** `docs/garantias-de-la-base.md` lista todo lo que la base impide.
+  Un test lo compara contra el catálogo y falla si algo falta, sobra, cambió de
+  columnas o tiene un trigger deshabilitado; cada restricción violable tiene
+  además su test de rechazo, que exige el nombre exacto de la restricción.
 - **Concurrencia:** tres carreras con test propio — dos sellados simultáneos con el
   mismo código, dos canjes simultáneos sobre la misma tarjeta, y un sello que entra
   justo cuando el cron vence esa tarjeta. Todas deben terminar en un solo efecto
@@ -332,7 +339,7 @@ pnpm install
 pnpm dev                  # todas las apps
 pnpm --filter api dev
 pnpm test                 # unitarios
-pnpm test:integration     # requiere Postgres levantado
+pnpm test:integration     # recrea repunto_test; requiere Postgres levantado
 pnpm typecheck
 pnpm lint
 pnpm db:migrate           # prisma migrate dev + prisma generate
@@ -371,11 +378,19 @@ invariante que sostiene.
 | `turno_caja.local_id` | `(dispositivo_id, local_id)` → `dispositivo_caja`; `(usuario_id, local_id)` → `usuario_local` | INV-3, y vía `sello` y `canje`, INV-2 |
 | `usuario_local.negocio_id` | `(usuario_id, negocio_id)` → `usuario_negocio`; `(local_id, negocio_id)` → `local` | Un usuario solo se asigna a locales de su propio negocio |
 
-Sin columna nueva, el mismo patrón cierra dos cosas más. `sello` y `canje`
-apuntan con `(turno_id, local_id)` a `turno_caja`: el local sale del turno y el
-turno sale del dispositivo (INV-2). `condicion_sello` apunta con
-`(usuario_id, negocio_id)` a `usuario_negocio`: nadie escribe la condición de
-otra marca.
+Sin columna nueva, el mismo patrón cierra cuatro cosas más:
+
+- `sello` y `canje` apuntan con `(turno_id, local_id)` a `turno_caja`: el local
+  sale del turno y el turno sale del dispositivo (INV-2).
+- `sello` apunta con `(anulado_turno_id, local_id)` a `turno_caja`: nadie anula
+  sellos de otra sucursal desde su tablet.
+- `condicion_sello` apunta con `(usuario_id, negocio_id)` a `usuario_negocio`:
+  nadie escribe la condición de otra marca.
+- `vinculacion_pendiente` apunta con `(creado_por_usuario_id, local_id)` a
+  `usuario_local`: el código de vinculación de una tablet lo genera alguien
+  asignado a ESE local, no solo alguien del mismo negocio. Consecuencias: el
+  dueño tiene que estar asignado al local para vincular una tablet, y el
+  `admin_plataforma` no puede generar códigos, porque no es `usuario_negocio`.
 
 **Al escribir código contra estas tablas**, la columna de alcance se toma del
 registro padre —el `negocio_id` de la tarjeta, el `local_id` del turno—, nunca
@@ -384,19 +399,34 @@ datos: es un bug de alcance o un intento de fraude, y se registra como tal.
 
 **Límite de INV-3.** La FK garantiza que la asignación `usuario_local` exista,
 no que siga activa. Una asignación dada de baja (`activo = false`) conserva la
-fila porque los turnos viejos la referencian (INV-17). Que el cajero esté
-asignado *hoy* lo verifica el código al abrir turno.
+fila porque los turnos viejos la referencian (INV-17). Que el usuario esté
+asignado *hoy* lo verifica el código al abrir turno y al generar un código de
+vinculación.
 
 ### Lo que Prisma no expresa
 
-Los índices únicos parciales (INV-5, INV-11) y los CHECK viven como SQL crudo al
-final de cada `migration.sql`, inventariados al final de `schema.prisma`.
+Los índices únicos parciales (INV-5, INV-11), los CHECK y los triggers viven como
+SQL crudo al final de cada `migration.sql`. El inventario de todo lo que
+garantiza la base, con el invariante de cada restricción, es
+`docs/garantias-de-la-base.md`, y lo verifica `pnpm test:integration`.
 
 Verificado con Prisma 7.10: `migrate dev` los ignora al calcular diferencias y
-no intenta dropearlos, ni siquiera ante cambios sobre las mismas tablas o sobre
-el enum que usa el `WHERE`. El reverso: Prisma tampoco detecta si alguien los
-borra a mano. Por eso cada uno necesita un test de integración que falle si
-desaparece, y toda restricción nueva de este tipo se suma al inventario.
+no intenta dropearlos, ni siquiera ante cambios sobre las mismas tablas, sobre el
+enum que usa un `WHERE` o sobre el tipo de una columna. El reverso: Prisma
+tampoco detecta si alguien los borra. Eso lo cubren los tests de integración.
+Toda restricción nueva de este tipo se agrega a `docs/garantias-de-la-base.md`
+en el mismo commit; si no, el test de inventario falla.
+
+**Triggers de inmutabilidad.** `tarjeta_programa_id_inmutable` (INV-6),
+`programa_inmutable` (INV-5) y `condicion_sello_solo_insercion` (INV-7) rechazan
+con `ERRCODE 23000` y se reportan con `CONSTRAINT` igual a su nombre: el código
+los reconoce por `error.constraint`, como a cualquier restricción, nunca por el
+texto del mensaje. `programa_inmutable` compara la fila entera menos `vigente`,
+así que una columna nueva queda protegida sola. Consecuencia: un backfill
+(`UPDATE programa SET columna_nueva = …`, o lo mismo sobre `condicion_sello`)
+queda bloqueado. Esa migración tiene que hacer `DISABLE TRIGGER`, el `UPDATE` y
+`ENABLE TRIGGER` explícitamente, y el test de inventario falla si el trigger
+queda deshabilitado.
 
 **Borrado físico (INV-17).** Todas las FK son `ON DELETE RESTRICT`: nada con
 historial colgando se puede borrar. Pero una fila hoja (`sello`, `canje`) no

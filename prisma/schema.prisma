@@ -13,8 +13,8 @@
 //    sello, canje, turno_caja y usuario_local NO son redundancia a eliminar.
 //    Son la mitad de una FK compuesta que sostiene un invariante. Ver CLAUDE.md
 //    seccion 14 antes de tocarlas.
-//  - Lo que Prisma no sabe expresar (indices parciales y CHECK) vive como SQL
-//    en las migraciones. El inventario completo esta al final de este archivo.
+//  - Lo que Prisma no sabe expresar (indices parciales, CHECK y triggers) vive
+//    como SQL en las migraciones. Inventario: docs/garantias-de-la-base.md.
 
 generator client {
   provider     = "prisma-client"
@@ -126,13 +126,12 @@ model Local {
   activo     Boolean  @default(true)
   creado_el  DateTime @default(now()) @db.Timestamptz(3)
 
-  negocio       Negocio                @relation(fields: [negocio_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  usuarios      UsuarioLocal[]
-  dispositivos  DispositivoCaja[]
-  vinculaciones VinculacionPendiente[]
-  tarjetas      Tarjeta[]
-  sellos        Sello[]
-  canjes        Canje[]
+  negocio      Negocio           @relation(fields: [negocio_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  usuarios     UsuarioLocal[]
+  dispositivos DispositivoCaja[]
+  tarjetas     Tarjeta[]
+  sellos       Sello[]
+  canjes       Canje[]
 
   /// Destino de FK compuesta, no una restriccion de negocio. Existe para que
   /// usuario_local, tarjeta, sello y canje puedan exigir que su local sea del
@@ -161,10 +160,9 @@ model UsuarioNegocio {
   activo     Boolean    @default(true)
   creado_el  DateTime   @default(now()) @db.Timestamptz(3)
 
-  negocio               Negocio                @relation(fields: [negocio_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  locales               UsuarioLocal[]
-  condiciones           CondicionSello[]
-  vinculaciones_creadas VinculacionPendiente[]
+  negocio     Negocio          @relation(fields: [negocio_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  locales     UsuarioLocal[]
+  condiciones CondicionSello[]
 
   /// Destino de FK compuesta, no una restriccion de negocio. Existe para que
   /// usuario_local y condicion_sello puedan exigir que el usuario sea del
@@ -186,9 +184,10 @@ model UsuarioLocal {
   activo     Boolean  @default(true)
   creado_el  DateTime @default(now()) @db.Timestamptz(3)
 
-  usuario UsuarioNegocio @relation(fields: [usuario_id, negocio_id], references: [id, negocio_id], onDelete: Restrict, onUpdate: Restrict, map: "usuario_local_usuario_mismo_negocio_fkey")
-  local   Local          @relation(fields: [local_id, negocio_id], references: [id, negocio_id], onDelete: Restrict, onUpdate: Restrict, map: "usuario_local_local_mismo_negocio_fkey")
-  turnos  TurnoCaja[]
+  usuario               UsuarioNegocio         @relation(fields: [usuario_id, negocio_id], references: [id, negocio_id], onDelete: Restrict, onUpdate: Restrict, map: "usuario_local_usuario_mismo_negocio_fkey")
+  local                 Local                  @relation(fields: [local_id, negocio_id], references: [id, negocio_id], onDelete: Restrict, onUpdate: Restrict, map: "usuario_local_local_mismo_negocio_fkey")
+  turnos                TurnoCaja[]
+  vinculaciones_creadas VinculacionPendiente[]
 
   @@id([usuario_id, local_id])
   @@index([local_id, activo])
@@ -230,6 +229,9 @@ model VinculacionPendiente {
   codigo                String    @unique
   /// El local al que queda atada la tablet, y de ahi cada sello (INV-2).
   local_id              String    @db.Uuid
+  /// Tiene que estar asignado a ESTE local, no solo ser del mismo negocio:
+  /// FK (creado_por_usuario_id, local_id) -> usuario_local, el mismo patron
+  /// que turno_caja. El negocio queda implicito, sin columna extra.
   creado_por_usuario_id String    @db.Uuid
   /// Vence en minutos. Usarlo despues es imposible en la base
   /// (CHECK vinculacion_pendiente_uso_antes_de_expirar_chk).
@@ -238,8 +240,7 @@ model VinculacionPendiente {
   usado_el              DateTime? @db.Timestamptz(3)
   creado_el             DateTime  @default(now()) @db.Timestamptz(3)
 
-  local      Local          @relation(fields: [local_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  creado_por UsuarioNegocio @relation(fields: [creado_por_usuario_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  creador UsuarioLocal @relation(fields: [creado_por_usuario_id, local_id], references: [usuario_id, local_id], onDelete: Restrict, onUpdate: Restrict, map: "vinculacion_pendiente_creador_asignado_al_local_fkey")
 
   @@index([local_id, creado_el])
   @@map("vinculacion_pendiente")
@@ -439,14 +440,15 @@ model Sello {
   anulado          Boolean   @default(false)
   anulado_el       DateTime? @db.Timestamptz(3)
   /// Turno desde el que se anulo. Igual que turno_id: de ahi salen el usuario
-  /// y el equipo. Alimenta la senal de anulaciones altas por local.
+  /// y el equipo. La FK (anulado_turno_id, local_id) obliga a que sea un turno
+  /// del local del sello: nadie anula sellos de otra sucursal desde su tablet.
   anulado_turno_id String?   @db.Uuid
   creado_el        DateTime  @default(now()) @db.Timestamptz(3)
 
   tarjeta       Tarjeta        @relation(fields: [tarjeta_id, negocio_id], references: [id, negocio_id], onDelete: Restrict, onUpdate: Restrict, map: "sello_tarjeta_mismo_negocio_fkey")
   local         Local          @relation(fields: [local_id, negocio_id], references: [id, negocio_id], onDelete: Restrict, onUpdate: Restrict, map: "sello_local_mismo_negocio_fkey")
   turno         TurnoCaja      @relation("sello_otorgado", fields: [turno_id, local_id], references: [id, local_id], onDelete: Restrict, onUpdate: Restrict, map: "sello_turno_mismo_local_fkey")
-  anulado_turno TurnoCaja?     @relation("sello_anulado", fields: [anulado_turno_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "sello_anulado_turno_id_fkey")
+  anulado_turno TurnoCaja?     @relation("sello_anulado", fields: [anulado_turno_id, local_id], references: [id, local_id], onDelete: Restrict, onUpdate: Restrict, map: "sello_anulado_turno_mismo_local_fkey")
   condicion     CondicionSello @relation(fields: [condicion_id, negocio_id], references: [id, negocio_id], onDelete: Restrict, onUpdate: Restrict, map: "sello_condicion_mismo_negocio_fkey")
 
   @@index([tarjeta_id, creado_el])
@@ -510,34 +512,10 @@ model CodigoUsado {
 }
 
 // ---------------------------------------------------------------------------
-// Inventario de lo que vive en SQL crudo dentro de prisma/migrations, porque
-// Prisma no lo sabe expresar. Si una migracion futura intenta dropear alguno
-// de estos, esta mal generada. Toda restriccion nueva de este tipo se suma
-// aca y al test de inventario de la integracion.
-//
-// Indices unicos parciales:
-//   tarjeta_una_activa_por_cliente_negocio   INV-11
-//   programa_una_vigente_por_negocio         INV-5
-//
-// CHECK:
-//   admin_plataforma_telefono_e164_chk               INV-20
-//   cliente_telefono_e164_chk                        INV-20
-//   usuario_negocio_telefono_e164_chk                INV-20
-//   usuario_negocio_dueno_con_telefono_chk           el dueno entra por telefono
-//   negocio_color_principal_hex_chk                  hex #RRGGBB
-//   negocio_plantilla_tarjeta_chk                    PROVISIONAL
-//   negocio_icono_sello_chk                          PROVISIONAL
-//   programa_version_positiva_chk                    INV-5
-//   programa_sellos_requeridos_positivo_chk          cordura
-//   programa_horas_entre_sellos_no_negativo_chk      cordura
-//   programa_vigencia_meses_positiva_chk             cordura
-//   condicion_sello_monto_minimo_no_negativo_chk     cordura
-//   tarjeta_vence_solo_con_reloj_chk                 INV-12
-//   sello_anulacion_completa_chk                     INV-17
-//   sello_monto_no_negativo_chk                      cordura
-//   turno_caja_cierre_posterior_chk                  cordura
-//   dispositivo_caja_revocado_posterior_chk          cordura
-//   codigo_usado_ventana_no_negativa_chk             cordura
-//   vinculacion_pendiente_expira_posterior_chk       cordura
-//   vinculacion_pendiente_uso_antes_de_expirar_chk   el codigo vence en minutos
+// Lo que Prisma no sabe expresar (indices unicos parciales, CHECK y triggers)
+// vive como SQL crudo al final de cada migration.sql. El inventario completo
+// de lo que garantiza la base, con el invariante de cada restriccion, esta en
+// docs/garantias-de-la-base.md. Ese archivo lo verifica el test de inventario
+// contra el catalogo de una base recien migrada: si una restriccion falta, o
+// sobra sin estar documentada, pnpm test:integration falla.
 // ---------------------------------------------------------------------------

@@ -13,19 +13,8 @@ export default defineConfig({
           exclude: [...EXCLUIDOS, '**/*.int.test.ts'],
         },
       },
-      {
-        // Integracion contra Postgres real, nunca mocks ni SQLite
-        // (CLAUDE.md, seccion 10). Todavia no hay casos: el comando existe
-        // para que el primero no tenga que inventar el andamiaje.
-        test: {
-          name: 'integracion',
-          environment: 'node',
-          include: ['{apps,packages}/*/**/*.int.test.ts'],
-          exclude: EXCLUIDOS,
-          hookTimeout: 30_000,
-          testTimeout: 30_000,
-        },
-      },
+      // Integracion contra Postgres real: ver apps/api/vitest.integracion.config.ts.
+      'apps/api/vitest.integracion.config.ts',
     ],
   },
 });

@@ -19,18 +19,18 @@ pnpm dev                   # api :3001, cliente :3000, panel :3002
 
 ## Comandos
 
-| Comando                 | Que hace                                            |
-| ----------------------- | --------------------------------------------------- |
-| `pnpm dev`              | Levanta las tres apps                               |
-| `pnpm --filter api dev` | Solo la api                                         |
-| `pnpm build`            | Compila packages y apps                             |
-| `pnpm test`             | Unitarios (Vitest)                                  |
-| `pnpm test:integration` | Integracion contra Postgres real. Todavia sin casos |
-| `pnpm typecheck`        | TypeScript strict en todo el monorepo               |
-| `pnpm lint`             | ESLint + Prettier                                   |
-| `pnpm db:migrate`       | `prisma migrate dev` + `prisma generate`            |
-| `pnpm db:generate`      | Solo regenera el cliente de Prisma                  |
-| `pnpm db:seed`          | Falla: el seed todavia no existe                    |
+| Comando                 | Que hace                                                                    |
+| ----------------------- | --------------------------------------------------------------------------- |
+| `pnpm dev`              | Levanta las tres apps                                                       |
+| `pnpm --filter api dev` | Solo la api                                                                 |
+| `pnpm build`            | Compila packages y apps                                                     |
+| `pnpm test`             | Unitarios (Vitest)                                                          |
+| `pnpm test:integration` | Recrea `repunto_test`, la migra y corre la integracion contra Postgres real |
+| `pnpm typecheck`        | TypeScript strict en todo el monorepo                                       |
+| `pnpm lint`             | ESLint + Prettier                                                           |
+| `pnpm db:migrate`       | `prisma migrate dev` + `prisma generate`                                    |
+| `pnpm db:generate`      | Solo regenera el cliente de Prisma                                          |
+| `pnpm db:seed`          | Falla: el seed todavia no existe                                            |
 
 ## Base de datos
 
@@ -44,5 +44,6 @@ leer `CLAUDE.md`, seccion 14, antes de tocarlo.
 
 ## Estado
 
-Esquema y primera migracion. Sin logica de negocio, sin repositorios y sin
-endpoints de producto.
+Esquema, migraciones y tests de integracion del esquema. Lo que garantiza la
+base esta en `docs/garantias-de-la-base.md`. Sin logica de negocio, sin
+repositorios y sin endpoints de producto.

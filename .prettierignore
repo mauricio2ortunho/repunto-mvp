@@ -4,7 +4,8 @@ dist/
 .turbo/
 coverage/
 pnpm-lock.yaml
-docs/
+# Documentos fuente escritos a mano: no se reformatean.
+docs/especificacion-funcional.md
 CLAUDE.md
 next-env.d.ts
 apps/api/generated/
