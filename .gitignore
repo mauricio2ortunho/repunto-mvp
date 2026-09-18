@@ -1,0 +1,23 @@
+node_modules/
+dist/
+.next/
+out/
+.turbo/
+coverage/
+
+.env
+.env.local
+.env.*.local
+
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+.DS_Store
+Thumbs.db
+
+next-env.d.ts
+
+# Cliente de Prisma: se regenera con pnpm db:generate
+apps/api/generated/
+*.tsbuildinfo
