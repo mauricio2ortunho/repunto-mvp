@@ -69,6 +69,8 @@ model AdminPlataforma {
   activo    Boolean  @default(true)
   creado_el DateTime @default(now()) @db.Timestamptz(3)
 
+  vinculaciones_creadas VinculacionPendiente[]
+
   @@map("admin_plataforma")
 }
 
@@ -229,10 +231,14 @@ model VinculacionPendiente {
   codigo                String    @unique
   /// El local al que queda atada la tablet, y de ahi cada sello (INV-2).
   local_id              String    @db.Uuid
-  /// Tiene que estar asignado a ESTE local, no solo ser del mismo negocio:
-  /// FK (creado_por_usuario_id, local_id) -> usuario_local, el mismo patron
-  /// que turno_caja. El negocio queda implicito, sin columna extra.
-  creado_por_usuario_id String    @db.Uuid
+  /// Origen 1: alguien del negocio. Tiene que estar asignado a ESTE local, no
+  /// solo ser del mismo negocio: FK (creado_por_usuario_id, local_id) ->
+  /// usuario_local, el mismo patron que turno_caja. El negocio queda implicito.
+  creado_por_usuario_id String?   @db.Uuid
+  /// Origen 2: nosotros, vinculando la tablet en la capacitacion del primer
+  /// dia. El admin no pertenece a ningun negocio, asi que no puede pasar por
+  /// usuario_local; entra por su propia columna y queda igual de auditado.
+  creado_por_admin_id   String?   @db.Uuid
   /// Vence en minutos. Usarlo despues es imposible en la base
   /// (CHECK vinculacion_pendiente_uso_antes_de_expirar_chk).
   expira_el             DateTime  @db.Timestamptz(3)
@@ -240,7 +246,10 @@ model VinculacionPendiente {
   usado_el              DateTime? @db.Timestamptz(3)
   creado_el             DateTime  @default(now()) @db.Timestamptz(3)
 
-  creador UsuarioLocal @relation(fields: [creado_por_usuario_id, local_id], references: [usuario_id, local_id], onDelete: Restrict, onUpdate: Restrict, map: "vinculacion_pendiente_creador_asignado_al_local_fkey")
+  /// Exactamente uno de los dos origenes, nunca ambos ni ninguno
+  /// (CHECK vinculacion_pendiente_un_solo_origen_chk).
+  creador       UsuarioLocal?    @relation(fields: [creado_por_usuario_id, local_id], references: [usuario_id, local_id], onDelete: Restrict, onUpdate: Restrict, map: "vinculacion_pendiente_creador_asignado_al_local_fkey")
+  creador_admin AdminPlataforma? @relation(fields: [creado_por_admin_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@index([local_id, creado_el])
   @@map("vinculacion_pendiente")

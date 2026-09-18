@@ -1,16 +1,21 @@
 import { describe } from 'vitest';
 
 import { esperarAceptacion, esperarRechazo, test, una } from '../base';
-import { crearNegocio, unico } from '../escenario';
+import { crearAdmin, crearNegocio, unico } from '../escenario';
 
 /**
  * Codigo de vinculacion de una tablet: de un solo uso, vence en minutos, y lo
- * genera alguien asignado a ESE local.
+ * genera alguien asignado a ESE local o, en la capacitacion del primer dia, el
+ * admin de plataforma. Exactamente uno de los dos origenes.
  */
 
 const GENERAR = `
   INSERT INTO vinculacion_pendiente (codigo, local_id, creado_por_usuario_id, expira_el)
   VALUES ($1, $2, $3, now() + make_interval(mins => $4))`;
+
+const GENERAR_COMO_ADMIN = `
+  INSERT INTO vinculacion_pendiente (codigo, local_id, creado_por_admin_id, expira_el)
+  VALUES ($1, $2, $3, now() + interval '10 minutes')`;
 
 describe('Vinculacion de tablets', () => {
   test('INV-2 · rechaza un codigo generado por alguien no asignado a ese local', async ({
@@ -44,6 +49,51 @@ describe('Vinculacion de tablets', () => {
   }) => {
     const a = await crearNegocio(db);
     await esperarAceptacion(db, GENERAR, [unico('cod'), a.otroLocal, a.supervisor, 10]);
+  });
+
+  test('Seccion 5 · acepta un codigo generado por el admin de plataforma, sin asignacion', async ({
+    db,
+  }) => {
+    // El admin vincula las tablets en la capacitacion del primer dia. No
+    // pertenece a ningun negocio, asi que entra por su propia columna.
+    const a = await crearNegocio(db);
+    const admin = await crearAdmin(db);
+    await esperarAceptacion(db, GENERAR_COMO_ADMIN, [unico('cod'), a.local, admin]);
+  });
+
+  test('Seccion 5 · rechaza un codigo sin ningun origen', async ({ db }) => {
+    const a = await crearNegocio(db);
+    await esperarRechazo(
+      db,
+      'vinculacion_pendiente_un_solo_origen_chk',
+      `INSERT INTO vinculacion_pendiente (codigo, local_id, expira_el)
+       VALUES ($1, $2, now() + interval '10 minutes')`,
+      [unico('cod'), a.local],
+    );
+  });
+
+  test('Seccion 5 · rechaza un codigo con los dos origenes a la vez', async ({ db }) => {
+    const a = await crearNegocio(db);
+    const admin = await crearAdmin(db);
+    await esperarRechazo(
+      db,
+      'vinculacion_pendiente_un_solo_origen_chk',
+      `INSERT INTO vinculacion_pendiente (codigo, local_id, creado_por_usuario_id, creado_por_admin_id, expira_el)
+       VALUES ($1, $2, $3, $4, now() + interval '10 minutes')`,
+      [unico('cod'), a.local, a.supervisor, admin],
+    );
+  });
+
+  test('Seccion 5 · rechaza atribuir la vinculacion a un admin que no existe', async ({
+    db,
+  }) => {
+    const a = await crearNegocio(db);
+    await esperarRechazo(
+      db,
+      'vinculacion_pendiente_creado_por_admin_id_fkey',
+      GENERAR_COMO_ADMIN,
+      [unico('cod'), a.local, '00000000-0000-0000-0000-000000000000'],
+    );
   });
 
   test('Seccion 5 · rechaza dos vinculaciones con el mismo codigo', async ({ db }) => {

@@ -388,9 +388,15 @@ Sin columna nueva, el mismo patrón cierra cuatro cosas más:
   nadie escribe la condición de otra marca.
 - `vinculacion_pendiente` apunta con `(creado_por_usuario_id, local_id)` a
   `usuario_local`: el código de vinculación de una tablet lo genera alguien
-  asignado a ESE local, no solo alguien del mismo negocio. Consecuencias: el
-  dueño tiene que estar asignado al local para vincular una tablet, y el
-  `admin_plataforma` no puede generar códigos, porque no es `usuario_negocio`.
+  asignado a ESE local, no solo alguien del mismo negocio. Consecuencia: el
+  dueño tiene que estar asignado al local para vincular una tablet.
+
+  El `admin_plataforma` no pertenece a ningún negocio y por eso no puede entrar
+  por esa FK, pero es quien vincula las tablets en la capacitación del primer
+  día. Tiene su propio origen: `creado_por_admin_id`, con FK a
+  `admin_plataforma`. Un CHECK exige **exactamente uno** de los dos, nunca los
+  dos ni ninguno, así que cada tablet vinculada sabe quién la vinculó sin
+  aflojar la garantía del caso normal.
 
 **Al escribir código contra estas tablas**, la columna de alcance se toma del
 registro padre —el `negocio_id` de la tarjeta, el `local_id` del turno—, nunca

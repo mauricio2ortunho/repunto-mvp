@@ -185,6 +185,15 @@ export async function abrirTurno(
   );
 }
 
+/** Un admin de plataforma: no pertenece a ningun negocio. */
+export async function crearAdmin(db: Db): Promise<string> {
+  return insertar(
+    db,
+    `INSERT INTO admin_plataforma (telefono, nombre) VALUES ($1, 'Admin') RETURNING id`,
+    [telefono()],
+  );
+}
+
 export async function crearCliente(db: Db): Promise<string> {
   return insertar(
     db,
