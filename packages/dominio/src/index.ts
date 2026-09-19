@@ -19,7 +19,7 @@ export type {
 } from './tipos';
 
 export { CODIGOS_DE_ERROR, rechazo } from './errores';
-export type { CodigoDeError, Rechazo } from './errores';
+export type { CodigoDeError, DetalleDeRechazo, Rechazo } from './errores';
 
 export {
   ZONA_HORARIA,
@@ -41,11 +41,12 @@ export {
   codigoPublicoDesde,
   esCodigoPublicoValido,
   partirCodigoTipeado,
+  revisarCodigo,
   ventanaDe,
   ventanasAceptadas,
   verificarCodigo,
 } from './codigo';
-export type { CodigoTipeado, VerificacionDeCodigo } from './codigo';
+export type { CodigoTipeado, RevisionDeCodigo, VerificacionDeCodigo } from './codigo';
 
 export {
   estaCompleta,
@@ -58,7 +59,7 @@ export {
 } from './tarjeta';
 
 export { revisarCaja } from './caja';
-export type { Caja } from './caja';
+export type { Caja, RevisionDeCaja } from './caja';
 
 export { decidirSello } from './sellado';
 export type { DecisionDeSellado, EfectoDeSellado, EntradaDeSellado } from './sellado';

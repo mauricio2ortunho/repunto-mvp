@@ -112,10 +112,15 @@ Validaciones, en este orden y en una sola transacción:
 2. El negocio no está suspendido.
 3. El código resuelve a un cliente, aceptando la ventana actual y la anterior.
 4. Se registra el consumo del código. Si ya estaba registrado, se rechaza.
-5. Se busca la tarjeta activa del cliente para el programa vigente; si no existe,
-   se crea.
+5. Se busca la tarjeta activa del cliente; si no existe, se crea con el programa
+   vigente. **Si la que hay está vencida, se cierra y se abre una nueva**: el cron
+   que vence tarjetas corre una vez por día, y trabar al cajero con el cliente
+   enfrente y la compra hecha, hasta las 00:15 del día siguiente, es el peor
+   momento posible para hacerlo esperar. Los sellos de la vencida no se arrastran:
+   el progreso arranca de cero, que es lo que significa que haya vencido.
 6. Se verifica el intervalo mínimo entre sellos configurado en el programa.
-7. Se verifica que la tarjeta no esté vencida ni completa.
+7. Se verifica que la tarjeta no esté completa. Si lo está, no se sella: se canjea.
+   Una tarjeta vencida no llega hasta acá, porque ya se reemplazó en el paso 5.
 8. Se inserta el sello, con la condición vigente adjunta. Si es el primero, se fija
    el vencimiento.
 
@@ -164,6 +169,12 @@ cliente cuando quedan pocos días con sellos en curso.
 
 Lo confirma siempre el negocio, nunca el cliente desde su teléfono. Antes de
 confirmar, el cajero ve el premio en texto para no entregar algo equivocado.
+
+**Pide el código del cliente, igual que el sellado.** Lo confirma el negocio, pero
+con el cliente presente: un cajero que pudiera canjear la tarjeta de alguien
+ausente podría quedarse con el premio, y que quede auditado no lo devuelve. No es
+fricción real, porque el cliente está ahí esperando su premio con la app abierta.
+Consecuencia: el canje también consume una ventana del código rotativo.
 
 Al canjear: se registra el canje, la tarjeta pasa a canjeada, se abre una tarjeta
 nueva y los sellos sobrantes se reasignan a ella conservando su fecha y local

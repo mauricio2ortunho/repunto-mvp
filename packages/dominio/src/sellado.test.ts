@@ -42,6 +42,7 @@ describe('decidirSello · cada validacion tiene su caso que la dispara', () => {
       { dispositivo: { id: 'tablet-1', local_id: LOCAL.id, revocado_el: AHORA } },
     ],
     ['TURNO_CERRADO', 'el turno ya se cerro', { turno: { ...TURNO, cerrado_el: AHORA } }],
+    ['TURNO_CERRADO', 'nadie abrio turno en esa tablet', { turno: null }],
     [
       'LOCAL_NO_AUTORIZADO',
       'el local esta dado de baja',
@@ -128,18 +129,7 @@ describe('decidirSello · cada validacion tiene su caso que la dispara', () => {
         },
       },
     ],
-    [
-      'TARJETA_VENCIDA',
-      'la tarjeta vencio ayer y el cron todavia no paso',
-      {
-        enCurso: unaTarjetaEnCurso({
-          tarjeta: unaTarjeta({
-            reloj_desde: new Date(AHORA.getTime() - 40 * 24 * HORA),
-            vence_el: new Date(AHORA.getTime() - 24 * HORA),
-          }),
-        }),
-      },
-    ],
+    ['CODIGO_INVALIDO', 'el prefijo no resuelve a ningun cliente', { cliente: null }],
     [
       'TARJETA_COMPLETA',
       'la tarjeta ya llego a los sellos que pide el programa',
@@ -210,6 +200,7 @@ describe('decidirSello · el efecto', () => {
     const efecto = efectoDe();
     expect(efecto.tarjeta_id).toBeNull();
     expect(efecto.abrirTarjeta).toEqual({
+      cliente_id: CLIENTE.id,
       programa_id: PROGRAMA.id,
       negocio_id: NEGOCIO.id,
       local_alta_id: LOCAL.id,
@@ -250,6 +241,7 @@ describe('decidirSello · el efecto', () => {
       progreso: 4,
       faltan: 6,
       completa: false,
+      premio: PROGRAMA.premio,
     });
   });
 
@@ -318,14 +310,103 @@ describe('decidirSello · el intervalo se mide por cliente y negocio', () => {
   });
 });
 
+describe('decidirSello · la tarjeta vencida se cierra y se abre otra', () => {
+  const vencidaAyer = () =>
+    unaTarjetaEnCurso({
+      tarjeta: unaTarjeta({
+        reloj_desde: new Date(AHORA.getTime() - 40 * 24 * HORA),
+        vence_el: new Date(AHORA.getTime() - 24 * HORA),
+      }),
+      sellos: unosSellos(3),
+    });
+
+  it('no rechaza: el cajero no queda trabado hasta que pase el cron', () => {
+    expect(rechazoDe({ enCurso: vencidaAyer() })).toBe('sello aceptado');
+  });
+
+  it('cierra la vencida, abre una nueva y arranca su reloj', () => {
+    const efecto = efectoDe({ enCurso: vencidaAyer() });
+    expect(efecto.vencerTarjeta).toBe('tarjeta-1');
+    expect(efecto.tarjeta_id).toBeNull();
+    expect(efecto.abrirTarjeta).toEqual({
+      cliente_id: CLIENTE.id,
+      programa_id: PROGRAMA.id,
+      negocio_id: NEGOCIO.id,
+      local_alta_id: LOCAL.id,
+    });
+    expect(efecto.arrancarReloj?.reloj_desde).toEqual(AHORA);
+  });
+
+  it('el progreso vuelve a uno: los sellos de la vencida no se arrastran', () => {
+    expect(efectoDe({ enCurso: vencidaAyer() }).aviso.progreso).toBe(1);
+  });
+
+  it('la nueva nace con el programa vigente de hoy, no con el de la vencida', () => {
+    const vigente = { ...PROGRAMA, id: 'programa-v2', premio: 'Dos cafes' };
+    const efecto = efectoDe({ enCurso: vencidaAyer(), programaVigente: vigente });
+    expect(efecto.abrirTarjeta?.programa_id).toBe('programa-v2');
+    expect(efecto.aviso.premio).toBe('Dos cafes');
+  });
+
+  it('sin programa vigente no hay tarjeta nueva que abrir', () => {
+    expect(rechazoDe({ enCurso: vencidaAyer(), programaVigente: null })).toBe(
+      'PROMO_NO_CONFIGURADA',
+    );
+  });
+
+  it('una tarjeta vencida y completa tampoco rechaza: vencio, ya no se canjea', () => {
+    const enCurso = unaTarjetaEnCurso({
+      tarjeta: unaTarjeta({
+        reloj_desde: new Date(AHORA.getTime() - 40 * 24 * HORA),
+        vence_el: new Date(AHORA.getTime() - 24 * HORA),
+      }),
+      sellos: unosSellos(PROGRAMA.sellos_requeridos),
+    });
+    expect(rechazoDe({ enCurso })).toBe('sello aceptado');
+  });
+
+  it('sella normal cuando no esta vencida: no hay nada que cerrar', () => {
+    expect(efectoDe({ enCurso: unaTarjetaEnCurso() }).vencerTarjeta).toBeNull();
+  });
+});
+
+describe('decidirSello · DEMASIADO_PRONTO dice desde cuando', () => {
+  it('suma las horas del programa al ultimo sello', () => {
+    const ultimo = new Date(AHORA.getTime() - 3 * HORA);
+    const decision = decidirSello(
+      unaEntradaDeSellado({
+        ultimoSelloDelCliente: {
+          id: 'sello-previo',
+          tarjeta_id: 'tarjeta-1',
+          creado_el: ultimo,
+          anulado: false,
+        },
+      }),
+    );
+    if (decision.tipo !== 'rechazado') throw new Error('Se esperaba un rechazo.');
+    expect(decision.codigo).toBe('DEMASIADO_PRONTO');
+    expect(decision.detalle?.puede_sellar_desde).toEqual(
+      new Date(ultimo.getTime() + PROGRAMA.horas_entre_sellos * HORA),
+    );
+  });
+
+  it('los rechazos que no lo necesitan no traen detalle', () => {
+    const decision = decidirSello(unaEntradaDeSellado({ codigoYaUsado: true }));
+    if (decision.tipo !== 'rechazado') throw new Error('Se esperaba un rechazo.');
+    expect(decision.detalle).toBeUndefined();
+  });
+});
+
 describe('decidirSello · no deja enumerar clientes', () => {
   it('un prefijo que no existe y un TOTP equivocado dan el mismo error', () => {
+    const prefijoDeNadie = rechazoDe({ cliente: null });
     const prefijoAjeno = rechazoDe({
       codigo: `AB2CD-${codigoDeVentana(SEMILLA, ventanaDe(AHORA))}`,
     });
     const totpAjeno = rechazoDe({
       codigo: `${CLIENTE.codigo_publico}-000000`,
     });
+    expect(prefijoDeNadie).toBe('CODIGO_INVALIDO');
     expect(prefijoAjeno).toBe('CODIGO_INVALIDO');
     expect(totpAjeno).toBe('CODIGO_INVALIDO');
   });

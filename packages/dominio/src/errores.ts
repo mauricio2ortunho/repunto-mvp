@@ -3,8 +3,13 @@
  * sueltos: `apps/api` los mapea a HTTP y el panel, a un mensaje que le dice al
  * cajero que hacer.
  *
- * Los ocho primeros son los de CLAUDE.md, seccion 9. Los tres ultimos los pide
- * el flujo y esa lista dice "al menos".
+ * Los ocho primeros son los de CLAUDE.md, seccion 9. Los cuatro ultimos los
+ * pide el flujo y esa lista dice "al menos".
+ *
+ * La lista esta repetida en `packages/contratos` porque los frontends la
+ * necesitan y contratos no puede importar dominio (CLAUDE.md, seccion 3). Un
+ * test en apps/api —el unico que puede ver los dos paquetes— falla si dejan de
+ * coincidir.
  */
 export const CODIGOS_DE_ERROR = [
   /** El prefijo no resuelve, o el TOTP no coincide. Nunca se distingue cual de
@@ -16,7 +21,9 @@ export const CODIGOS_DE_ERROR = [
   'DEMASIADO_PRONTO',
   /** La tarjeta ya llego a los sellos que pide el programa: hay que canjear. */
   'TARJETA_COMPLETA',
-  /** Paso su vencimiento, aunque el cron todavia no la haya marcado. */
+  /** Solo del canje: un premio no se entrega sobre una tarjeta vencida. Al
+   * sellar, una tarjeta vencida no rechaza nada: se cierra y se abre una nueva
+   * (especificacion funcional, seccion 5). */
   'TARJETA_VENCIDA',
   /** El local no corresponde, esta dado de baja, o el usuario no opera ahi. */
   'LOCAL_NO_AUTORIZADO',
@@ -37,11 +44,26 @@ export const CODIGOS_DE_ERROR = [
 
 export type CodigoDeError = (typeof CODIGOS_DE_ERROR)[number];
 
+/**
+ * Lo que el mensaje al cajero necesita y el codigo solo no dice. Lo calcula el
+ * dominio, que es quien conoce la regla: si lo recalculara `apps/api` para
+ * armar el texto, la regla viviria en dos lados.
+ */
+export interface DetalleDeRechazo {
+  /** DEMASIADO_PRONTO: desde cuando el cliente puede volver a sellar. */
+  puede_sellar_desde?: Date;
+  /** CANJE_EN_OTRO_LOCAL: el local donde se abrio la tarjeta. */
+  local_alta_id?: string;
+}
+
 export interface Rechazo {
   tipo: 'rechazado';
   codigo: CodigoDeError;
+  detalle?: DetalleDeRechazo;
 }
 
-export function rechazo(codigo: CodigoDeError): Rechazo {
-  return { tipo: 'rechazado', codigo };
+export function rechazo(codigo: CodigoDeError, detalle?: DetalleDeRechazo): Rechazo {
+  return detalle === undefined
+    ? { tipo: 'rechazado', codigo }
+    : { tipo: 'rechazado', codigo, detalle };
 }

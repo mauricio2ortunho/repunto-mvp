@@ -18,7 +18,7 @@
 
 generator client {
   provider     = "prisma-client"
-  output       = "../apps/api/generated/prisma"
+  output       = "../apps/api/src/generated/prisma"
   moduleFormat = "cjs"
   runtime      = "nodejs"
 }
@@ -210,8 +210,9 @@ model DispositivoCaja {
   revocado_el  DateTime? @db.Timestamptz(3)
   creado_el    DateTime  @default(now()) @db.Timestamptz(3)
 
-  local  Local       @relation(fields: [local_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  turnos TurnoCaja[]
+  local      Local                 @relation(fields: [local_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  turnos     TurnoCaja[]
+  peticiones PeticionIdempotente[]
 
   /// Destino de FK compuesta, no una restriccion de negocio. Existe para que
   /// turno_caja pueda exigir que su local sea el del dispositivo (CLAUDE.md,
@@ -265,7 +266,10 @@ model TurnoCaja {
   /// local asignado al usuario (INV-3). CLAUDE.md, seccion 14.
   local_id       String    @db.Uuid
   abierto_el     DateTime  @db.Timestamptz(3)
-  /// Cierre manual o por inactividad.
+  /// Cierre manual o por inactividad. Mientras sea nulo, este es EL turno de
+  /// la tablet: un solo turno abierto por dispositivo (indice parcial
+  /// turno_caja_uno_abierto_por_dispositivo). De ahi sale el turno de cada
+  /// sello sin que el panel mande ningun id.
   cerrado_el     DateTime? @db.Timestamptz(3)
   creado_el      DateTime  @default(now()) @db.Timestamptz(3)
 
@@ -526,6 +530,36 @@ model CodigoUsado {
   @@id([cliente_id, ventana])
   @@index([creado_el])
   @@map("codigo_usado")
+}
+
+/// El reintento del cajero. Todo endpoint que crea algo acepta Idempotency-Key
+/// y devuelve el mismo resultado ante reintento (CLAUDE.md, seccion 9): el
+/// cajero va a tocar el boton dos veces.
+///
+/// La fila se inserta al principio de la transaccion del sellado o del canje.
+/// Si llega un segundo intento con la misma clave, su INSERT queda bloqueado
+/// en la clave primaria hasta que el primero termine: si commiteo, lee su
+/// respuesta y la devuelve; si fallo, sigue de largo como si fuera el primero.
+model PeticionIdempotente {
+  dispositivo_id  String   @db.Uuid
+  /// Lo que la tablet manda en la cabecera Idempotency-Key.
+  clave           String
+  /// La misma clave en otro endpoint es otra peticion, no un reintento.
+  endpoint        String
+  /// SHA-256 del cuerpo. La misma clave con otro cuerpo es un bug del panel:
+  /// se rechaza en lugar de devolver la respuesta de otra cosa.
+  huella_peticion String
+  /// Lo que se respondio. Nula solo dentro de la transaccion que la esta
+  /// resolviendo: cuando esta fila se ve desde afuera, ya tiene valor.
+  respuesta       Json?    @db.JsonB
+  /// El cron la purga a las 24 horas, como codigo_usado.
+  creado_el       DateTime @default(now()) @db.Timestamptz(3)
+
+  dispositivo DispositivoCaja @relation(fields: [dispositivo_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([dispositivo_id, endpoint, clave])
+  @@index([creado_el])
+  @@map("peticion_idempotente")
 }
 
 // ---------------------------------------------------------------------------

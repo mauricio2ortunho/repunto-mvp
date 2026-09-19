@@ -244,6 +244,73 @@ describe('Cordura y unicidad operativa', () => {
     ]);
   });
 
+  test('INV-2 · rechaza dos turnos abiertos en la misma tablet', async ({ db }) => {
+    const a = await crearNegocio(db);
+    // El escenario ya dejo un turno abierto del cajero en esa tablet. El
+    // supervisor tambien esta asignado a ese local, asi que la fila es valida
+    // salvo por el indice parcial.
+    await esperarRechazo(
+      db,
+      'turno_caja_uno_abierto_por_dispositivo',
+      `INSERT INTO turno_caja (dispositivo_id, usuario_id, local_id, abierto_el)
+       VALUES ($1, $2, $3, now())`,
+      [a.dispositivo, a.supervisor, a.local],
+    );
+  });
+
+  test('INV-2 · acepta el turno siguiente cuando el anterior ya se cerro', async ({
+    db,
+  }) => {
+    const a = await crearNegocio(db);
+    await db.query('UPDATE turno_caja SET cerrado_el = now() WHERE id = $1', [a.turno]);
+    await esperarAceptacion(
+      db,
+      `INSERT INTO turno_caja (dispositivo_id, usuario_id, local_id, abierto_el)
+       VALUES ($1, $2, $3, now())`,
+      [a.dispositivo, a.supervisor, a.local],
+    );
+  });
+
+  test('Seccion 9 · rechaza guardar dos veces la misma clave de idempotencia', async ({
+    db,
+  }) => {
+    const a = await crearNegocio(db);
+    const PETICION = `INSERT INTO peticion_idempotente (dispositivo_id, clave, endpoint, huella_peticion)
+                      VALUES ($1, 'clave-de-prueba', 'POST /caja/sellos', 'huella')`;
+    await db.query(PETICION, [a.dispositivo]);
+    await esperarRechazo(db, 'peticion_idempotente_pkey', PETICION, [a.dispositivo]);
+  });
+
+  test('Seccion 9 · acepta la misma clave en otro endpoint: es otra peticion', async ({
+    db,
+  }) => {
+    const a = await crearNegocio(db);
+    await db.query(
+      `INSERT INTO peticion_idempotente (dispositivo_id, clave, endpoint, huella_peticion)
+       VALUES ($1, 'clave-de-prueba', 'POST /caja/sellos', 'huella')`,
+      [a.dispositivo],
+    );
+    await esperarAceptacion(
+      db,
+      `INSERT INTO peticion_idempotente (dispositivo_id, clave, endpoint, huella_peticion)
+       VALUES ($1, 'clave-de-prueba', 'POST /caja/canjes', 'huella')`,
+      [a.dispositivo],
+    );
+  });
+
+  test('Seccion 9 · rechaza una clave de idempotencia demasiado corta', async ({
+    db,
+  }) => {
+    const a = await crearNegocio(db);
+    await esperarRechazo(
+      db,
+      'peticion_idempotente_clave_razonable_chk',
+      `INSERT INTO peticion_idempotente (dispositivo_id, clave, endpoint, huella_peticion)
+       VALUES ($1, '1', 'POST /caja/sellos', 'huella')`,
+      [a.dispositivo],
+    );
+  });
+
   test('Seccion 5 · rechaza dos equipos de cliente con el mismo token', async ({
     db,
   }) => {
@@ -298,6 +365,12 @@ describe('INV-17 · FK simples: nada apunta a un padre que no existe', () => {
     [
       'usuario_negocio_negocio_id_fkey',
       `INSERT INTO usuario_negocio (negocio_id, rol, nombre) VALUES ($1, 'cajero', 'x')`,
+      () => [INEXISTENTE],
+    ],
+    [
+      'peticion_idempotente_dispositivo_id_fkey',
+      `INSERT INTO peticion_idempotente (dispositivo_id, clave, endpoint, huella_peticion)
+       VALUES ($1, 'clave-de-prueba', 'POST /caja/sellos', 'huella')`,
       () => [INEXISTENTE],
     ],
   ] as const)(

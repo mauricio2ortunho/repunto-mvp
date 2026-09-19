@@ -19,5 +19,5 @@ Thumbs.db
 next-env.d.ts
 
 # Cliente de Prisma: se regenera con pnpm db:generate
-apps/api/generated/
+apps/api/src/generated/
 *.tsbuildinfo

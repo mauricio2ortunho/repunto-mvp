@@ -112,17 +112,18 @@ que apunta.
 
 ## Caja y vinculación de tablets
 
-| Restricción                                      | Tabla                   | Tipo   | Definición                                                         | Invariante | Qué impide                                                                                      |
-| ------------------------------------------------ | ----------------------- | ------ | ------------------------------------------------------------------ | ---------- | ----------------------------------------------------------------------------------------------- |
-| `vinculacion_pendiente_codigo_key`               | `vinculacion_pendiente` | UNIQUE | `(codigo)`                                                         | Sección 5  | Dos vinculaciones con el mismo código: la tablet todavía no sabe de qué negocio es.             |
-| `vinculacion_pendiente_expira_posterior_chk`     | `vinculacion_pendiente` | CHECK  | `expira_el > creado_el`                                            | Sección 5  | Un código que nace vencido.                                                                     |
-| `vinculacion_pendiente_uso_antes_de_expirar_chk` | `vinculacion_pendiente` | CHECK  | `usado_el` nulo, o entre `creado_el` y `expira_el`                 | Sección 5  | Marcar un código como usado después de vencido.                                                 |
-| `vinculacion_pendiente_un_solo_origen_chk`       | `vinculacion_pendiente` | CHECK  | exactamente uno de `creado_por_usuario_id` y `creado_por_admin_id` | Sección 5  | Un código sin origen, o con los dos a la vez. Siempre queda auditado quién vinculó cada tablet. |
-| `dispositivo_caja_token_hash_key`                | `dispositivo_caja`      | UNIQUE | `(token_hash)`                                                     | Sección 5  | Dos tablets con la misma sesión.                                                                |
-| `dispositivo_caja_revocado_posterior_chk`        | `dispositivo_caja`      | CHECK  | `revocado_el` nulo, o posterior a `vinculado_el`                   | Cordura    | Revocar una tablet antes de vincularla.                                                         |
-| `turno_caja_cierre_posterior_chk`                | `turno_caja`            | CHECK  | `cerrado_el` nulo, o posterior a `abierto_el`                      | Cordura    | Cerrar un turno antes de abrirlo.                                                               |
-| `dispositivo_cliente_token_hash_key`             | `dispositivo_cliente`   | UNIQUE | `(token_hash)`                                                     | Sección 5  | Dos equipos de cliente con el mismo identificador de sesión.                                    |
-| `local_qr_slug_key`                              | `local`                 | UNIQUE | `(qr_slug)`                                                        | Modelo     | Dos locales con el mismo QR impreso.                                                            |
+| Restricción                                      | Tabla                   | Tipo           | Definición                                                         | Invariante | Qué impide                                                                                                                                                     |
+| ------------------------------------------------ | ----------------------- | -------------- | ------------------------------------------------------------------ | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vinculacion_pendiente_codigo_key`               | `vinculacion_pendiente` | UNIQUE         | `(codigo)`                                                         | Sección 5  | Dos vinculaciones con el mismo código: la tablet todavía no sabe de qué negocio es.                                                                            |
+| `vinculacion_pendiente_expira_posterior_chk`     | `vinculacion_pendiente` | CHECK          | `expira_el > creado_el`                                            | Sección 5  | Un código que nace vencido.                                                                                                                                    |
+| `vinculacion_pendiente_uso_antes_de_expirar_chk` | `vinculacion_pendiente` | CHECK          | `usado_el` nulo, o entre `creado_el` y `expira_el`                 | Sección 5  | Marcar un código como usado después de vencido.                                                                                                                |
+| `vinculacion_pendiente_un_solo_origen_chk`       | `vinculacion_pendiente` | CHECK          | exactamente uno de `creado_por_usuario_id` y `creado_por_admin_id` | Sección 5  | Un código sin origen, o con los dos a la vez. Siempre queda auditado quién vinculó cada tablet.                                                                |
+| `dispositivo_caja_token_hash_key`                | `dispositivo_caja`      | UNIQUE         | `(token_hash)`                                                     | Sección 5  | Dos tablets con la misma sesión.                                                                                                                               |
+| `dispositivo_caja_revocado_posterior_chk`        | `dispositivo_caja`      | CHECK          | `revocado_el` nulo, o posterior a `vinculado_el`                   | Cordura    | Revocar una tablet antes de vincularla.                                                                                                                        |
+| `turno_caja_cierre_posterior_chk`                | `turno_caja`            | CHECK          | `cerrado_el` nulo, o posterior a `abierto_el`                      | Cordura    | Cerrar un turno antes de abrirlo.                                                                                                                              |
+| `turno_caja_uno_abierto_por_dispositivo`         | `turno_caja`            | UNIQUE parcial | `(dispositivo_id)` solo entre los turnos sin `cerrado_el`          | INV-2      | Dos turnos abiertos a la vez en la misma tablet. El turno de un sello sale del dispositivo, y "el turno abierto de esta tablet" solo tiene sentido si hay uno. |
+| `dispositivo_cliente_token_hash_key`             | `dispositivo_cliente`   | UNIQUE         | `(token_hash)`                                                     | Sección 5  | Dos equipos de cliente con el mismo identificador de sesión.                                                                                                   |
+| `local_qr_slug_key`                              | `local`                 | UNIQUE         | `(qr_slug)`                                                        | Modelo     | Dos locales con el mismo QR impreso.                                                                                                                           |
 
 ## Diseño de la tarjeta
 
@@ -134,14 +135,15 @@ que apunta.
 
 ## Cordura de valores
 
-| Restricción                                    | Tabla             | Tipo  | Definición                   | Invariante | Qué impide                                                |
-| ---------------------------------------------- | ----------------- | ----- | ---------------------------- | ---------- | --------------------------------------------------------- |
-| `programa_sellos_requeridos_positivo_chk`      | `programa`        | CHECK | `sellos_requeridos > 0`      | Cordura    | Una tarjeta de cero casilleros.                           |
-| `programa_horas_entre_sellos_no_negativo_chk`  | `programa`        | CHECK | `horas_entre_sellos >= 0`    | Cordura    | Un intervalo mínimo negativo.                             |
-| `programa_vigencia_meses_positiva_chk`         | `programa`        | CHECK | nula, o `vigencia_meses > 0` | Cordura    | Una vigencia de cero meses. Nula sí: la tarjeta no vence. |
-| `sello_monto_no_negativo_chk`                  | `sello`           | CHECK | nulo, o `monto >= 0`         | Cordura    | Un monto de compra negativo.                              |
-| `condicion_sello_monto_minimo_no_negativo_chk` | `condicion_sello` | CHECK | nulo, o `monto_minimo >= 0`  | Cordura    | Un monto mínimo negativo.                                 |
-| `codigo_usado_ventana_no_negativa_chk`         | `codigo_usado`    | CHECK | `ventana >= 0`               | INV-9      | Una ventana de código anterior a 1970.                    |
+| Restricción                                    | Tabla                  | Tipo  | Definición                         | Invariante | Qué impide                                                                                              |
+| ---------------------------------------------- | ---------------------- | ----- | ---------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------- |
+| `programa_sellos_requeridos_positivo_chk`      | `programa`             | CHECK | `sellos_requeridos > 0`            | Cordura    | Una tarjeta de cero casilleros.                                                                         |
+| `programa_horas_entre_sellos_no_negativo_chk`  | `programa`             | CHECK | `horas_entre_sellos >= 0`          | Cordura    | Un intervalo mínimo negativo.                                                                           |
+| `programa_vigencia_meses_positiva_chk`         | `programa`             | CHECK | nula, o `vigencia_meses > 0`       | Cordura    | Una vigencia de cero meses. Nula sí: la tarjeta no vence.                                               |
+| `sello_monto_no_negativo_chk`                  | `sello`                | CHECK | nulo, o `monto >= 0`               | Cordura    | Un monto de compra negativo.                                                                            |
+| `condicion_sello_monto_minimo_no_negativo_chk` | `condicion_sello`      | CHECK | nulo, o `monto_minimo >= 0`        | Cordura    | Un monto mínimo negativo.                                                                               |
+| `codigo_usado_ventana_no_negativa_chk`         | `codigo_usado`         | CHECK | `ventana >= 0`                     | INV-9      | Una ventana de código anterior a 1970.                                                                  |
+| `peticion_idempotente_clave_razonable_chk`     | `peticion_idempotente` | CHECK | `char_length(clave)` entre 8 y 200 | Sección 9  | Una clave de idempotencia de un caracter, que le devolvería a un cajero la respuesta del sello de otro. |
 
 ## Estructura
 
@@ -164,23 +166,24 @@ borrar: sin ellas, esas FK no se pueden crear.
 
 ### Claves primarias
 
-| Restricción                  | Tabla                   | Tipo | Definición               | Invariante | Qué impide                                         |
-| ---------------------------- | ----------------------- | ---- | ------------------------ | ---------- | -------------------------------------------------- |
-| `admin_plataforma_pkey`      | `admin_plataforma`      | PK   | `(id)`                   | Modelo     | Filas sin identidad.                               |
-| `negocio_pkey`               | `negocio`               | PK   | `(id)`                   | Modelo     | Filas sin identidad.                               |
-| `local_pkey`                 | `local`                 | PK   | `(id)`                   | Modelo     | Filas sin identidad.                               |
-| `usuario_negocio_pkey`       | `usuario_negocio`       | PK   | `(id)`                   | Modelo     | Filas sin identidad.                               |
-| `usuario_local_pkey`         | `usuario_local`         | PK   | `(usuario_id, local_id)` | Modelo     | Asignar dos veces el mismo usuario al mismo local. |
-| `dispositivo_caja_pkey`      | `dispositivo_caja`      | PK   | `(id)`                   | Modelo     | Filas sin identidad.                               |
-| `vinculacion_pendiente_pkey` | `vinculacion_pendiente` | PK   | `(id)`                   | Modelo     | Filas sin identidad.                               |
-| `turno_caja_pkey`            | `turno_caja`            | PK   | `(id)`                   | Modelo     | Filas sin identidad.                               |
-| `programa_pkey`              | `programa`              | PK   | `(id)`                   | Modelo     | Filas sin identidad.                               |
-| `condicion_sello_pkey`       | `condicion_sello`       | PK   | `(id)`                   | Modelo     | Filas sin identidad.                               |
-| `cliente_pkey`               | `cliente`               | PK   | `(id)`                   | Modelo     | Filas sin identidad.                               |
-| `dispositivo_cliente_pkey`   | `dispositivo_cliente`   | PK   | `(id)`                   | Modelo     | Filas sin identidad.                               |
-| `tarjeta_pkey`               | `tarjeta`               | PK   | `(id)`                   | Modelo     | Filas sin identidad.                               |
-| `sello_pkey`                 | `sello`                 | PK   | `(id)`                   | Modelo     | Filas sin identidad.                               |
-| `canje_pkey`                 | `canje`                 | PK   | `(id)`                   | Modelo     | Filas sin identidad.                               |
+| Restricción                  | Tabla                   | Tipo | Definición                          | Invariante | Qué impide                                                                                                                                 |
+| ---------------------------- | ----------------------- | ---- | ----------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `admin_plataforma_pkey`      | `admin_plataforma`      | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
+| `negocio_pkey`               | `negocio`               | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
+| `local_pkey`                 | `local`                 | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
+| `usuario_negocio_pkey`       | `usuario_negocio`       | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
+| `usuario_local_pkey`         | `usuario_local`         | PK   | `(usuario_id, local_id)`            | Modelo     | Asignar dos veces el mismo usuario al mismo local.                                                                                         |
+| `dispositivo_caja_pkey`      | `dispositivo_caja`      | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
+| `vinculacion_pendiente_pkey` | `vinculacion_pendiente` | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
+| `turno_caja_pkey`            | `turno_caja`            | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
+| `programa_pkey`              | `programa`              | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
+| `condicion_sello_pkey`       | `condicion_sello`       | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
+| `cliente_pkey`               | `cliente`               | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
+| `dispositivo_cliente_pkey`   | `dispositivo_cliente`   | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
+| `tarjeta_pkey`               | `tarjeta`               | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
+| `sello_pkey`                 | `sello`                 | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
+| `canje_pkey`                 | `canje`                 | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
+| `peticion_idempotente_pkey`  | `peticion_idempotente`  | PK   | `(dispositivo_id, endpoint, clave)` | Sección 9  | Dos respuestas guardadas para el mismo reintento. La clave es por tablet y por endpoint: la misma clave en otro endpoint es otra petición. |
 
 ### FK simples
 
@@ -198,6 +201,7 @@ Todas `RESTRICT`: no se puede borrar un padre con hijos (INV-17).
 | `tarjeta_cliente_id_fkey`                        | `tarjeta`               | FK   | `(cliente_id) → cliente(id)`                   | INV-17     | Una tarjeta sin cliente.                                                                                                                                           |
 | `codigo_usado_cliente_id_fkey`                   | `codigo_usado`          | FK   | `(cliente_id) → cliente(id)`                   | INV-9      | Registrar el consumo de un código de nadie.                                                                                                                        |
 | `codigo_usado_negocio_id_fkey`                   | `codigo_usado`          | FK   | `(negocio_id) → negocio(id)`                   | INV-9      | Auditar un consumo contra un negocio inexistente.                                                                                                                  |
+| `peticion_idempotente_dispositivo_id_fkey`       | `peticion_idempotente`  | FK   | `(dispositivo_id) → dispositivo_caja(id)`      | Sección 9  | Guardar el reintento de una tablet que no existe. Cada tablet tiene su propio espacio de claves.                                                                   |
 
 ## Lo que la base todavía no impide
 

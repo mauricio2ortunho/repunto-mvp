@@ -20,6 +20,7 @@ export const test = testDeVitest.extend<{ pool: Pool; db: Db }>({
   pool: [
     // eslint-disable-next-line no-empty-pattern -- Vitest exige desestructurar el contexto del fixture aunque no use nada de el.
     async ({}, use) => {
+      configurarEntorno();
       const pool = new Pool({ connectionString: inject('urlBaseTest'), max: 2 });
       await use(pool);
       await pool.end();
@@ -40,7 +41,17 @@ export const test = testDeVitest.extend<{ pool: Pool; db: Db }>({
   },
 });
 
-async function exigirBaseVacia(db: Db): Promise<void> {
+/**
+ * Lo que el proceso de la api leeria del entorno. Lo pasa el globalSetup, que
+ * es quien leyo .env: las variables que se cambian alla no llegan solas hasta
+ * aca, porque los tests corren en otro proceso.
+ */
+export function configurarEntorno(): void {
+  process.env['DATABASE_URL'] = inject('urlBaseTest');
+  process.env['CLAVE_CIFRADO_SEMILLAS'] = inject('claveCifrado');
+}
+
+export async function exigirBaseVacia(db: Db): Promise<void> {
   // Un solo viaje: cuenta las filas de todas las tablas del esquema.
   const { rows } = await db.query<{ tabla: string; filas: string }>(`
     SELECT t.tablename AS tabla,

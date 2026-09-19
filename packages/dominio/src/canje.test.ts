@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import { type EntradaDeCanje, decidirCanje } from './canje';
 import type { CodigoDeError } from './errores';
+import { codigoDeVentana, ventanaDe } from './codigo';
 import {
   AHORA,
+  CLIENTE,
   LOCAL,
   NEGOCIO,
   PROGRAMA,
+  SEMILLA,
   TURNO,
   unaEntradaDeCanje,
   unaTarjeta,
@@ -105,6 +108,17 @@ describe('decidirCanje · lo que lo frena', () => {
       },
     ],
     ['TURNO_CERRADO', 'el turno ya se cerro', { turno: { ...TURNO, cerrado_el: AHORA } }],
+    ['TURNO_CERRADO', 'nadie abrio turno en esa tablet', { turno: null }],
+    ['CODIGO_INVALIDO', 'el codigo no tiene la forma esperada', { codigo: '418329' }],
+    ['CODIGO_INVALIDO', 'el prefijo no resuelve a ningun cliente', { cliente: null }],
+    [
+      'CODIGO_INVALIDO',
+      'el TOTP es de tres ventanas atras',
+      {
+        codigo: `${CLIENTE.codigo_publico}-${codigoDeVentana(SEMILLA, ventanaDe(AHORA) - 3)}`,
+      },
+    ],
+    ['CODIGO_YA_USADO', 'esa ventana ya se consumio al sellar', { codigoYaUsado: true }],
   ] as const)('%s cuando %s', (esperado, _caso, cambios) => {
     expect(rechazoDe(cambios)).toBe(esperado);
   });
@@ -136,6 +150,12 @@ describe('decidirCanje · lo que lo deja pasar', () => {
     [
       'el negocio limita el canje y es el local donde se abrio',
       { negocio: { ...NEGOCIO, canje_cualquier_local: false } },
+    ],
+    [
+      'el cliente muestra el codigo de la ventana anterior',
+      {
+        codigo: `${CLIENTE.codigo_publico}-${codigoDeVentana(SEMILLA, ventanaDe(AHORA) - 1)}`,
+      },
     ],
   ] as const)('canjea cuando %s', (_caso, cambios) => {
     expect(rechazoDe(cambios)).toBe('canje aceptado');
@@ -218,5 +238,34 @@ describe('decidirCanje · el efecto', () => {
     });
     expect(efecto.tarjetaNueva.reloj_desde).toEqual(AHORA);
     expect(efecto.tarjetaNueva.vence_el).toBeNull();
+  });
+});
+
+describe('decidirCanje · lo que el cajero dice al entregar', () => {
+  it('trae el nombre, el premio y cuantos sellos quedan para la proxima', () => {
+    const efecto = efectoDe({
+      enCurso: unaTarjetaEnCurso({
+        sellos: unosSellos(PROGRAMA.sellos_requeridos + 2),
+      }),
+    });
+    expect(efecto.aviso).toEqual({
+      nombre: 'Juan',
+      premio: PROGRAMA.premio,
+      sobrantes: 2,
+    });
+  });
+
+  it('CANJE_EN_OTRO_LOCAL dice en que local se abrio la tarjeta', () => {
+    const decision = decidirCanje(
+      unaEntradaDeCanje({
+        negocio: { ...NEGOCIO, canje_cualquier_local: false },
+        enCurso: unaTarjetaEnCurso({
+          tarjeta: unaTarjeta({ local_alta_id: 'local-9' }),
+          sellos: COMPLETA,
+        }),
+      }),
+    );
+    if (decision.tipo !== 'rechazado') throw new Error('Se esperaba un rechazo.');
+    expect(decision.detalle?.local_alta_id).toBe('local-9');
   });
 });

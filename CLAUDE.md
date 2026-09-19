@@ -86,6 +86,14 @@ panel  ──┼──> contratos <── api ──> dominio
   que hace testeables el vencimiento, el intervalo entre sellos y la ventana del
   código.
 
+**La lista de códigos de error está repetida a propósito.** `CODIGOS_DE_ERROR`
+vive en `packages/dominio`, que es quien la decide, y otra vez en
+`packages/contratos` como `CODIGOS_DE_ERROR_DE_CAJA`, porque los frontends la
+necesitan para mostrar el mensaje y `contratos` no puede importar `dominio` sin
+romper el dibujo de arriba. No "arreglarlo" importando dominio desde contratos:
+la copia es el precio correcto de la regla, y es barata. Un test en `apps/api`
+—el único paquete que ve los dos— falla si las listas dejan de coincidir.
+
 ---
 
 ## 4. Invariantes del negocio
@@ -175,6 +183,11 @@ un código de vinculación y su sesión no vence hasta que se revoque. Sobre ell
 cada cajero abre turno tocando su nombre en la lista del dispositivo y escribiendo
 su PIN de cuatro dígitos. El nombre identifica, el PIN confirma y la autoridad la
 tiene el dispositivo. Revocar un dispositivo lo invalida al instante.
+
+**Una tablet, un turno abierto.** El turno de un sello sale del dispositivo y no
+del request (INV-2), así que "el turno abierto de esta tablet" tiene que resolver
+a uno solo. Lo garantiza un índice único parcial sobre `turno_caja(dispositivo_id)`
+entre los turnos sin cerrar, no el código.
 
 **El PIN no es único, y no hay que hacerlo único.** Dos cajeros del mismo local
 pueden tener el mismo PIN: como primero se elige el nombre, no hay ambigüedad. No
@@ -273,12 +286,26 @@ le dice al cajero que avise, no que reintente; y `TARJETA_INCOMPLETA` y
 código) acepta `Idempotency-Key` y devuelve el mismo resultado ante reintento. El
 cajero va a tocar el botón dos veces.
 
+La clave se guarda en `peticion_idempotente`, con el dispositivo y el endpoint
+como parte de la clave primaria, y la fila se inserta **dentro de la misma
+transacción** que resuelve el pedido. Eso hace innecesario cualquier estado "en
+curso": el segundo intento queda bloqueado en el índice hasta que el primero
+termina, y ahí lee su respuesta y la devuelve. Un rechazo no se guarda: si la
+transacción se deshizo, el reintento vuelve a decidir con el estado del momento.
+Misma clave con otro cuerpo se rechaza, porque no es un reintento.
+
 **Migraciones.** Siempre por Prisma, versionadas, reversibles, nunca editar una ya
 aplicada. Las restricciones de unicidad de los invariantes viven en la base, no
 solo en el código.
 
 **Contraste de color.** El color del negocio no define el color del texto encima:
 se calcula por contraste y se elige blanco o negro. Nunca se deja elegir.
+
+**Secretos.** `CLAVE_CIFRADO_SEMILLAS` son 32 bytes en base64 y cifra las
+semillas TOTP de los clientes en reposo (AES-256-GCM). Es distinta en cada
+entorno, y perderla en producción es perder todos los códigos de todos los
+clientes. La semilla descifrada no sale del proceso de la API: ni en una
+respuesta, ni en el log, ni en Sentry.
 
 **Entornos.** `local` (Docker Compose), `staging` (Railway + Vercel preview) y
 `produccion`. Ningún dato real en staging. `pnpm db:seed` crea un negocio de demo
@@ -466,3 +493,35 @@ teléfono.
 Cuando aparezca el caso, la salida es separar identidad de membresía: una tabla
 `persona` con el teléfono, y `usuario_negocio` pasa a ser la membresía de una
 persona en un negocio. No implementarlo antes de que el caso exista.
+
+---
+
+## 15. Deuda anotada
+
+Lo que está a medio hacer a propósito, con el motivo. No es una lista de ideas:
+es lo que falta terminar, y está acá para que no se pierda.
+
+- **Anulación de sellos.** El botón de deshacer de 5 minutos del cajero y la
+  anulación del supervisor no existen todavía: no hay función de dominio que
+  las decida, ni endpoint, ni test. La base ya lo sostiene entero —`anulado`,
+  `anulado_el` y `anulado_turno_id` con su CHECK, y la FK compuesta que impide
+  anular desde la tablet de otra sucursal— y el progreso ya cuenta solo los
+  sellos no anulados (INV-10). Lo que falta es la decisión y su camino: quién
+  puede anular qué, dentro de qué ventana de tiempo, y el efecto. Va junto con
+  el alta del cliente.
+- **Alta del cliente en caja.** El registro asistido —teléfono, confirmación,
+  generación del código público y de la semilla— tampoco existe. Hoy los
+  clientes solo pueden nacer por SQL, y por eso el cifrado de la semilla está
+  implementado a medias: la API la descifra para dar el código, pero todavía no
+  la cifra al crear a nadie.
+- **Los trabajos programados de la sección 7.** Ninguno corre. El más urgente es
+  el de vencer tarjetas: mientras no exista, una tarjeta vencida solo se cierra
+  cuando el cliente vuelve a sellar. A la purga diaria de `codigo_usado` se le
+  suma ahora la de `peticion_idempotente`, con el mismo criterio de 24 horas.
+- **El tope del endpoint del código vive en memoria.** 120 peticiones por hora
+  por cliente, contadas en el proceso. Con una sola instancia de la API alcanza;
+  con dos, cada una cuenta la suya y el tope real se duplica. Cuando haya más de
+  una instancia, se muda a la base o a Redis.
+- **El log estructurado de la sección 8.** Todavía no hay `request_id` ni las
+  líneas JSON con `cliente_id`, `local_id` y `turno_id` del flujo de sellado.
+  Hoy, "qué pasó con el sello de Juan el martes" se responde con SQL.

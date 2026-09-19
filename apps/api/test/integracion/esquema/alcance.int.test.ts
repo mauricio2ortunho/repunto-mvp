@@ -1,7 +1,7 @@
 import { describe } from 'vitest';
 
 import { esperarAceptacion, esperarRechazo, test } from '../base';
-import { crearCliente, crearTarjeta, escenario } from '../escenario';
+import { cerrarTurno, crearCliente, crearTarjeta, escenario } from '../escenario';
 
 /**
  * Alcance entre negocios y locales: lo sostienen las FK compuestas
@@ -82,6 +82,7 @@ describe('INV-3 · un cajero o supervisor solo opera en sus locales', () => {
     db,
   }) => {
     const { a } = await escenario(db);
+    await cerrarTurno(db, a.turnoOtroLocal);
     await esperarRechazo(db, 'turno_caja_usuario_asignado_al_local_fkey', ABRIR_TURNO, [
       a.dispositivoOtroLocal,
       a.cajero,
@@ -93,6 +94,7 @@ describe('INV-3 · un cajero o supervisor solo opera en sus locales', () => {
     db,
   }) => {
     const { a } = await escenario(db);
+    await cerrarTurno(db, a.turnoOtroLocal);
     await esperarRechazo(db, 'turno_caja_dispositivo_mismo_local_fkey', ABRIR_TURNO, [
       a.dispositivoOtroLocal,
       a.cajero,
@@ -104,6 +106,7 @@ describe('INV-3 · un cajero o supervisor solo opera en sus locales', () => {
     db,
   }) => {
     const { a } = await escenario(db);
+    await cerrarTurno(db, a.turno);
     await esperarAceptacion(db, ABRIR_TURNO, [a.dispositivo, a.cajero, a.local]);
   });
 

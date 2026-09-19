@@ -1,5 +1,7 @@
 import 'reflect-metadata';
 
+import { existsSync } from 'node:fs';
+
 import { NestFactory } from '@nestjs/core';
 import { ZONA_HORARIA } from '@repunto/dominio';
 
@@ -8,6 +10,10 @@ import { AppModule } from './app.module';
 const PUERTO_POR_DEFECTO = 3001;
 
 async function bootstrap(): Promise<void> {
+  // En local las variables viven en .env; en Railway ya vienen del entorno y
+  // el archivo no existe. Las del entorno mandan: loadEnvFile no las pisa.
+  if (existsSync('.env')) process.loadEnvFile('.env');
+
   const app = await NestFactory.create(AppModule);
   const puerto = Number(process.env.PORT ?? PUERTO_POR_DEFECTO);
 

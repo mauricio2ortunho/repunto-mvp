@@ -4,6 +4,9 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "noEmit": true,
+    // Los tests importan de src, que es Nest y esta lleno de decoradores.
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "declaration": false,
     "declarationMap": false,
     "types": ["node"]

@@ -1,5 +1,8 @@
 import { createHmac } from 'node:crypto';
 
+import type { CodigoDeError } from './errores';
+import type { Cliente } from './tipos';
+
 /**
  * El codigo que el cliente muestra en caja: `K7Q4M-418329`.
  *
@@ -155,4 +158,47 @@ function decodificarBase32(semilla: string): Uint8Array {
     }
   }
   return Uint8Array.from(bytes);
+}
+
+/**
+ * Resultado de revisar el codigo tipeado. Cuando es valido trae el cliente ya
+ * resuelto, asi quien decide no tiene que volver a preguntarse si era nulo.
+ */
+export type RevisionDeCodigo =
+  { valido: true; cliente: Cliente } | { valido: false; codigo: CodigoDeError };
+
+/**
+ * El codigo tipeado contra el cliente que resolvio su prefijo: las tres
+ * verificaciones que comparten sellar y canjear, en su orden.
+ *
+ * `cliente` es nulo cuando el prefijo no resuelve a nadie, y el resultado es
+ * el mismo CODIGO_INVALIDO que si el TOTP no coincidiera. Esa igualdad es la
+ * regla: distinguirlas permitiria averiguar que codigos publicos existen. Vive
+ * aca, y no en `apps/api`, justamente por eso.
+ *
+ * `codigoYaUsado` lo responde la base: el insert en codigo_usado escribe, asi
+ * que ocurre afuera, antes de decidir y en la misma transaccion (INV-9).
+ */
+export function revisarCodigo(entrada: {
+  cliente: Cliente | null;
+  codigo: string;
+  codigoYaUsado: boolean;
+  ahora: Date;
+}): RevisionDeCodigo {
+  const invalido = { valido: false, codigo: 'CODIGO_INVALIDO' } as const;
+
+  const tipeado = partirCodigoTipeado(entrada.codigo);
+  if (tipeado === null) return invalido;
+  if (entrada.cliente === null) return invalido;
+  if (tipeado.codigo_publico !== entrada.cliente.codigo_publico) return invalido;
+
+  const verificacion = verificarCodigo({
+    semilla: entrada.cliente.semilla_totp,
+    totp: tipeado.totp,
+    ahora: entrada.ahora,
+  });
+  if (!verificacion.valido) return invalido;
+
+  if (entrada.codigoYaUsado) return { valido: false, codigo: 'CODIGO_YA_USADO' };
+  return { valido: true, cliente: entrada.cliente };
 }

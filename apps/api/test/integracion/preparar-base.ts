@@ -31,6 +31,7 @@ export default async function prepararBase(project: TestProject): Promise<void> 
   await recrearBase(url);
   aplicarMigraciones(url);
   project.provide('urlBaseTest', url.toString());
+  project.provide('claveCifrado', claveDeCifrado());
 }
 
 function cargarEnvLocal(): void {
@@ -61,6 +62,18 @@ function urlDeTest(): URL {
     );
   }
   return url;
+}
+
+/**
+ * La misma clave que usa la api para cifrar las semillas TOTP. Los tests del
+ * flujo crean clientes con semilla real, asi que la necesitan.
+ */
+function claveDeCifrado(): string {
+  const clave = process.env['CLAVE_CIFRADO_SEMILLAS'];
+  if (clave === undefined || clave === '') {
+    throw new Error('Falta CLAVE_CIFRADO_SEMILLAS. Copiala de .env.example a .env.');
+  }
+  return clave;
 }
 
 function nombreDeBase(url: URL): string {

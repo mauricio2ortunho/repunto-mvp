@@ -1,5 +1,9 @@
-import { randomUUID } from 'node:crypto';
+import { randomInt, randomUUID } from 'node:crypto';
 
+import { codigoDeVentana, ventanaDe } from '@repunto/dominio';
+
+import { cifrarSemilla } from '../../src/seguridad/cifrado';
+import { hashDeToken, nuevoToken } from '../../src/seguridad/token';
 import { type Db, una } from './base';
 
 /**
@@ -26,8 +30,11 @@ export interface NegocioDePrueba {
   supervisor: string;
   /** Tablet de `local`. */
   dispositivo: string;
+  /** El token en claro de esa tablet: es lo que manda en la cabecera. */
+  token: string;
   /** Tablet de `otroLocal`. */
   dispositivoOtroLocal: string;
+  tokenOtroLocal: string;
   /** Turno abierto del cajero en la tablet de `local`. */
   turno: string;
   /** Turno abierto del supervisor en la tablet de `otroLocal`. */
@@ -37,14 +44,13 @@ export interface NegocioDePrueba {
   condicion: string;
 }
 
-// No es estado de datos: la base arranca vacia en cada test y todo se deshace.
-// El contador solo garantiza telefonos distintos dentro de un mismo test.
-let ultimoTelefono = 0;
-
-/** Telefono boliviano en E.164, distinto en cada llamada. */
+/**
+ * Telefono boliviano en E.164, distinto en cada llamada. Al azar y no por
+ * contador: el telefono es unico global, y dos procesos de Vitest con su
+ * propio contador chocarian entre si.
+ */
 export function telefono(): string {
-  ultimoTelefono += 1;
-  return `+5917${String(ultimoTelefono).padStart(7, '0')}`;
+  return `+5917${String(randomInt(0, 10_000_000)).padStart(7, '0')}`;
 }
 
 /** Texto unico corto, para slugs, tokens y codigos. */
@@ -83,8 +89,10 @@ export async function crearNegocio(
   await asignar(db, supervisor, local, id);
   await asignar(db, supervisor, otroLocal, id);
 
-  const dispositivo = await crearDispositivo(db, local);
-  const dispositivoOtroLocal = await crearDispositivo(db, otroLocal);
+  const token = nuevoToken();
+  const tokenOtroLocal = nuevoToken();
+  const dispositivo = await crearDispositivo(db, local, token);
+  const dispositivoOtroLocal = await crearDispositivo(db, otroLocal, tokenOtroLocal);
 
   const turno = await abrirTurno(db, dispositivo, cajero, local);
   const turnoOtroLocal = await abrirTurno(
@@ -115,7 +123,9 @@ export async function crearNegocio(
     cajero,
     supervisor,
     dispositivo,
+    token,
     dispositivoOtroLocal,
+    tokenOtroLocal,
     turno,
     turnoOtroLocal,
     programa,
@@ -162,12 +172,16 @@ export async function asignar(
   );
 }
 
-export async function crearDispositivo(db: Db, local: string): Promise<string> {
+export async function crearDispositivo(
+  db: Db,
+  local: string,
+  token: string = nuevoToken(),
+): Promise<string> {
   return insertar(
     db,
     `INSERT INTO dispositivo_caja (local_id, nombre, token_hash, vinculado_el)
      VALUES ($1, 'Caja 1', $2, now()) RETURNING id`,
-    [local, unico('token')],
+    [local, hashDeToken(token)],
   );
 }
 
@@ -185,6 +199,15 @@ export async function abrirTurno(
   );
 }
 
+/**
+ * Cierra un turno. Hace falta antes de intentar abrir otro en la misma tablet:
+ * el indice parcial turno_caja_uno_abierto_por_dispositivo se evalua antes que
+ * las FK, y taparia la restriccion que el test quiere probar.
+ */
+export async function cerrarTurno(db: Db, turno: string): Promise<void> {
+  await db.query('UPDATE turno_caja SET cerrado_el = now() WHERE id = $1', [turno]);
+}
+
 /** Un admin de plataforma: no pertenece a ningun negocio. */
 export async function crearAdmin(db: Db): Promise<string> {
   return insertar(
@@ -194,30 +217,77 @@ export async function crearAdmin(db: Db): Promise<string> {
   );
 }
 
+// Base32, como exige el TOTP. Distinta en cada cliente: si dos compartieran
+// semilla, el codigo de uno serviria para el otro y los tests de codigo
+// invalido no probarian nada.
+const BASE32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+
+function nuevaSemilla(): string {
+  return Array.from({ length: 16 }, () => BASE32[randomInt(0, BASE32.length)]).join('');
+}
+
+export interface ClienteDePrueba {
+  id: string;
+  nombre: string;
+  codigo_publico: string;
+  /** Su semilla TOTP en claro; en la base esta cifrada. */
+  semilla: string;
+  /** Token en claro de la sesion de su telefono. */
+  token: string;
+}
+
 export async function crearCliente(db: Db): Promise<string> {
-  return insertar(
+  return (await crearClienteEnCaja(db)).id;
+}
+
+/**
+ * Un cliente listo para mostrar su codigo: semilla cifrada como en produccion
+ * y una sesion abierta en su telefono.
+ */
+export async function crearClienteEnCaja(
+  db: Db,
+  nombre = 'Juan',
+): Promise<ClienteDePrueba> {
+  const codigo_publico = codigoPublico();
+  const semilla = nuevaSemilla();
+  const id = await insertar(
     db,
     `INSERT INTO cliente (telefono, nombre, semilla_totp, codigo_publico)
-     VALUES ($1, 'Juan', 'semilla-cifrada', $2) RETURNING id`,
-    [telefono(), codigoPublico()],
+     VALUES ($1, $2, $3, $4) RETURNING id`,
+    [telefono(), nombre, cifrarSemilla(semilla), codigo_publico],
   );
+  const token = nuevoToken();
+  await db.query(
+    `INSERT INTO dispositivo_cliente (cliente_id, token_hash, ultimo_acceso)
+     VALUES ($1, $2, now())`,
+    [id, hashDeToken(token)],
+  );
+  return { id, nombre, codigo_publico, semilla, token };
+}
+
+/** El codigo que ese cliente muestra en ese instante. */
+export function codigoDe(cliente: ClienteDePrueba, ahora: Date = new Date()): string {
+  return `${cliente.codigo_publico}-${codigoDeVentana(cliente.semilla, ventanaDe(ahora))}`;
+}
+
+/** El de la ventana anterior, que el dominio tambien acepta. */
+export function codigoAnteriorDe(
+  cliente: ClienteDePrueba,
+  ahora: Date = new Date(),
+): string {
+  return `${cliente.codigo_publico}-${codigoDeVentana(cliente.semilla, ventanaDe(ahora) - 1)}`;
 }
 
 // Alfabeto sin ambiguos, igual que el CHECK. El dominio genera estos codigos
-// en produccion; aca solo hacen falta distintos entre si.
+// en produccion; aca solo hacen falta distintos entre si. Al azar, por lo
+// mismo que el telefono: 29^5 son 20 millones de combinaciones.
 const ALFABETO = 'ABCDEFGHJKMNPQRTUVWXYZ2346789';
-let ultimoCodigo = 0;
 
 /** Codigo publico valido y distinto en cada llamada. */
 export function codigoPublico(): string {
-  ultimoCodigo += 1;
-  let resto = ultimoCodigo;
-  let codigo = '';
-  for (let i = 0; i < 5; i += 1) {
-    codigo += ALFABETO[resto % ALFABETO.length];
-    resto = Math.floor(resto / ALFABETO.length);
-  }
-  return codigo;
+  return Array.from({ length: 5 }, () => ALFABETO[randomInt(0, ALFABETO.length)]).join(
+    '',
+  );
 }
 
 /** Tarjeta activa, sin sellos: sin reloj ni vencimiento. */
@@ -234,17 +304,51 @@ export async function crearTarjeta(
   );
 }
 
-/** Sello coherente: en el local del turno del cajero, con la condicion vigente. */
+/**
+ * Sello coherente: en el local del turno del cajero, con la condicion vigente.
+ * `haceHoras` lo antedata, para armar tarjetas que ya pasaron el intervalo
+ * minimo entre sellos.
+ */
 export async function crearSello(
   db: Db,
   tarjeta: string,
   negocio: NegocioDePrueba,
+  haceHoras = 0,
 ): Promise<string> {
   return insertar(
     db,
-    `INSERT INTO sello (tarjeta_id, negocio_id, local_id, turno_id, condicion_id)
-     VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-    [tarjeta, negocio.id, negocio.local, negocio.turno, negocio.condicion],
+    `INSERT INTO sello (tarjeta_id, negocio_id, local_id, turno_id, condicion_id, creado_el)
+     VALUES ($1, $2, $3, $4, $5, now() - make_interval(hours => $6::int)) RETURNING id`,
+    [tarjeta, negocio.id, negocio.local, negocio.turno, negocio.condicion, haceHoras],
+  );
+}
+
+/** `cantidad` sellos viejos sobre la misma tarjeta, uno por dia hacia atras. */
+export async function crearSellos(
+  db: Db,
+  tarjeta: string,
+  negocio: NegocioDePrueba,
+  cantidad: number,
+): Promise<string[]> {
+  const sellos: string[] = [];
+  for (let i = 0; i < cantidad; i += 1) {
+    sellos.push(await crearSello(db, tarjeta, negocio, 24 * (cantidad - i)));
+  }
+  return sellos;
+}
+
+/** Tarjeta cuyo reloj arranco hace 40 dias y que vencio ayer. */
+export async function crearTarjetaVencida(
+  db: Db,
+  cliente: string,
+  negocio: NegocioDePrueba,
+): Promise<string> {
+  return insertar(
+    db,
+    `INSERT INTO tarjeta (cliente_id, programa_id, negocio_id, local_alta_id, reloj_desde, vence_el)
+     VALUES ($1, $2, $3, $4, now() - interval '40 days', now() - interval '1 day')
+     RETURNING id`,
+    [cliente, negocio.programa, negocio.id, negocio.local],
   );
 }
 

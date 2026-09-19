@@ -1,6 +1,13 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalEnv": ["NODE_ENV", "TZ", "APP_VERSION", "DATABASE_URL"],
+  "globalEnv": [
+    "NODE_ENV",
+    "TZ",
+    "APP_VERSION",
+    "DATABASE_URL",
+    "DATABASE_URL_TEST",
+    "CLAVE_CIFRADO_SEMILLAS"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
