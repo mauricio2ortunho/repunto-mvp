@@ -40,6 +40,29 @@ export const CODIGOS_DE_ERROR = [
   'TARJETA_INCOMPLETA',
   /** El negocio solo permite canjear donde se abrio la tarjeta. */
   'CANJE_EN_OTRO_LOCAL',
+
+  // Alta del cliente en el mostrador.
+  /** Lo tipeado no es un telefono que se pueda normalizar a E.164 (INV-20). */
+  'TELEFONO_INVALIDO',
+  /** No existe, no es de este local, o ya vencio. Los tres dan lo mismo: si se
+   * distinguieran, desde una tablet se podria averiguar que registros hay en
+   * otra sucursal. */
+  'REGISTRO_NO_ENCONTRADO',
+  /** Otro cajero del local lo confirmo o lo descarto primero. */
+  'REGISTRO_YA_RESUELTO',
+
+  // Anulacion.
+  /** No existe, o no es de este local. */
+  'SELLO_NO_ENCONTRADO',
+  /** Ese sello ya estaba anulado. */
+  'SELLO_YA_ANULADO',
+  /** El cajero quiere anular algo que no es su ultimo sello, o que ya paso los
+   * cinco minutos, o que es de otro cajero. Un solo codigo para los tres: al
+   * cajero le sirve la misma frase, y separarlos le diria de quien es cada
+   * sello del local. */
+  'ANULACION_NO_PERMITIDA',
+  /** El premio que incluia ese sello ya se entrego. */
+  'SELLO_YA_CANJEADO',
 ] as const;
 
 export type CodigoDeError = (typeof CODIGOS_DE_ERROR)[number];

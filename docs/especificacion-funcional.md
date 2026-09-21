@@ -59,6 +59,21 @@ Las cuentas creadas por la vía presencial quedan con teléfono no verificado. S
 pide verificación recién cuando el cliente intenta entrar desde un equipo que no
 conoce.
 
+**La confirmación presencial autentica a alguien nuevo, no a alguien que ya
+existe.** Si el teléfono que se escribió ya tiene cuenta, el cajero confirma
+igual —la tarjeta se abre y el sello se otorga, porque la persona está ahí—,
+pero el equipo desde el que se escribió NO recibe la sesión de esa cuenta: para
+entrar hay que verificar el teléfono por código. Sin esta distinción, cualquiera
+en la fila podría escribir el teléfono de otro, dejar que el cajero confirme un
+nombre razonable y llevarse la cuenta ajena entera, con sus tarjetas y con su
+código para sellar y canjear. La verificación por código gana siempre sobre la
+confirmación presencial.
+
+**Tope de pendientes por local.** El registro es el único paso sin credencial
+—el QR está impreso y se puede fotografiar—, así que la lista del cajero tiene
+un máximo. Pasado ese número, el registro nuevo recibe la misma respuesta de
+siempre y no entra: el que la está llenando no tiene por qué enterarse.
+
 El correo es opcional y no se pide en el registro. Se ofrece más adelante, cuando
 el cliente ya tiene sellos que le importa no perder.
 
@@ -230,10 +245,23 @@ aparte.
 
 Las tarjetas y el progreso deben verse sin conexión. El código no.
 
+**Panel de caja, lista de registros.** Nombre y los últimos cuatro dígitos del
+teléfono, en grande. Con tres personas registrándose a la vez, el cajero
+pregunta "¿terminado en 4521?" antes de confirmar; sin eso confirma la fila
+equivocada. El teléfono entero no se muestra.
+
 **Panel de caja.** Una sola vista: la condición vigente arriba, campo de código,
 botón grande, y el resultado con nombre, progreso y la frase que el cajero le dice
 al cliente. El foco vuelve al campo después de cada sello. Tarjeta completa cambia
 la vista entera, no un número pequeño.
+
+**El canje pide el código otra vez.** El sello que completa la tarjeta consume el
+código, así que la pantalla de canje tiene que pedirle al cliente el que muestra
+ahora, treinta segundos después. Es correcto —son dos operaciones y cada una
+consume su ventana— pero se ve como si el primero no hubiera servido. La pantalla
+lo dice con todas las letras: "Pedile el código de nuevo para entregarle el
+premio", nunca un campo vacío sin explicación. Si el cajero cree que algo falló,
+va a reintentar el sello y va a llamar al dueño.
 
 **Panel del dueño.** Resumen con clientes que volvieron, nuevos y enfriados;
 configuración del programa; condición vigente; locales, usuarios y dispositivos. El

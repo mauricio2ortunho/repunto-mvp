@@ -34,6 +34,14 @@ const ESTADO_DE_CAJA: Record<CodigoDeError, number> = {
   NEGOCIO_SUSPENDIDO: 403,
   TURNO_CERRADO: 409,
   PROMO_NO_CONFIGURADA: 409,
+  TELEFONO_INVALIDO: 422,
+  // 404 y no 403: para esta caja, un registro de otra sucursal no existe.
+  REGISTRO_NO_ENCONTRADO: 404,
+  REGISTRO_YA_RESUELTO: 409,
+  SELLO_NO_ENCONTRADO: 404,
+  SELLO_YA_ANULADO: 409,
+  ANULACION_NO_PERMITIDA: 403,
+  SELLO_YA_CANJEADO: 409,
 };
 
 const ESTADO_DE_API: Record<CodigoDeErrorDeApi, number> = {

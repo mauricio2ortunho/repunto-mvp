@@ -316,7 +316,7 @@ describe('Cordura y unicidad operativa', () => {
   }) => {
     const { cliente } = await escenario(db);
     const token = unico('token');
-    const EQUIPO = `INSERT INTO dispositivo_cliente (cliente_id, token_hash, ultimo_acceso) VALUES ($1, $2, now())`;
+    const EQUIPO = `INSERT INTO dispositivo_cliente (cliente_id, token_hash, ultimo_acceso, origen) VALUES ($1, $2, now(), 'codigo')`;
     await db.query(EQUIPO, [cliente, token]);
     await esperarRechazo(db, 'dispositivo_cliente_token_hash_key', EQUIPO, [
       cliente,
@@ -348,7 +348,7 @@ describe('INV-17 · FK simples: nada apunta a un padre que no existe', () => {
     ],
     [
       'dispositivo_cliente_cliente_id_fkey',
-      'INSERT INTO dispositivo_cliente (cliente_id, token_hash, ultimo_acceso) VALUES ($1, $2, now())',
+      "INSERT INTO dispositivo_cliente (cliente_id, token_hash, ultimo_acceso, origen) VALUES ($1, $2, now(), 'codigo')",
       () => [INEXISTENTE, unico('token')],
     ],
     [
@@ -366,6 +366,12 @@ describe('INV-17 · FK simples: nada apunta a un padre que no existe', () => {
       'usuario_negocio_negocio_id_fkey',
       `INSERT INTO usuario_negocio (negocio_id, rol, nombre) VALUES ($1, 'cajero', 'x')`,
       () => [INEXISTENTE],
+    ],
+    [
+      'registro_pendiente_local_id_fkey',
+      `INSERT INTO registro_pendiente (local_id, telefono, nombre, ticket_hash, expira_el)
+       VALUES ($1, $2, 'Juan', $3, now() + interval '30 minutes')`,
+      () => [INEXISTENTE, telefono(), unico('ticket')],
     ],
     [
       'peticion_idempotente_dispositivo_id_fkey',

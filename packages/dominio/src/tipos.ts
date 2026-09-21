@@ -25,11 +25,20 @@ export interface Dispositivo {
   revocado_el: Date | null;
 }
 
+/** Quien opera en el panel. El cliente no es un rol de caja. */
+export type Rol = 'dueno' | 'supervisor' | 'cajero';
+
 export interface Turno {
   id: string;
   dispositivo_id: string;
   usuario_id: string;
   local_id: string;
+  /**
+   * El rol del usuario que abrio el turno. Sale de usuario_negocio, via el
+   * turno: nunca del request. Es lo que decide quien puede anular que (seccion
+   * 5), igual que el local sale del dispositivo (INV-2).
+   */
+  rol: Rol;
   cerrado_el: Date | null;
 }
 
@@ -81,6 +90,23 @@ export interface Sello {
   tarjeta_id: string;
   creado_el: Date;
   anulado: boolean;
+}
+
+/**
+ * Alguien que escaneo el QR del mostrador y escribio su telefono y su nombre.
+ * Todavia no es un cliente: lo es cuando el cajero lo confirma de cuerpo
+ * presente, y esa confirmacion reemplaza al codigo de verificacion.
+ */
+export interface RegistroPendiente {
+  id: string;
+  /** El local del QR que escaneo. De ahi sale el local del primer sello. */
+  local_id: string;
+  /** E.164, ya normalizado (INV-20). */
+  telefono: string;
+  nombre: string;
+  estado: 'pendiente' | 'confirmado' | 'descartado';
+  /** Pasado este instante ya no se puede confirmar: el cliente se fue. */
+  expira_el: Date;
 }
 
 /** La tarjeta activa del cliente en el negocio, con la regla que la rige. */

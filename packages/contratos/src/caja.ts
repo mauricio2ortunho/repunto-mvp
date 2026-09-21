@@ -32,6 +32,13 @@ export const CODIGOS_DE_ERROR_DE_CAJA = [
   'PROMO_NO_CONFIGURADA',
   'TARJETA_INCOMPLETA',
   'CANJE_EN_OTRO_LOCAL',
+  'TELEFONO_INVALIDO',
+  'REGISTRO_NO_ENCONTRADO',
+  'REGISTRO_YA_RESUELTO',
+  'SELLO_NO_ENCONTRADO',
+  'SELLO_YA_ANULADO',
+  'ANULACION_NO_PERMITIDA',
+  'SELLO_YA_CANJEADO',
 ] as const;
 
 export type CodigoDeErrorDeCaja = (typeof CODIGOS_DE_ERROR_DE_CAJA)[number];
@@ -115,6 +122,20 @@ export function mensajeParaElCajero(
       return 'El negocio está suspendido. Avisá al dueño.';
     case 'TURNO_CERRADO':
       return 'Abrí tu turno con tu PIN antes de sellar.';
+    case 'TELEFONO_INVALIDO':
+      return 'Ese número no es válido. Revisalo con el cliente: si es boliviano, son ocho dígitos.';
+    case 'REGISTRO_NO_ENCONTRADO':
+      return 'Ese registro ya no está. Pedile que escanee el QR de nuevo.';
+    case 'REGISTRO_YA_RESUELTO':
+      return 'Ya lo confirmó alguien del equipo.';
+    case 'SELLO_NO_ENCONTRADO':
+      return 'Ese sello no está en esta caja.';
+    case 'SELLO_YA_ANULADO':
+      return 'Ese sello ya estaba anulado.';
+    case 'ANULACION_NO_PERMITIDA':
+      return 'Solo podés deshacer tu último sello y dentro de los 5 minutos. Pedíselo a tu supervisor.';
+    case 'SELLO_YA_CANJEADO':
+      return 'Ese sello ya se usó en un premio entregado. Avisá al dueño.';
     case 'PROMO_NO_CONFIGURADA':
       return 'Falta configurar la promo. Avisá al dueño: no se arregla desde la caja.';
     case 'TOKEN_INVALIDO':
@@ -164,3 +185,84 @@ export const esquemaCanjearRespuesta = z.object({
 });
 
 export type CanjearRespuesta = z.infer<typeof esquemaCanjearRespuesta>;
+
+/**
+ * `GET /caja/registros`: la lista que el cajero mira mientras el cliente
+ * termina de escribir.
+ *
+ * Va el nombre y los ultimos cuatro digitos, nunca el telefono entero: con
+ * tres personas registrandose a la vez, el cajero pregunta "terminado en
+ * 4521?" antes de confirmar, y sin eso confirma la fila equivocada. El resto
+ * del numero no le hace falta para nada.
+ */
+export const esquemaRegistroEnCaja = z.object({
+  id: z.uuid(),
+  nombre: z.string(),
+  telefono_final: z.string().length(4),
+  creado_el: z.iso.datetime(),
+});
+
+export const esquemaRegistrosPendientes = z.object({
+  registros: z.array(esquemaRegistroEnCaja),
+});
+
+export type RegistroEnCaja = z.infer<typeof esquemaRegistroEnCaja>;
+export type RegistrosPendientes = z.infer<typeof esquemaRegistrosPendientes>;
+
+/**
+ * `POST /caja/registros/:id/confirmar`. Los dos botones del panel son este
+ * mismo endpoint: `sellar` en true es "confirmar y sellar", en false es "solo
+ * confirmar". Lo decide el cajero, no el sistema.
+ */
+export const esquemaConfirmarPeticion = z.object({ sellar: z.boolean() });
+
+export const esquemaConfirmarRespuesta = z.object({
+  nombre: z.string(),
+  progreso: z.int().nonnegative(),
+  faltan: z.int().nonnegative(),
+  completa: z.boolean(),
+  premio: z.string(),
+  /** Si se otorgo un sello en el mismo acto. */
+  sello: z.boolean(),
+});
+
+export type ConfirmarPeticion = z.infer<typeof esquemaConfirmarPeticion>;
+export type ConfirmarRespuesta = z.infer<typeof esquemaConfirmarRespuesta>;
+
+export const esquemaDescartarRespuesta = z.object({
+  estado: z.literal('descartado'),
+});
+
+export type DescartarRespuesta = z.infer<typeof esquemaDescartarRespuesta>;
+
+/** `POST /caja/sellos/:id/anulacion`: como queda la tarjeta despues. */
+export const esquemaAnularRespuesta = z.object({
+  nombre: z.string(),
+  progreso: z.int().nonnegative(),
+  faltan: z.int().nonnegative(),
+  completa: z.boolean(),
+});
+
+export type AnularRespuesta = z.infer<typeof esquemaAnularRespuesta>;
+
+/**
+ * `GET /caja/sellos/recientes`: de donde saca el supervisor cual anular.
+ * El cajero ve solo los suyos del turno; el supervisor y el dueño, los del
+ * local en las ultimas 24 horas. Un cajero nunca ve la base de clientes.
+ */
+export const esquemaSelloReciente = z.object({
+  id: z.uuid(),
+  /** Nombre del cliente al que se le otorgo. */
+  nombre: z.string(),
+  /** Quien lo otorgo. */
+  cajero: z.string(),
+  creado_el: z.iso.datetime(),
+  anulado: z.boolean(),
+});
+
+export const esquemaSellosRecientes = z.object({
+  sellos: z.array(esquemaSelloReciente),
+});
+
+export type SelloReciente = z.infer<typeof esquemaSelloReciente>;
+export type SellosRecientes = z.infer<typeof esquemaSellosRecientes>;

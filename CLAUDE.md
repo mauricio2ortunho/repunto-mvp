@@ -184,6 +184,16 @@ cada cajero abre turno tocando su nombre en la lista del dispositivo y escribien
 su PIN de cuatro dígitos. El nombre identifica, el PIN confirma y la autoridad la
 tiene el dispositivo. Revocar un dispositivo lo invalida al instante.
 
+**La confirmación presencial autentica a alguien nuevo.** El alta en el
+mostrador reemplaza al código de verificación solo cuando la cuenta se crea en
+ese acto. Si el teléfono ya tenía cuenta, el cajero confirma igual —se abre la
+tarjeta y se otorga el sello, porque la persona está enfrente—, pero el equipo
+que escribió ese teléfono no recibe la sesión: para entrar hay que verificar por
+código. **La verificación por código gana siempre sobre la confirmación
+presencial.** Sin esa distinción, cualquiera en la fila se lleva la cuenta de
+otro escribiendo su teléfono y dejando que el cajero vea un nombre razonable.
+Lo sostiene también la base: `registro_pendiente_sesion_solo_si_cuenta_nueva_chk`.
+
 **Una tablet, un turno abierto.** El turno de un sello sale del dispositivo y no
 del request (INV-2), así que "el turno abierto de esta tablet" tiene que resolver
 a uno solo. Lo garantiza un índice único parcial sobre `turno_caja(dispositivo_id)`
@@ -501,23 +511,32 @@ persona en un negocio. No implementarlo antes de que el caso exista.
 Lo que está a medio hacer a propósito, con el motivo. No es una lista de ideas:
 es lo que falta terminar, y está acá para que no se pierda.
 
-- **Anulación de sellos.** El botón de deshacer de 5 minutos del cajero y la
-  anulación del supervisor no existen todavía: no hay función de dominio que
-  las decida, ni endpoint, ni test. La base ya lo sostiene entero —`anulado`,
-  `anulado_el` y `anulado_turno_id` con su CHECK, y la FK compuesta que impide
-  anular desde la tablet de otra sucursal— y el progreso ya cuenta solo los
-  sellos no anulados (INV-10). Lo que falta es la decisión y su camino: quién
-  puede anular qué, dentro de qué ventana de tiempo, y el efecto. Va junto con
-  el alta del cliente.
-- **Alta del cliente en caja.** El registro asistido —teléfono, confirmación,
-  generación del código público y de la semilla— tampoco existe. Hoy los
-  clientes solo pueden nacer por SQL, y por eso el cifrado de la semilla está
-  implementado a medias: la API la descifra para dar el código, pero todavía no
-  la cifra al crear a nadie.
+- **Verificación del teléfono por código (WhatsApp, con SMS de respaldo).** Es
+  lo que falta para cerrar el acceso del cliente: hoy, quien se registra con un
+  teléfono que ya tenía cuenta recibe `verificacion_requerida` y no tiene cómo
+  seguir. Necesita la cuenta de WhatsApp Business con plantillas aprobadas, que
+  es trámite y no código (especificación, sección 14).
+
+  Con ese flujo entra una regla que ya está decidida y todavía no implementada:
+  **cuando el dueño real verifique ese teléfono por código, las sesiones creadas
+  por confirmación presencial para esa cuenta se revocan. La verificación por
+  código gana siempre.** El estado está preparado: `dispositivo_cliente.origen`
+  distingue `presencial` de `codigo`, así que revocarlas es un `UPDATE` sobre
+  las presenciales de ese cliente.
+
+- **Fuga conocida y aceptada.** `GET /registros/mio` le revela a quien tiene el
+  ticket que ese teléfono ya tenía cuenta: responde `verificacion_requerida` en
+  lugar de entregar la sesión. Se acepta porque para llegar ahí hay que haber
+  pasado por el mostrador —un cajero confirmó a una persona física— y porque el
+  registro tiene tope por teléfono y por IP. No cerrarla es una decisión, no un
+  descuido.
+
 - **Los trabajos programados de la sección 7.** Ninguno corre. El más urgente es
   el de vencer tarjetas: mientras no exista, una tarjeta vencida solo se cierra
   cuando el cliente vuelve a sellar. A la purga diaria de `codigo_usado` se le
   suma ahora la de `peticion_idempotente`, con el mismo criterio de 24 horas.
+  Los `registro_pendiente` no se purgan: uno que nadie confirmó es la señal de
+  que en ese local no están ofreciendo la tarjeta (especificación, sección 11).
 - **El tope del endpoint del código vive en memoria.** 120 peticiones por hora
   por cliente, contadas en el proceso. Con una sola instancia de la API alcanza;
   con dos, cada una cuenta la suya y el tope real se duplica. Cuando haya más de

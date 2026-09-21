@@ -47,6 +47,23 @@ enum EstadoNegocio {
   @@map("estado_negocio")
 }
 
+enum EstadoRegistro {
+  pendiente
+  confirmado
+  descartado
+
+  @@map("estado_registro")
+}
+
+/// Como nacio la sesion del telefono del cliente. La verificacion por codigo
+/// gana siempre sobre la confirmacion presencial: ver CLAUDE.md, seccion 15.
+enum OrigenSesion {
+  presencial
+  codigo
+
+  @@map("origen_sesion")
+}
+
 enum EstadoTarjeta {
   activa
   canjeada
@@ -129,6 +146,7 @@ model Local {
   creado_el  DateTime @default(now()) @db.Timestamptz(3)
 
   negocio      Negocio           @relation(fields: [negocio_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  registros    RegistroPendiente[]
   usuarios     UsuarioLocal[]
   dispositivos DispositivoCaja[]
   tarjetas     Tarjeta[]
@@ -275,6 +293,7 @@ model TurnoCaja {
 
   dispositivo     DispositivoCaja @relation(fields: [dispositivo_id, local_id], references: [id, local_id], onDelete: Restrict, onUpdate: Restrict, map: "turno_caja_dispositivo_mismo_local_fkey")
   asignacion      UsuarioLocal    @relation(fields: [usuario_id, local_id], references: [usuario_id, local_id], onDelete: Restrict, onUpdate: Restrict, map: "turno_caja_usuario_asignado_al_local_fkey")
+  registros       RegistroPendiente[]
   sellos          Sello[]         @relation("sello_otorgado")
   sellos_anulados Sello[]         @relation("sello_anulado")
   canjes          Canje[]
@@ -378,6 +397,7 @@ model Cliente {
   tarjetas       Tarjeta[]
   dispositivos   DispositivoCliente[]
   codigos_usados CodigoUsado[]
+  registros      RegistroPendiente[]
 
   @@map("cliente")
 }
@@ -388,6 +408,11 @@ model DispositivoCliente {
   cliente_id    String   @db.Uuid
   /// Identificador persistente guardado en el equipo.
   token_hash    String   @unique
+  /// Como nacio esta sesion. `presencial` es la que entrega la confirmacion
+  /// del cajero al dar de alta a alguien nuevo; `codigo`, la que entrega la
+  /// verificacion por WhatsApp o SMS. Existe para poder revocar las
+  /// presenciales cuando el dueño real del telefono verifique por codigo.
+  origen        OrigenSesion
   /// Si es un equipo nuevo, ahi si se pide verificacion.
   ultimo_acceso DateTime @db.Timestamptz(3)
   creado_el     DateTime @default(now()) @db.Timestamptz(3)
@@ -530,6 +555,47 @@ model CodigoUsado {
   @@id([cliente_id, ventana])
   @@index([creado_el])
   @@map("codigo_usado")
+}
+
+/// Alguien que escaneo el QR del mostrador y dejo su telefono y su nombre.
+/// Todavia no es un cliente: lo es cuando el cajero lo confirma de cuerpo
+/// presente, y esa confirmacion reemplaza al codigo de verificacion
+/// (especificacion funcional, seccion 3).
+model RegistroPendiente {
+  id                  String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// El local del QR que escaneo. De ahi sale el local de su primera tarjeta.
+  local_id            String         @db.Uuid
+  /// E.164, normalizado en el borde de la API (INV-20). En la lista del cajero
+  /// se muestran solo los ultimos cuatro digitos.
+  telefono            String
+  nombre              String
+  /// Hash del secreto con el que la PWA vuelve a preguntar si ya lo
+  /// confirmaron. Nunca viaja en una URL.
+  ticket_hash         String         @unique
+  estado              EstadoRegistro @default(pendiente)
+  /// La cuenta que quedo asociada al confirmar: la que se creo, o la que ya
+  /// existia con ese telefono.
+  cliente_id          String?        @db.Uuid
+  /// Si ESTA confirmacion creo la cuenta. Es lo que decide si el ticket puede
+  /// llevarse una sesion: sobre una cuenta que ya existia, no.
+  cliente_creado      Boolean?
+  resuelto_el         DateTime?      @db.Timestamptz(3)
+  /// El turno que confirmo o descarto. La FK compuesta con local_id obliga a
+  /// que sea un turno de ESTE local: nadie confirma registros de otra
+  /// sucursal desde su tablet (CLAUDE.md, seccion 14).
+  resuelto_turno_id   String?        @db.Uuid
+  /// Cuando se entrego la sesion. Se entrega una sola vez.
+  sesion_entregada_el DateTime?      @db.Timestamptz(3)
+  /// Media hora. Despues el cliente ya se fue del mostrador.
+  expira_el           DateTime       @db.Timestamptz(3)
+  creado_el           DateTime       @default(now()) @db.Timestamptz(3)
+
+  local          Local      @relation(fields: [local_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  cliente        Cliente?   @relation(fields: [cliente_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  resuelto_turno TurnoCaja? @relation(fields: [resuelto_turno_id, local_id], references: [id, local_id], onDelete: Restrict, onUpdate: Restrict, map: "registro_pendiente_turno_mismo_local_fkey")
+
+  @@index([local_id, estado, creado_el])
+  @@map("registro_pendiente")
 }
 
 /// El reintento del cajero. Todo endpoint que crea algo acepta Idempotency-Key

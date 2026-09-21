@@ -4,23 +4,49 @@ export type { Salud } from './salud';
 export {
   CODIGOS_DE_ERROR_DE_API,
   CODIGOS_DE_ERROR_DE_CAJA,
+  esquemaAnularRespuesta,
   esquemaCanjearPeticion,
   esquemaCanjearRespuesta,
+  esquemaConfirmarPeticion,
+  esquemaConfirmarRespuesta,
+  esquemaDescartarRespuesta,
   esquemaError,
+  esquemaRegistroEnCaja,
+  esquemaRegistrosPendientes,
   esquemaSellarPeticion,
   esquemaSellarRespuesta,
+  esquemaSelloReciente,
+  esquemaSellosRecientes,
   mensajeParaElCajero,
 } from './caja';
 export type {
+  AnularRespuesta,
   CanjearPeticion,
   CanjearRespuesta,
   CodigoDeErrorDeApi,
   CodigoDeErrorDeCaja,
+  ConfirmarPeticion,
+  ConfirmarRespuesta,
+  DescartarRespuesta,
   DetalleDelMensaje,
   ErrorDeLaApi,
+  RegistroEnCaja,
+  RegistrosPendientes,
   SellarPeticion,
   SellarRespuesta,
+  SelloReciente,
+  SellosRecientes,
 } from './caja';
 
-export { esquemaCodigoDelCliente } from './cliente';
-export type { CodigoDelCliente } from './cliente';
+export {
+  esquemaCodigoDelCliente,
+  esquemaEstadoDelRegistro,
+  esquemaRegistroPeticion,
+  esquemaRegistroRespuesta,
+} from './cliente';
+export type {
+  CodigoDelCliente,
+  EstadoDelRegistro,
+  RegistroPeticion,
+  RegistroRespuesta,
+} from './cliente';

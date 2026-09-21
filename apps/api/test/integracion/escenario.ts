@@ -208,6 +208,21 @@ export async function cerrarTurno(db: Db, turno: string): Promise<void> {
   await db.query('UPDATE turno_caja SET cerrado_el = now() WHERE id = $1', [turno]);
 }
 
+/**
+ * Cambia quien esta en la caja: cierra el turno abierto de la tablet y abre
+ * otro para ese usuario. Hace falta porque una tablet tiene un solo turno
+ * abierto a la vez, y devuelve el negocio con su turno nuevo.
+ */
+export async function conTurnoDe(
+  db: Db,
+  negocio: NegocioDePrueba,
+  usuario: string,
+): Promise<NegocioDePrueba> {
+  await cerrarTurno(db, negocio.turno);
+  const turno = await abrirTurno(db, negocio.dispositivo, usuario, negocio.local);
+  return { ...negocio, turno };
+}
+
 /** Un admin de plataforma: no pertenece a ningun negocio. */
 export async function crearAdmin(db: Db): Promise<string> {
   return insertar(
@@ -258,8 +273,8 @@ export async function crearClienteEnCaja(
   );
   const token = nuevoToken();
   await db.query(
-    `INSERT INTO dispositivo_cliente (cliente_id, token_hash, ultimo_acceso)
-     VALUES ($1, $2, now())`,
+    `INSERT INTO dispositivo_cliente (cliente_id, token_hash, ultimo_acceso, origen)
+     VALUES ($1, $2, now(), 'codigo')`,
     [id, hashDeToken(token)],
   );
   return { id, nombre, codigo_publico, semilla, token };
@@ -288,6 +303,23 @@ export function codigoPublico(): string {
   return Array.from({ length: 5 }, () => ALFABETO[randomInt(0, ALFABETO.length)]).join(
     '',
   );
+}
+
+/** Alguien que escaneo el QR y dejo su telefono. Pendiente de confirmacion. */
+export async function crearRegistro(
+  db: Db,
+  local: string,
+  opciones: { telefono?: string; nombre?: string; minutos?: number } = {},
+): Promise<{ id: string; telefono: string; ticket: string }> {
+  const tel = opciones.telefono ?? telefono();
+  const ticket = nuevoToken();
+  const id = await insertar(
+    db,
+    `INSERT INTO registro_pendiente (local_id, telefono, nombre, ticket_hash, expira_el)
+     VALUES ($1, $2, $3, $4, now() + make_interval(mins => $5::int)) RETURNING id`,
+    [local, tel, opciones.nombre ?? 'Juan', hashDeToken(ticket), opciones.minutos ?? 30],
+  );
+  return { id, telefono: tel, ticket };
 }
 
 /** Tarjeta activa, sin sellos: sin reloj ni vencimiento. */

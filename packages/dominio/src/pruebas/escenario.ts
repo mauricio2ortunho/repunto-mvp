@@ -1,4 +1,6 @@
 import { codigoDeVentana, ventanaDe } from '../codigo';
+import type { EntradaDeAlta } from '../alta';
+import type { EntradaDeAnulacion, SelloParaAnular } from '../anulacion';
 import type { EntradaDeCanje } from '../canje';
 import type { EntradaDeSellado } from '../sellado';
 import type {
@@ -9,6 +11,7 @@ import type {
   Local,
   Negocio,
   Programa,
+  RegistroPendiente,
   Sello,
   Tarjeta,
   TarjetaEnCurso,
@@ -47,7 +50,16 @@ export const TURNO: Turno = {
   dispositivo_id: DISPOSITIVO.id,
   usuario_id: 'cajero-1',
   local_id: LOCAL.id,
+  rol: 'cajero',
   cerrado_el: null,
+};
+
+/** El mismo turno, abierto por un supervisor. */
+export const TURNO_DE_SUPERVISOR: Turno = {
+  ...TURNO,
+  id: 'turno-2',
+  usuario_id: 'supervisor-1',
+  rol: 'supervisor',
 };
 
 export const ASIGNACION: Asignacion = {
@@ -155,6 +167,78 @@ export function unaEntradaDeCanje(cambios: Partial<EntradaDeCanje> = {}): Entrad
     codigoYaUsado: false,
     enCurso: unaTarjetaEnCurso({ sellos: unosSellos(PROGRAMA.sellos_requeridos) }),
     programaVigente: PROGRAMA,
+    ...cambios,
+  };
+}
+
+const MINUTO = 60_000;
+
+/** Alguien que acaba de escanear el QR del mostrador. */
+export const REGISTRO: RegistroPendiente = {
+  id: 'registro-1',
+  local_id: LOCAL.id,
+  telefono: '+59170000001',
+  nombre: 'Juan',
+  estado: 'pendiente',
+  expira_el: new Date(AHORA.getTime() + 30 * MINUTO),
+};
+
+export function unaEntradaDeAlta(cambios: Partial<EntradaDeAlta> = {}): EntradaDeAlta {
+  return {
+    ahora: AHORA,
+    negocio: NEGOCIO,
+    local: LOCAL,
+    dispositivo: DISPOSITIVO,
+    turno: TURNO,
+    asignacion: ASIGNACION,
+    registro: REGISTRO,
+    sellar: false,
+    clienteExistente: null,
+    programaVigente: PROGRAMA,
+    condicionVigente: CONDICION,
+    enCurso: null,
+    ultimoSelloDelCliente: null,
+    ...cambios,
+  };
+}
+
+/** El sello que el cajero acaba de otorgar, hace un minuto. */
+export function unSelloParaAnular(
+  cambios: Partial<SelloParaAnular> = {},
+): SelloParaAnular {
+  return {
+    id: 'sello-3',
+    tarjeta_id: 'tarjeta-1',
+    local_id: LOCAL.id,
+    usuario_id: TURNO.usuario_id,
+    creado_el: new Date(AHORA.getTime() - MINUTO),
+    anulado: false,
+    tarjeta_estado: 'activa',
+    ...cambios,
+  };
+}
+
+export function unaEntradaDeAnulacion(
+  cambios: Partial<EntradaDeAnulacion> = {},
+): EntradaDeAnulacion {
+  const sello = cambios.sello === undefined ? unSelloParaAnular() : cambios.sello;
+  const sellos = unosSellos(3, { hasta: new Date(AHORA.getTime() - MINUTO) });
+  const ultimo = sellos[sellos.length - 1];
+  return {
+    ahora: AHORA,
+    negocio: NEGOCIO,
+    local: LOCAL,
+    dispositivo: DISPOSITIVO,
+    turno: TURNO,
+    asignacion: ASIGNACION,
+    sello,
+    // El ultimo que otorgo este cajero es el tercero, 'sello-3', que es el que
+    // unSelloParaAnular() devuelve por defecto. Un test que pase otro id esta
+    // probando justamente que ya no es el ultimo.
+    ultimoSelloDelUsuario: ultimo ?? null,
+    tarjeta: unaTarjetaEnCurso({ sellos }),
+    nombreDelCliente: CLIENTE.nombre,
+    programaDeLaTarjeta: PROGRAMA,
     ...cambios,
   };
 }

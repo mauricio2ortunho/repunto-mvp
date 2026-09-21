@@ -10,6 +10,7 @@ import { Pool, type PoolClient } from 'pg';
 import { inject, test as testDeVitest } from 'vitest';
 
 import { AppModule } from '../../../src/app.module';
+import { TopeDePeticiones } from '../../../src/seguridad/tope';
 import { configurarEntorno, exigirBaseVacia } from '../base';
 
 /**
@@ -27,6 +28,7 @@ export type Db = PoolClient;
 export interface Respuesta {
   estado: number;
   cuerpo: Record<string, unknown>;
+  cabeceras: Record<string, string>;
 }
 
 export interface Llamada {
@@ -35,9 +37,14 @@ export interface Llamada {
   /** Idempotency-Key. Por defecto, una distinta en cada llamada. */
   clave?: string;
   cuerpo?: unknown;
+  /** If-None-Match, para los endpoints con ETag. */
+  etiqueta?: string;
 }
 
 export class Api {
+  /** Lo completa el fixture: reinicia los topes en memoria de la api. */
+  reiniciarTopes: () => void = () => undefined;
+
   constructor(private readonly url: string) {}
 
   sellar(llamada: Llamada): Promise<Respuesta> {
@@ -51,6 +58,46 @@ export class Api {
   /** `query` existe para probar que un identificador de cliente se ignora. */
   async miCodigo(token?: string, query = ''): Promise<Respuesta> {
     return this.pedir('GET', `/mi/codigo${query}`, { token });
+  }
+
+  /** El alta: lo que hace el telefono del cliente. */
+  registrar(cuerpo: unknown): Promise<Respuesta> {
+    return this.pedir('POST', '/registros', { cuerpo });
+  }
+
+  miRegistro(ticket?: string): Promise<Respuesta> {
+    return this.pedir('GET', '/registros/mio', { token: ticket });
+  }
+
+  /** El alta: lo que hace el cajero. */
+  registros(token?: string, etiqueta?: string): Promise<Respuesta> {
+    return this.pedir('GET', '/caja/registros', { token, etiqueta });
+  }
+
+  confirmar(
+    token: string,
+    id: string,
+    sellar: boolean,
+    clave = randomUUID(),
+  ): Promise<Respuesta> {
+    return this.pedir('POST', `/caja/registros/${id}/confirmar`, {
+      token,
+      clave,
+      cuerpo: { sellar },
+    });
+  }
+
+  descartar(token: string, id: string, clave = randomUUID()): Promise<Respuesta> {
+    return this.pedir('POST', `/caja/registros/${id}/descartar`, { token, clave });
+  }
+
+  /** La anulacion. */
+  anular(token: string, selloId: string, clave = randomUUID()): Promise<Respuesta> {
+    return this.pedir('POST', `/caja/sellos/${selloId}/anulacion`, { token, clave });
+  }
+
+  sellosRecientes(token?: string): Promise<Respuesta> {
+    return this.pedir('GET', '/caja/sellos/recientes', { token });
   }
 
   private postear(ruta: string, llamada: Llamada): Promise<Respuesta> {
@@ -70,6 +117,7 @@ export class Api {
       cabeceras['authorization'] = `Bearer ${llamada.token}`;
     }
     if (llamada.clave !== undefined) cabeceras['idempotency-key'] = llamada.clave;
+    if (llamada.etiqueta !== undefined) cabeceras['if-none-match'] = llamada.etiqueta;
     if (llamada.cuerpo !== undefined) cabeceras['content-type'] = 'application/json';
 
     const respuesta = await fetch(`${this.url}${ruta}`, {
@@ -82,6 +130,7 @@ export class Api {
     return {
       estado: respuesta.status,
       cuerpo: texto === '' ? {} : (JSON.parse(texto) as Record<string, unknown>),
+      cabeceras: Object.fromEntries(respuesta.headers.entries()),
     };
   }
 }
@@ -97,7 +146,11 @@ export const test = testDeVitest.extend<{ api: Api; pool: Pool; db: Db }>({
       await app.listen(0, '127.0.0.1');
       const servidor = app.getHttpServer() as Server;
       const direccion = servidor.address() as AddressInfo;
-      await use(new Api(`http://127.0.0.1:${direccion.port}`));
+      const api = new Api(`http://127.0.0.1:${direccion.port}`);
+      // Los topes viven en memoria del proceso y la api dura todo el archivo:
+      // sin esto, el tercer test hereda las cuentas de los dos anteriores.
+      api.reiniciarTopes = () => app.get(TopeDePeticiones).reiniciar();
+      await use(api);
       // fetch deja los sockets abiertos con keep-alive, y con un socket vivo el
       // servidor no cierra nunca: sin esto, la suite se cuelga al terminar el
       // primer archivo.
@@ -118,10 +171,11 @@ export const test = testDeVitest.extend<{ api: Api; pool: Pool; db: Db }>({
     { scope: 'file' },
   ],
 
-  db: async ({ pool }, use) => {
+  db: async ({ pool, api }, use) => {
     const conexion = await pool.connect();
     try {
       await exigirBaseVacia(conexion);
+      api.reiniciarTopes();
       await use(conexion);
     } finally {
       await vaciarBase(conexion);

@@ -1,5 +1,5 @@
 import { diaEnLaPaz, finDelDia, sumarMesesCalendario } from './tiempo';
-import type { Programa, Sello, Tarjeta } from './tipos';
+import type { Programa, Sello, Tarjeta, TarjetaEnCurso } from './tipos';
 
 /**
  * Progreso de una tarjeta: se cuentan los sellos no anulados (INV-10). No hay
@@ -59,4 +59,38 @@ export function ordenadosPorFecha(sellos: readonly Sello[]): Sello[] {
     const diferencia = a.creado_el.getTime() - b.creado_el.getTime();
     return diferencia !== 0 ? diferencia : a.id.localeCompare(b.id);
   });
+}
+
+/** Cual es la tarjeta que aplica, y con que regla. */
+export interface TarjetaElegida {
+  /** La tarjeta sobre la que se opera, o null si hay que abrir una nueva. */
+  enCurso: TarjetaEnCurso | null;
+  /** La vencida que hay que cerrar antes de abrir la nueva, o null. */
+  vencerTarjeta: string | null;
+  /** La regla que rige: la de la tarjeta en curso (INV-6) o la vigente. */
+  programa: Programa | null;
+}
+
+/**
+ * Resuelve sobre que tarjeta se opera. Lo comparten el sellado y el alta del
+ * cliente, que llegan al mismo punto por caminos distintos.
+ *
+ * Una tarjeta vencida deja de estar en curso: se cierra y se abre otra con la
+ * regla vigente de hoy. El cron que vence tarjetas corre una vez por dia, y
+ * trabar al cajero con el cliente enfrente hasta las 00:15 del dia siguiente
+ * es el peor momento posible para hacerlo esperar.
+ */
+export function elegirTarjeta(
+  enCurso: TarjetaEnCurso | null,
+  programaVigente: Programa | null,
+  ahora: Date,
+): TarjetaElegida {
+  const vencida =
+    enCurso !== null && estaVencida(enCurso.tarjeta, ahora) ? enCurso : null;
+  const vigente = vencida === null ? enCurso : null;
+  return {
+    enCurso: vigente,
+    vencerTarjeta: vencida === null ? null : vencida.tarjeta.id,
+    programa: vigente?.programa ?? programaVigente,
+  };
 }

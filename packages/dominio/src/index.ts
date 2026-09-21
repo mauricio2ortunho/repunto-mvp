@@ -12,6 +12,8 @@ export type {
   Local,
   Negocio,
   Programa,
+  RegistroPendiente,
+  Rol,
   Sello,
   Tarjeta,
   TarjetaEnCurso,
@@ -49,6 +51,7 @@ export {
 export type { CodigoTipeado, RevisionDeCodigo, VerificacionDeCodigo } from './codigo';
 
 export {
+  elegirTarjeta,
   estaCompleta,
   estaVencida,
   faltanPara,
@@ -57,12 +60,39 @@ export {
   ultimoSelloDe,
   vencimientoDesde,
 } from './tarjeta';
+export type { TarjetaElegida } from './tarjeta';
+
+export { PREFIJO_BOLIVIA, normalizarTelefono, ultimosCuatro } from './telefono';
 
 export { revisarCaja } from './caja';
 export type { Caja, RevisionDeCaja } from './caja';
 
-export { decidirSello } from './sellado';
-export type { DecisionDeSellado, EfectoDeSellado, EntradaDeSellado } from './sellado';
+export { decidirSello, planDeSellado } from './sellado';
+export type {
+  DecisionDeSellado,
+  EfectoDeSellado,
+  EntradaDeSellado,
+  EntradaDeTarjeta,
+  PlanDeSellado,
+  ResultadoDelPlan,
+} from './sellado';
+
+export { decidirAlta, decidirDescarte } from './alta';
+export type {
+  DecisionDeAlta,
+  DecisionDeDescarte,
+  EfectoDeAlta,
+  EntradaDeAlta,
+  EntradaDeDescarte,
+} from './alta';
+
+export { MINUTOS_PARA_DESHACER, decidirAnulacion } from './anulacion';
+export type {
+  DecisionDeAnulacion,
+  EfectoDeAnulacion,
+  EntradaDeAnulacion,
+  SelloParaAnular,
+} from './anulacion';
 
 export { decidirCanje } from './canje';
 export type { DecisionDeCanje, EfectoDeCanje, EntradaDeCanje } from './canje';
