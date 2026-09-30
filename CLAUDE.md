@@ -40,8 +40,10 @@ Si una tarea pide algo de esa lista, detenerse y preguntar antes de escribir có
 | Validación | Zod, compartido vía `packages/contratos` |
 | Tests | Vitest; integración contra Postgres real |
 | Monorepo | pnpm workspaces + Turborepo |
-| Hosting API, base y cron | Railway |
+| Base de datos manejada | Supabase (Postgres 16) |
+| Hosting API | Vercel, como funcion serverless |
 | Hosting frontends | Vercel |
+| Trabajos programados | Sin resolver: Vercel no corre procesos largos |
 | Imágenes (logo, portada) | Cloudflare R2, URLs en la base |
 | Errores | Sentry, en las tres apps |
 | Mensajería | WhatsApp Cloud API, SMS como respaldo |
@@ -49,6 +51,19 @@ Si una tarea pide algo de esa lista, detenerse y preguntar antes de escribir có
 
 Nada de esto se cambia sin decirlo. Si una librería nueva parece necesaria,
 explicar qué problema resuelve y qué alternativa estándar se descartó.
+
+**Este stack cambió sobre la marcha, y el cambio tiene consecuencias.** La base
+y la API iban a Railway: un proceso largo, con su cron y su memoria. Hoy la
+base está en Supabase y la API corre serverless en Vercel, decidido para tener
+todo en la web con dos cuentas en lugar de tres. Lo que eso rompe está en la
+sección 15 y el procedimiento completo en `docs/despliegue.md`. Dos cosas para
+tener siempre presentes al escribir código de la API:
+
+- **No hay estado en memoria que se pueda creer.** Cada invocación puede ser
+  otro proceso. Un contador, una caché o un candado en una variable de módulo
+  no cuenta lo que parece contar.
+- **No hay proceso largo.** Nada de `setInterval`, nada que "corra cada hora"
+  desde dentro de la API.
 
 ---
 
@@ -531,16 +546,23 @@ es lo que falta terminar, y está acá para que no se pierda.
   registro tiene tope por teléfono y por IP. No cerrarla es una decisión, no un
   descuido.
 
-- **Los trabajos programados de la sección 7.** Ninguno corre. El más urgente es
-  el de vencer tarjetas: mientras no exista, una tarjeta vencida solo se cierra
-  cuando el cliente vuelve a sellar. A la purga diaria de `codigo_usado` se le
-  suma ahora la de `peticion_idempotente`, con el mismo criterio de 24 horas.
-  Los `registro_pendiente` no se purgan: uno que nadie confirmó es la señal de
-  que en ese local no están ofreciendo la tarjeta (especificación, sección 11).
-- **El tope del endpoint del código vive en memoria.** 120 peticiones por hora
-  por cliente, contadas en el proceso. Con una sola instancia de la API alcanza;
-  con dos, cada una cuenta la suya y el tope real se duplica. Cuando haya más de
-  una instancia, se muda a la base o a Redis.
+- **Los trabajos programados de la sección 7.** Ninguno corre, y ahora además
+  no hay dónde: Vercel no sostiene procesos largos. El diseño que queda es
+  Vercel Cron pegándole a un endpoint protegido por un secreto, con el candado
+  en la base en lugar de en memoria. El más urgente sigue siendo vencer
+  tarjetas: mientras no exista, una tarjeta vencida solo se cierra cuando el
+  cliente vuelve a sellar. A la purga de `codigo_usado` se le suma la de
+  `peticion_idempotente`, con el mismo criterio de 24 horas. Los
+  `registro_pendiente` no se purgan: uno que nadie confirmó es la señal de que
+  en ese local no están ofreciendo la tarjeta (especificación, sección 11).
+- **Los topes de peticiones ya no cuentan bien, y es urgente.** Están en
+  memoria del proceso —120 por hora por cliente en `/mi/codigo`, 5 por teléfono
+  y 60 por IP en `/registros`— y en serverless cada invocación puede ser otra
+  instancia, así que el tope real es indeterminado y tiende a no existir. El
+  endpoint público del registro queda sin freno efectivo más allá del tope de
+  pendientes por local, que sí vive en la base. Mudarlos a una tabla con la
+  ventana como parte de la clave es el arreglo, y conviene hacerlo antes de
+  darle la URL a alguien de afuera.
 - **El log estructurado de la sección 8.** Todavía no hay `request_id` ni las
   líneas JSON con `cliente_id`, `local_id` y `turno_id` del flujo de sellado.
   Hoy, "qué pasó con el sello de Juan el martes" se responde con SQL.

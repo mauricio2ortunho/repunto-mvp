@@ -30,10 +30,16 @@ pnpm dev                   # api :3001, cliente :3000, panel :3002
 | `pnpm lint`             | ESLint + Prettier                                                           |
 | `pnpm db:migrate`       | `prisma migrate dev` + `prisma generate`                                    |
 | `pnpm db:generate`      | Solo regenera el cliente de Prisma                                          |
-| `pnpm db:seed`          | Falla: el seed todavia no existe                                            |
+| `pnpm db:seed`          | Negocio de demo idempotente; imprime los tokens para probar                 |
 
 Los tests de integracion levantan la api de verdad y hablan HTTP contra ella,
 asi que necesitan Postgres arriba y las variables de `.env`.
+
+## Despliegue
+
+Base en Supabase, apps en Vercel. El procedimiento, las variables de cada
+proyecto y lo que este despliegue todavia no resuelve estan en
+[`docs/despliegue.md`](./docs/despliegue.md).
 
 ## Base de datos
 

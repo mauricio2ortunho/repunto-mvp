@@ -1,0 +1,15 @@
+{
+  // Los scripts los corre Node 24 directamente, sin compilar, asi que importan
+  // con extension .ts. Igual se tipan: un script que nadie chequea es el
+  // proximo error en silencio.
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "types": ["node"]
+  },
+  "include": ["**/*.ts", "**/*.mts"]
+}

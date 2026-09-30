@@ -18,7 +18,7 @@
     "test:integration": "vitest run --project integracion",
     "db:migrate": "prisma migrate dev && prisma generate",
     "db:generate": "prisma generate",
-    "db:seed": "node scripts/seed-pendiente.mjs"
+    "db:seed": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON apps/api/scripts/seed.mts"
   },
   "devDependencies": {
     "@eslint/js": "^9.37.0",

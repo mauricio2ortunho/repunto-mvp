@@ -7,7 +7,7 @@
     "dev": "nest start --watch",
     "build": "nest build",
     "start": "node dist/main.js",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p test/tsconfig.json"
+    "typecheck": "tsc -p tsconfig.vercel.json && tsc -p test/tsconfig.json && tsc -p scripts/tsconfig.json"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",

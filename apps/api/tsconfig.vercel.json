@@ -1,0 +1,12 @@
+{
+  // La funcion serverless vive afuera de src, asi que el tsconfig del build no
+  // la ve. Se tipa con las mismas opciones que src —decoradores incluidos—
+  // para que no quede un archivo que solo mira esbuild en el servidor de
+  // Vercel y nadie mas.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "."
+  },
+  "include": ["api/**/*.ts", "src/**/*.ts"]
+}
