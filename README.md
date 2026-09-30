@@ -32,6 +32,9 @@ pnpm dev                   # api :3001, cliente :3000, panel :3002
 | `pnpm db:generate`      | Solo regenera el cliente de Prisma                                          |
 | `pnpm db:seed`          | Falla: el seed todavia no existe                                            |
 
+Los tests de integracion levantan la api de verdad y hablan HTTP contra ella,
+asi que necesitan Postgres arriba y las variables de `.env`.
+
 ## Base de datos
 
 Postgres corre en el **5434**, no en el 5432: en Windows es comun tener un
@@ -44,6 +47,22 @@ leer `CLAUDE.md`, seccion 14, antes de tocarlo.
 
 ## Estado
 
-Esquema, migraciones y tests de integracion del esquema. Lo que garantiza la
-base esta en `docs/garantias-de-la-base.md`. Sin logica de negocio, sin
-repositorios y sin endpoints de producto.
+Funciona el mostrador completo, de punta a punta y con tests de integracion
+contra Postgres real:
+
+- **Sellado y canje.** El cliente muestra `K7Q4M-418329` —prefijo estable mas
+  TOTP de 30 segundos—, el cajero lo tipea, y todo ocurre en una transaccion.
+- **Alta del cliente.** Escanea el QR del local, queda pendiente en la lista de
+  la caja y el cajero lo confirma, con o sin sello en el mismo acto.
+- **Anulacion.** Cinco minutos para el cajero sobre su ultimo sello; el
+  supervisor, cualquiera de su local. Marca, nunca borra.
+
+Las reglas de negocio viven en `packages/dominio`, en funciones puras que
+reciben el reloj por parametro y devuelven decisiones; `apps/api` las ejecuta.
+Lo que garantiza la base, restriccion por restriccion, esta en
+[`docs/garantias-de-la-base.md`](./docs/garantias-de-la-base.md), y un test
+falla si el documento y el esquema dejan de coincidir.
+
+Lo que falta —verificacion del telefono por codigo, los trabajos programados,
+el log estructurado y los frontends— esta anotado en `CLAUDE.md`, seccion 15,
+con el motivo de cada cosa.
