@@ -32,7 +32,7 @@ Si una tarea pide algo de esa lista, detenerse y preguntar antes de escribir có
 
 | Capa | Elección |
 |---|---|
-| Base de datos | PostgreSQL 16 |
+| Base de datos | PostgreSQL 16 en local, 17.11 en Supabase (desalineado, ver sección 15) |
 | ORM / migraciones | Prisma |
 | API | NestJS (TypeScript, `strict: true`) |
 | PWA cliente | Next.js App Router, con service worker |
@@ -538,6 +538,22 @@ es lo que falta terminar, y está acá para que no se pierda.
   código gana siempre.** El estado está preparado: `dispositivo_cliente.origen`
   distingue `presencial` de `codigo`, así que revocarlas es un `UPDATE` sobre
   las presenciales de ese cliente.
+
+- **Dev y staging corren versiones distintas de Postgres.** Local es 16, el
+  Docker del repo; Supabase da 17.11 y no se elige. Las migraciones aplican en
+  las dos y los tests corren contra la 16, así que hoy nadie ve el desajuste
+  —que es justamente el problema—. Alinear significa pasar el
+  `docker-compose.yml` a `postgres:17-alpine`, y eso obliga a borrar el volumen
+  local: Postgres no arranca sobre datos de otra versión mayor. Son datos de
+  demo y de test, recreables con `pnpm db:seed`, pero es una decisión que se
+  toma a propósito y no de paso.
+
+- **El certificado de Supabase no se verifica.** Las cadenas de conexión usan
+  `sslmode=no-verify` porque el certificado del pooler no valida contra las CA
+  del sistema. Acepta cualquier certificado, así que en el camino alguien
+  podría hacerse pasar por la base. Para staging con datos de demo es
+  aceptable; antes de que haya teléfonos de clientes reales, hay que instalar
+  la CA de Supabase en lugar de apagar la verificación.
 
 - **Fuga conocida y aceptada.** `GET /registros/mio` le revela a quien tiene el
   ticket que ese teléfono ya tenía cuenta: responde `verificacion_requerida` en

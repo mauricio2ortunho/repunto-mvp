@@ -25,14 +25,48 @@ IPv6 en los proyectos nuevos, salvo que se pague IPv4—, usá la cadena del
 **Session pooler** (mismo host del pooler, puerto 5432) como `DIRECT_URL`. Esa
 sí soporta lo que las migraciones necesitan.
 
+### Verificado contra el proyecto del piloto
+
+Probado con una conexión real, no leyendo el panel:
+
+- **El host del pooler es `aws-0-sa-east-1.pooler.supabase.com`.** Hay otro,
+  `aws-1-sa-east-1`, que resuelve igual de bien y contesta
+  `Tenant or user not found`: el proyecto está asignado a uno de los dos y no
+  se adivina. El usuario del pooler lleva el ref pegado:
+  `postgres.<ref>`, no `postgres`.
+- **La conexión directa solo tiene registro AAAA.** Funciona desde una red con
+  IPv6 y no resuelve en una sin él. Por eso el `Session pooler` es la
+  alternativa, no un lujo.
+- **El certificado no valida contra las CA del sistema.** Node corta con
+  `SELF_SIGNED_CERT_IN_CHAIN`, así que las cadenas que usa la aplicación y el
+  seed van con **`sslmode=no-verify`**. El motor de `prisma migrate` no verifica
+  la cadena y acepta `sslmode=require`. Está anotado como deuda en `CLAUDE.md`
+  sección 15: para producción hay que instalar la CA de Supabase en lugar de
+  apagar la verificación.
+- **Supabase corre PostgreSQL 17.11**, no 16 como el Docker local. Las
+  migraciones se aplican igual, pero dev y staging quedaron en versiones
+  distintas. Ver la deuda en `CLAUDE.md` sección 15.
+
 ## 2. Migrar y sembrar, desde tu máquina
 
-Con las dos cadenas en `.env`:
+Las dos cadenas se pasan **en la invocación**, no en `.env`: así `.env` sigue
+apuntando al Postgres de Docker y el trabajo diario no cambia de base sin que
+nadie se entere, que es exactamente el accidente del puerto 5432 que cuenta
+`CLAUDE.md` sección 9.
 
 ```bash
-pnpm exec prisma migrate deploy   # usa DIRECT_URL
-pnpm db:seed                      # negocio de demo, también por DIRECT_URL
+# PowerShell
+$env:DIRECT_URL = "postgresql://postgres:<clave>@db.<ref>.supabase.co:5432/postgres?sslmode=require"
+npx prisma migrate deploy
+
+$env:DATABASE_URL = "postgresql://postgres:<clave>@db.<ref>.supabase.co:5432/postgres?sslmode=no-verify"
+$env:CLAVE_CIFRADO_SEMILLAS = "<la misma que va en Vercel>"
+pnpm db:seed
 ```
+
+La clave de cifrado del seed **tiene que ser la misma que la de Vercel**: las
+semillas quedan cifradas con ella, y con otra clave los clientes de demo no
+pueden generar su código.
 
 `migrate deploy` y no `migrate dev`: nunca crea ni edita migraciones, solo
 aplica las que ya existen. Y nunca `db push`, que armaría la base desde
@@ -97,3 +131,7 @@ el teléfono pide su código a `/mi/codigo` y la tablet lo tipea en
 - **Los frontends son andamiaje.** Dos páginas que confirman que el contrato
   compartido compila. Las URLs quedan reservadas y el pipeline probado, pero no
   hay pantalla de caja ni app del cliente todavía.
+- **El certificado de la base no se verifica.** `sslmode=no-verify` acepta
+  cualquier certificado, así que alguien en el camino podría hacerse pasar por
+  la base. Para staging con datos de demo es aceptable; antes de que haya
+  teléfonos de clientes reales hay que instalar la CA de Supabase.
