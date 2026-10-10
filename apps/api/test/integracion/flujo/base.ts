@@ -69,6 +69,10 @@ export class Api {
     return this.pedir('GET', '/registros/mio', { token: ticket });
   }
 
+  estadoDeCaja(token?: string): Promise<Respuesta> {
+    return this.pedir('GET', '/caja/estado', { token });
+  }
+
   /** El alta: lo que hace el cajero. */
   registros(token?: string, etiqueta?: string): Promise<Respuesta> {
     return this.pedir('GET', '/caja/registros', { token, etiqueta });

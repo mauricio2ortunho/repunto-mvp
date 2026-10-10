@@ -342,13 +342,17 @@ async function ejecutarAlta(
     tarjeta = filas[0]?.id ?? null;
   }
 
+  let sello_id: string | null = null;
   const sello = efecto.sello;
   if (sello !== null) {
     const destino = tarjeta ?? (await tarjetaActivaDe(tx, cliente, sello.negocio_id));
-    await tx.$executeRaw`
+    const sellos = await tx.$queryRaw<{ id: string }[]>`
       INSERT INTO sello (tarjeta_id, negocio_id, local_id, turno_id, condicion_id)
       VALUES (${destino}::uuid, ${sello.negocio_id}::uuid, ${sello.local_id}::uuid,
-              ${sello.turno_id}::uuid, ${sello.condicion_id}::uuid)`;
+              ${sello.turno_id}::uuid, ${sello.condicion_id}::uuid)
+      RETURNING id`;
+    sello_id = sellos[0]?.id ?? null;
+    if (sello_id === null) throw new Error('El sello no se creo.');
 
     const reloj = efecto.arrancarReloj;
     if (reloj !== null) {
@@ -365,7 +369,7 @@ async function ejecutarAlta(
     WHERE id = ${efecto.registro_id}::uuid AND estado = 'pendiente'`;
   if (confirmados === 0) throw errorDeRechazo(rechazo('REGISTRO_YA_RESUELTO'), null);
 
-  return efecto.aviso;
+  return { ...efecto.aviso, sello_id };
 }
 
 /**

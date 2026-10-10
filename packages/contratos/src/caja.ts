@@ -164,6 +164,12 @@ export const esquemaSellarRespuesta = z.object({
   faltan: z.int().nonnegative(),
   completa: z.boolean(),
   premio: z.string(),
+  /**
+   * El sello que se acaba de crear. Esta aca para el boton de deshacer: sin
+   * el, el panel tendria que pedir la lista de recientes justo despues de la
+   * accion mas frecuente de la caja solo para saber que id anular.
+   */
+  sello_id: z.uuid(),
 });
 
 export type SellarRespuesta = z.infer<typeof esquemaSellarRespuesta>;
@@ -224,6 +230,8 @@ export const esquemaConfirmarRespuesta = z.object({
   premio: z.string(),
   /** Si se otorgo un sello en el mismo acto. */
   sello: z.boolean(),
+  /** El sello otorgado, para deshacerlo. Nulo en "solo confirmar". */
+  sello_id: z.uuid().nullable(),
 });
 
 export type ConfirmarPeticion = z.infer<typeof esquemaConfirmarPeticion>;
@@ -266,3 +274,51 @@ export const esquemaSellosRecientes = z.object({
 
 export type SelloReciente = z.infer<typeof esquemaSelloReciente>;
 export type SellosRecientes = z.infer<typeof esquemaSellosRecientes>;
+
+/**
+ * `GET /caja/estado`: con que se dibuja el panel antes de la primera accion.
+ *
+ * Trae la marca —el panel pinta con el color del negocio, y el color del texto
+ * encima se calcula por contraste, nunca se elige—, el local, quien tiene el
+ * turno abierto, la condicion vigente que va arriba de todo como recordatorio,
+ * y el premio con cuantos sellos pide, para poder dibujar los casilleros
+ * vacios antes de que exista una tarjeta.
+ */
+export const esquemaEstadoDeCaja = z.object({
+  negocio: z.object({
+    nombre: z.string(),
+    /** Hex `#RRGGBB`. */
+    color_principal: z.string(),
+    logo_url: z.string().nullable(),
+    plantilla_tarjeta: z.string(),
+    icono_sello: z.string(),
+  }),
+  local: z.object({ nombre: z.string() }),
+  /** Nulo si nadie abrio turno en esta tablet. */
+  turno: z
+    .object({
+      usuario: z.string(),
+      rol: z.enum(['dueno', 'supervisor', 'cajero']),
+    })
+    .nullable(),
+  /** Nula si el dueño todavia no configuro ninguna. */
+  condicion: z
+    .object({
+      texto: z.string(),
+      /** Decimal como texto: la plata no viaja en coma flotante. */
+      monto_minimo: z.string().nullable(),
+    })
+    .nullable(),
+  programa: z
+    .object({ premio: z.string(), sellos_requeridos: z.int().positive() })
+    .nullable(),
+  /**
+   * Nulo si la caja puede operar. Si no, el codigo que lo impide, decidido por
+   * las mismas reglas que rechazan un sello: tablet revocada, turno cerrado,
+   * negocio suspendido, local no autorizado. El panel lo muestra con
+   * `mensajeParaElCajero` y no vuelve a razonarlo por su cuenta.
+   */
+  impedimento: z.enum(CODIGOS_DE_ERROR_DE_CAJA).nullable(),
+});
+
+export type EstadoDeCaja = z.infer<typeof esquemaEstadoDeCaja>;

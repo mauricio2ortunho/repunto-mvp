@@ -86,8 +86,11 @@ export class CajaService {
       const decision = decidirSello(entrada);
       if (decision.tipo === 'rechazado') throw errorDeRechazo(decision, estado);
 
-      await ejecutarSello(tx, decision.efecto);
-      const respuesta = esquemaSellarRespuesta.parse(decision.efecto.aviso);
+      const sello_id = await ejecutarSello(tx, decision.efecto);
+      const respuesta = esquemaSellarRespuesta.parse({
+        ...decision.efecto.aviso,
+        sello_id,
+      });
       await guardarRespuesta(tx, peticion, respuesta);
       return respuesta;
     });
@@ -181,7 +184,7 @@ async function registrarConsumo(
   return insertadas === 0;
 }
 
-async function ejecutarSello(tx: Transaccion, efecto: EfectoDeSellado): Promise<void> {
+async function ejecutarSello(tx: Transaccion, efecto: EfectoDeSellado): Promise<string> {
   // La tarjeta vencida se cierra antes de abrir la nueva: si no, chocarian en
   // el indice de INV-11. Cero filas afectadas significa que el cron llego
   // primero, que es exactamente lo mismo.
@@ -203,11 +206,16 @@ async function ejecutarSello(tx: Transaccion, efecto: EfectoDeSellado): Promise<
   }
   if (tarjeta === null) throw new Error('Un sello sin tarjeta donde ponerlo.');
 
-  await tx.$executeRaw`
+  // Devuelve su id: es lo que el panel necesita para el boton de deshacer, y
+  // pedirlo despues costaria un viaje mas en la accion mas frecuente de la caja.
+  const sellos = await tx.$queryRaw<{ id: string }[]>`
     INSERT INTO sello (tarjeta_id, negocio_id, local_id, turno_id, condicion_id)
     VALUES (${tarjeta}::uuid, ${efecto.sello.negocio_id}::uuid,
             ${efecto.sello.local_id}::uuid, ${efecto.sello.turno_id}::uuid,
-            ${efecto.sello.condicion_id}::uuid)`;
+            ${efecto.sello.condicion_id}::uuid)
+    RETURNING id`;
+  const sello = sellos[0]?.id;
+  if (sello === undefined) throw new Error('El sello no se creo.');
 
   const reloj = efecto.arrancarReloj;
   if (reloj !== null) {
@@ -215,6 +223,8 @@ async function ejecutarSello(tx: Transaccion, efecto: EfectoDeSellado): Promise<
       UPDATE tarjeta SET reloj_desde = ${reloj.reloj_desde}, vence_el = ${reloj.vence_el}
       WHERE id = ${tarjeta}::uuid`;
   }
+
+  return sello;
 }
 
 async function ejecutarCanje(tx: Transaccion, efecto: EfectoDeCanje): Promise<void> {

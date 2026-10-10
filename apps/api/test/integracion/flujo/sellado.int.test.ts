@@ -47,6 +47,7 @@ describe('POST /caja/sellos · el camino feliz', () => {
       faltan: 9,
       completa: false,
       premio: 'Un cafe',
+      sello_id: expect.any(String),
     });
     expect(await contar(db, 'sello')).toBe(1);
     expect(await contar(db, 'tarjeta', "estado = 'activa'")).toBe(1);

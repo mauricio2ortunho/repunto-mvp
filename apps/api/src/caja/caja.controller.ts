@@ -13,6 +13,7 @@ import {
 import {
   type AnularRespuesta,
   type CanjearRespuesta,
+  type EstadoDeCaja,
   esquemaSellarPeticion,
   type SellarPeticion,
   type SellarRespuesta,
@@ -21,6 +22,7 @@ import {
 
 import { AnulacionService } from './anulacion.service';
 import { CajaService } from './caja.service';
+import { EstadoService } from './estado.service';
 import { GuardDeDispositivo, type PeticionDeCaja } from './dispositivo.guard';
 import { errorDeApi } from './errores-http';
 import { claveDeIdempotencia, idEnLaRuta } from './peticion';
@@ -41,7 +43,21 @@ export class CajaController {
   constructor(
     @Inject(CajaService) private readonly caja: CajaService,
     @Inject(AnulacionService) private readonly anulacion: AnulacionService,
+    @Inject(EstadoService) private readonly estadoDeCaja: EstadoService,
   ) {}
+
+  /**
+   * Con que se dibuja el panel antes de la primera accion: la marca, el local,
+   * quien tiene el turno, la condicion vigente y el premio.
+   *
+   * Es el unico de caja que contesta aunque la caja no pueda operar: el panel
+   * necesita saber que mostrar justamente cuando nadie abrio turno o cuando la
+   * tablet fue revocada. Eso viene en `impedimento`.
+   */
+  @Get('estado')
+  estado(@Req() peticion: PeticionDeCaja): Promise<EstadoDeCaja> {
+    return this.estadoDeCaja.estado(peticion.tokenHash);
+  }
 
   @Post('sellos')
   @HttpCode(HttpStatus.OK)
