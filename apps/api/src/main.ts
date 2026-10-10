@@ -6,6 +6,7 @@ import { NestFactory } from '@nestjs/core';
 import { ZONA_HORARIA } from '@repunto/dominio';
 
 import { AppModule } from './app.module';
+import { opcionesDeCors } from './seguridad/cors';
 
 const PUERTO_POR_DEFECTO = 3001;
 
@@ -15,6 +16,9 @@ async function bootstrap(): Promise<void> {
   if (existsSync('.env')) process.loadEnvFile('.env');
 
   const app = await NestFactory.create(AppModule);
+  // Los frontends viven en otro origen: sin esto el navegador bloquea todo.
+  app.enableCors(opcionesDeCors());
+
   const puerto = Number(process.env.PORT ?? PUERTO_POR_DEFECTO);
 
   await app.listen(puerto);

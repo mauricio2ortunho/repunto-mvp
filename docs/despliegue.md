@@ -84,11 +84,11 @@ Importar `mauricio2ortunho/repunto-mvp` tres veces, cambiando solo la carpeta
 raíz. Cada `vercel.json` ya trae el comando de build correcto, que instala
 desde la raíz del monorepo y compila los paquetes compartidos antes de la app.
 
-| Proyecto          | Root Directory | Framework | Variables                                               |
-| ----------------- | -------------- | --------- | ------------------------------------------------------- |
-| `repunto-api`     | `apps/api`     | Other     | `DATABASE_URL`, `CLAVE_CIFRADO_SEMILLAS`, `APP_VERSION` |
-| `repunto-cliente` | `apps/cliente` | Next.js   | `NEXT_PUBLIC_API_URL`                                   |
-| `repunto-panel`   | `apps/panel`   | Next.js   | `NEXT_PUBLIC_API_URL`                                   |
+| Proyecto          | Root Directory | Framework | Variables                                                                      |
+| ----------------- | -------------- | --------- | ------------------------------------------------------------------------------ |
+| `repunto-api`     | `apps/api`     | Other     | `DATABASE_URL`, `CLAVE_CIFRADO_SEMILLAS`, `ORIGENES_PERMITIDOS`, `APP_VERSION` |
+| `repunto-cliente` | `apps/cliente` | Next.js   | `NEXT_PUBLIC_API_URL`                                                          |
+| `repunto-panel`   | `apps/panel`   | Next.js   | `NEXT_PUBLIC_API_URL`                                                          |
 
 Detalles que importan:
 
@@ -99,6 +99,12 @@ Detalles que importan:
   `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`.
   Si se pierde, se pierden los códigos de todos los clientes: las semillas
   quedan cifradas con una clave que ya no existe.
+- **`ORIGENES_PERMITIDOS` no es opcional.** Son las URL de los dos frontends
+  separadas por coma. Sin ella la API no arranca en producción, y eso es
+  deliberado: si arrancara, el síntoma sería un error de CORS en la consola del
+  navegador de alguien, que no menciona ninguna variable de entorno. Para los
+  previews del hosting sirve el comodín de subdominio,
+  `https://*.netlify.app`, porque cada preview tiene su propia URL.
 - **Región de las funciones:** la más cercana a la base. Con Supabase en São
   Paulo, `gru1`. Cada salto entre región de función y región de base son
   decenas de milisegundos por consulta, y el sellado hace varias.

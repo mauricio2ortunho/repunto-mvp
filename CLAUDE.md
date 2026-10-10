@@ -326,6 +326,18 @@ solo en el código.
 **Contraste de color.** El color del negocio no define el color del texto encima:
 se calcula por contraste y se elige blanco o negro. Nunca se deja elegir.
 
+**CORS.** Los frontends viven en otro origen que la API, así que el navegador
+bloquea las llamadas salvo que la API lo permita explícitamente. Tres cosas que
+hay que mantener si se agrega una cabecera: `Authorization`, `Idempotency-Key`
+e `If-None-Match` no están en la lista blanca del navegador y hay que
+nombrarlas; `ETag` no se puede leer desde JavaScript salvo que se exponga, y
+sin eso el panel nunca recibe un 304; y el preflight se cachea un día, porque
+la lista de registros se consulta cada tres segundos con `If-None-Match`.
+
+Lo peligroso de CORS es que **ningún test de la suite lo ve**: todos usan
+`fetch` desde Node, que lo ignora por completo. Por eso hay un test de
+preflight contra el handler que se despliega, y no contra una copia de prueba.
+
 **Secretos.** `CLAVE_CIFRADO_SEMILLAS` son 32 bytes en base64 y cifra las
 semillas TOTP de los clientes en reposo (AES-256-GCM). Es distinta en cada
 entorno, y perderla en producción es perder todos los códigos de todos los

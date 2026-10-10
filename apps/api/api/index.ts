@@ -5,6 +5,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from '../src/app.module';
+import { opcionesDeCors } from '../src/seguridad/cors';
 
 /**
  * Entrada de la api como funcion serverless (Vercel).
@@ -32,6 +33,9 @@ let arranque: Promise<Manejador> | undefined;
 
 async function arrancar(): Promise<Manejador> {
   const app = await NestFactory.create(AppModule, { logger: ['error', 'warn'] });
+  // La misma configuracion que el servidor de siempre: si se configurara en un
+  // solo lado, el despliegue tendria un CORS distinto al de desarrollo.
+  app.enableCors(opcionesDeCors());
   await app.init();
   return app.getHttpAdapter().getInstance() as Manejador;
 }
