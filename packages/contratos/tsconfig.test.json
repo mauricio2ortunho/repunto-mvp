@@ -1,0 +1,12 @@
+{
+  // Los tests no se compilan al paquete, pero se tipan: sin esto, un cambio en
+  // un tipo los rompe en silencio y Vitest los corre igual, porque esbuild no
+  // chequea tipos. Mismo arreglo que en packages/dominio.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node", "vitest/globals"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": []
+}

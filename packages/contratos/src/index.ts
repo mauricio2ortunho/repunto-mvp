@@ -41,6 +41,24 @@ export type {
 } from './caja';
 
 export {
+  CONTRASTE_MINIMO,
+  ICONOS_DE_SELLO,
+  ICONO_DE_SELLO_POR_DEFECTO,
+  PLANTILLAS_DE_TARJETA,
+  PLANTILLA_DE_TARJETA_POR_DEFECTO,
+  TEXTO_SOBRE_CLARO,
+  TEXTO_SOBRE_OSCURO,
+  colorDeTextoSobre,
+  contrasteEntre,
+  esColorHex,
+  esIconoDeSello,
+  esPlantillaDeTarjeta,
+  iconoDeSelloDe,
+  plantillaDeTarjetaDe,
+} from './diseno';
+export type { ColorDeTexto, IconoDeSello, PlantillaDeTarjeta } from './diseno';
+
+export {
   esquemaCodigoDelCliente,
   esquemaEstadoDelRegistro,
   esquemaRegistroPeticion,

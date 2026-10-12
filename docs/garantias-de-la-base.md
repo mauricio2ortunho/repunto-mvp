@@ -142,11 +142,11 @@ confirma de cuerpo presente (especificación funcional, sección 3).
 
 ## Diseño de la tarjeta
 
-| Restricción                       | Tabla     | Tipo  | Definición                                                 | Invariante | Qué impide                                                                                                      |
-| --------------------------------- | --------- | ----- | ---------------------------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------- |
-| `negocio_plantilla_tarjeta_chk`   | `negocio` | CHECK | `plantilla_tarjeta IN ('clasica', 'moderna', 'minima')`    | Diseño     | Una plantilla que no existe. **Valores provisionales**: salen del trabajo de diseño y se cambian con una línea. |
-| `negocio_icono_sello_chk`         | `negocio` | CHECK | `icono_sello IN ('cafe', 'estrella', 'corazon', 'huella')` | Diseño     | Un ícono que no existe. **Valores provisionales**, mismo criterio.                                              |
-| `negocio_color_principal_hex_chk` | `negocio` | CHECK | `color_principal ~ '^#[0-9A-Fa-f]{6}$'`                    | Diseño     | Un color que no es hex. El color del texto encima se calcula por contraste, no se guarda.                       |
+| Restricción                       | Tabla     | Tipo  | Definición                                                 | Invariante | Qué impide                                                                                                                                                                                            |
+| --------------------------------- | --------- | ----- | ---------------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `negocio_plantilla_tarjeta_chk`   | `negocio` | CHECK | `plantilla_tarjeta IN ('clasica', 'moderna', 'minima')`    | Diseño     | Una plantilla que no existe. **Valores provisionales**: se cambian con una línea acá y otra en `packages/contratos/src/diseno.ts`, que es de donde los leen las apps; un test compara las dos listas. |
+| `negocio_icono_sello_chk`         | `negocio` | CHECK | `icono_sello IN ('cafe', 'estrella', 'corazon', 'huella')` | Diseño     | Un ícono que no existe. **Valores provisionales**, mismo criterio: la lista espejo está en `packages/contratos/src/diseno.ts`.                                                                        |
+| `negocio_color_principal_hex_chk` | `negocio` | CHECK | `color_principal ~ '^#[0-9A-Fa-f]{6}$'`                    | Diseño     | Un color que no es hex. El color del texto encima se calcula por contraste, no se guarda.                                                                                                             |
 
 ## Cordura de valores
 
