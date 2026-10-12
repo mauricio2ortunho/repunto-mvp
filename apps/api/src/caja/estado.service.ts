@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { type EstadoDeCaja, esquemaEstadoDeCaja } from '@repunto/contratos';
-import { type Rol, revisarCaja } from '@repunto/dominio';
+import { type Rol, revisarCajaParaSellar } from '@repunto/dominio';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { CAMPOS_DE_CAJA, type FilaDeCaja, cteDeCaja, mapearCaja } from './caja.sql';
@@ -12,8 +12,9 @@ import { errorDeApi } from './errores-http';
  * Es el unico endpoint de caja que contesta aunque la caja no pueda operar, y
  * tiene que ser asi: el panel necesita saber que mostrar justamente cuando
  * nadie abrio turno o cuando la tablet fue revocada. En vez de rechazar, trae
- * el estado y el `impedimento`, que decide `revisarCaja` con las mismas reglas
- * que rechazan un sello. El panel no vuelve a razonarlo.
+ * el estado y el `impedimento`, que decide `revisarCajaParaSellar` con las
+ * mismas reglas que rechazan un sello, promo incluida. El panel no vuelve a
+ * razonarlo.
  */
 
 interface FilaDeEstado extends FilaDeCaja {
@@ -71,7 +72,13 @@ export class EstadoService {
       throw new Error('Un dispositivo sin local o sin negocio: la base lo impide.');
     }
 
-    const revision = revisarCaja(caja);
+    // La promo entra en la revision: sin condicion o sin programa vigente la
+    // caja tampoco puede sellar, y el panel no tiene que deducirlo de que el
+    // premio venga nulo.
+    const revision = revisarCajaParaSellar(caja, {
+      condicionVigente: fila.condicion !== null,
+      programaVigente: fila.programa !== null,
+    });
     const usuario = fila.usuario_del_turno;
 
     return esquemaEstadoDeCaja.parse({

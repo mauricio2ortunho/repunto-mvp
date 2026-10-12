@@ -61,3 +61,40 @@ export function revisarCaja(caja: Caja): RevisionDeCaja {
 
   return { valido: true, turno };
 }
+
+/**
+ * Si el negocio tiene la promo configurada, visto desde la caja: hacen falta
+ * una condicion vigente y un programa vigente, que es exactamente lo que exige
+ * `planDeSellado`. Van como booleanos y no como las filas enteras porque la
+ * pregunta es si existen, y quien llama no siempre las trae completas.
+ */
+export interface PromoConfigurada {
+  condicionVigente: boolean;
+  programaVigente: boolean;
+}
+
+/**
+ * Lo mismo que `revisarCaja` mas la promo: la respuesta entera a "¿esta caja
+ * puede sellar ahora mismo?".
+ *
+ * Existe porque sin promo configurada la caja tampoco opera —sellar, canjear y
+ * confirmar rechazan con PROMO_NO_CONFIGURADA— y quien pregunta por el estado
+ * no tiene por que deducirlo de que el premio venga nulo. Es la misma regla
+ * que aplica `planDeSellado`, escrita una sola vez.
+ *
+ * El orden importa: primero el equipo y el turno. Una tablet revocada con la
+ * promo a medio configurar reporta la tablet, que es lo urgente y lo que el
+ * dueño acaba de hacer.
+ */
+export function revisarCajaParaSellar(
+  caja: Caja,
+  promo: PromoConfigurada,
+): RevisionDeCaja {
+  const revision = revisarCaja(caja);
+  if (!revision.valido) return revision;
+
+  if (!promo.condicionVigente || !promo.programaVigente) {
+    return { valido: false, codigo: 'PROMO_NO_CONFIGURADA' };
+  }
+  return revision;
+}

@@ -314,9 +314,16 @@ export const esquemaEstadoDeCaja = z.object({
     .nullable(),
   /**
    * Nulo si la caja puede operar. Si no, el codigo que lo impide, decidido por
-   * las mismas reglas que rechazan un sello: tablet revocada, turno cerrado,
-   * negocio suspendido, local no autorizado. El panel lo muestra con
-   * `mensajeParaElCajero` y no vuelve a razonarlo por su cuenta.
+   * las mismas reglas que rechazan un sello: `DISPOSITIVO_REVOCADO`,
+   * `LOCAL_NO_AUTORIZADO`, `TURNO_CERRADO`, `NEGOCIO_SUSPENDIDO` y
+   * `PROMO_NO_CONFIGURADA`. El panel lo muestra con `mensajeParaElCajero` y no
+   * vuelve a razonarlo por su cuenta.
+   *
+   * `PROMO_NO_CONFIGURADA` llega cuando falta la condicion vigente o el
+   * programa vigente. Sin eso el panel tendria que deducir de `programa: null`
+   * que la caja no puede sellar, que es justo lo que este campo evita.
+   *
+   * El token invalido no viene por aca: eso es un 401 con `TOKEN_INVALIDO`.
    */
   impedimento: z.enum(CODIGOS_DE_ERROR_DE_CAJA).nullable(),
 });
