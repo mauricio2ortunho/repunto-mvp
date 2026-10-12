@@ -1,0 +1,18 @@
+.frase {
+  margin: 0;
+  padding-left: var(--espacio-5);
+  border-left: 6px solid var(--c-acento);
+  color: var(--c-texto);
+  font-size: var(--texto-frase);
+  font-weight: var(--peso-medio);
+  line-height: var(--interlineado-titulo);
+  text-wrap: pretty;
+}
+
+.decile {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--c-texto-suave);
+  font-size: var(--texto-2);
+  font-weight: var(--peso-medio);
+}

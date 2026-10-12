@@ -1,0 +1,101 @@
+/* Nada aca usa opacidad: bajaria el contraste que se calculo para el texto. */
+
+.banda {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-3) var(--espacio-6);
+  padding: var(--espacio-3) var(--espacio-8);
+  border-bottom: var(--borde-fino) solid var(--c-borde);
+}
+
+.marca {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-3);
+  min-width: 0;
+}
+
+.logo {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--espacio-9);
+  height: var(--espacio-9);
+  padding: var(--espacio-1);
+  overflow: hidden;
+  border-radius: var(--radio-1);
+  background: var(--c-fondo-logo);
+}
+
+.logo img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.negocio {
+  margin: 0;
+  font-size: var(--texto-5);
+  font-weight: var(--peso-fuerte);
+  line-height: var(--interlineado-justo);
+}
+
+.local {
+  margin: 2px 0 0;
+  font-size: var(--texto-2);
+}
+
+.derecha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-2) var(--espacio-5);
+  font-size: var(--texto-2);
+}
+
+.turno {
+  font-weight: var(--peso-medio);
+}
+
+.conexion {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espacio-2);
+}
+
+/* El punto lleva un aro del color del texto: se ve sobre cualquier fondo. */
+.conexion::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--c-borde-fuerte);
+  box-shadow: 0 0 0 var(--borde-grueso) currentColor;
+}
+
+.conexion[data-estado='en_linea']::before {
+  background: var(--c-exito);
+}
+
+/* Sin conexion no depende del color del negocio: rojo con su propio texto. */
+.conexion[data-estado='sin_conexion'] {
+  padding: var(--espacio-1) var(--espacio-3);
+  border-radius: var(--radio-pildora);
+  background: var(--c-alerta);
+  color: var(--c-sobre-alerta);
+  font-weight: var(--peso-fuerte);
+}
+
+.conexion[data-estado='sin_conexion']::before {
+  background: var(--c-sobre-alerta);
+  box-shadow: none;
+}
+
+@media (max-width: 860px) {
+  .banda {
+    padding-inline: var(--espacio-4);
+  }
+}

@@ -1,0 +1,45 @@
+/* ---------- Instruccion: neutra, como cualquier tarjeta de la caja ---------- */
+
+.tarjeta {
+  display: grid;
+  justify-items: start;
+  gap: var(--espacio-6);
+  max-width: var(--ancho-contenido);
+  padding: var(--espacio-7);
+  border: var(--borde-fino) solid var(--c-borde);
+  border-radius: var(--radio-3);
+  background: var(--c-superficie);
+}
+
+.instruccion {
+  margin: 0;
+  font-size: var(--texto-9);
+  font-weight: var(--peso-fuerte);
+  line-height: var(--interlineado-titulo);
+  text-wrap: balance;
+}
+
+/* ---------- Alarma: sobre la superficie 'alerta' ---------- */
+
+.alarma {
+  display: grid;
+  justify-items: start;
+  gap: var(--espacio-5);
+  max-width: var(--ancho-contenido);
+  padding-top: var(--espacio-4);
+}
+
+.alarmaTitulo {
+  margin: 0;
+  color: var(--c-alerta);
+  font-size: var(--texto-5);
+  font-weight: var(--peso-fuerte);
+}
+
+.alarmaMensaje {
+  margin: 0;
+  font-size: var(--texto-10);
+  font-weight: var(--peso-negro);
+  line-height: var(--interlineado-justo);
+  text-wrap: balance;
+}

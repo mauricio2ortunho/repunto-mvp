@@ -1,0 +1,49 @@
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: var(--ancho-contenido);
+}
+
+.etiqueta {
+  color: var(--c-texto-suave);
+  font-size: var(--texto-3);
+  font-weight: var(--peso-medio);
+}
+
+.fila {
+  display: flex;
+  gap: var(--espacio-3);
+}
+
+.campo {
+  flex: 1;
+  min-width: 0;
+  height: var(--alto-control-grande);
+  padding: 0 var(--espacio-5);
+  border: var(--borde-grueso) solid var(--c-borde-fuerte);
+  border-radius: var(--radio-2);
+  background: var(--c-superficie);
+  color: var(--c-texto);
+  font-family: var(--f-codigo);
+  font-size: var(--texto-9);
+  font-weight: var(--peso-medio);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.campo:focus {
+  outline: none;
+  border-color: var(--c-accion);
+  box-shadow: 0 0 0 var(--ancho-anillo-foco) var(--c-accion-velo);
+}
+
+.campo:read-only {
+  color: var(--c-texto-suave);
+}
+
+@media (max-width: 600px) {
+  .fila {
+    flex-direction: column;
+  }
+}

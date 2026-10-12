@@ -1,0 +1,71 @@
+.oculto {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.sellos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.sello,
+.casilla {
+  flex: none;
+  width: var(--tamano-sello);
+  height: var(--tamano-sello);
+}
+
+.sello {
+  color: var(--c-sello);
+  transform: rotate(var(--giro));
+}
+
+.sello[data-nuevo] {
+  animation: estampar var(--duracion-estampar) var(--curva-estampar) both;
+}
+
+@keyframes estampar {
+  0% {
+    opacity: 0;
+    transform: rotate(var(--giro)) scale(1.7);
+  }
+  60% {
+    opacity: 1;
+    transform: rotate(var(--giro)) scale(0.92);
+  }
+  100% {
+    transform: rotate(var(--giro)) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sello[data-nuevo] {
+    animation: none;
+  }
+}
+
+.casilla {
+  display: grid;
+  place-items: center;
+  border: var(--borde-grueso) dashed var(--c-borde-fuerte);
+  border-radius: 50%;
+  color: var(--c-texto-suave);
+  font-size: var(--texto-3);
+  font-weight: var(--peso-medio);
+}
+
+.casilla[data-premio] {
+  border-style: solid;
+  border-color: var(--c-premio-borde);
+  background: var(--c-premio-velo);
+  color: var(--c-sobre-premio-velo);
+}
+
+.cuentaDeSellos {
+  margin: 0;
+  font-size: var(--texto-5);
+  font-weight: var(--peso-fuerte);
+}

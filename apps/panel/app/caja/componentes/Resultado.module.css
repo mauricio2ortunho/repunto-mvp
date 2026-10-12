@@ -1,0 +1,67 @@
+.invitacion {
+  max-width: 28em;
+  margin: var(--espacio-2) 0 0;
+  color: var(--c-texto-suave);
+  font-size: var(--texto-4);
+}
+
+.tarjeta {
+  display: grid;
+  gap: var(--espacio-5);
+  padding: var(--espacio-6) var(--espacio-7) var(--espacio-7);
+  border: var(--borde-fino) solid var(--c-borde);
+  border-radius: var(--radio-3);
+  background: var(--c-superficie);
+}
+
+/* Antes del primer sello: la tarjeta en blanco, como la de carton. */
+.tarjeta[data-en-blanco] {
+  border-style: dashed;
+  border-color: var(--c-borde-fuerte);
+  background: transparent;
+}
+
+.tarjeta[data-en-blanco] .invitacion {
+  margin: 0;
+}
+
+.cabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espacio-1) var(--espacio-4);
+}
+
+.nombre {
+  margin: 0;
+  font-size: var(--texto-7);
+  font-weight: var(--peso-fuerte);
+  overflow-wrap: anywhere;
+}
+
+.hecho {
+  color: var(--c-acento);
+  font-size: var(--texto-3);
+  font-weight: var(--peso-fuerte);
+}
+
+.hecho[data-tono='neutro'] {
+  color: var(--c-texto-suave);
+}
+
+.nota {
+  margin: 0;
+  font-size: var(--texto-5);
+  font-weight: var(--peso-medio);
+}
+
+.premio {
+  margin: 0;
+  color: var(--c-texto-suave);
+  font-size: var(--texto-3);
+}
+
+.premio strong {
+  color: var(--c-texto);
+}

@@ -1,0 +1,27 @@
+.condicion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--espacio-1) var(--espacio-5);
+  max-width: var(--ancho-contenido);
+  padding: var(--espacio-3) var(--espacio-5);
+  border-radius: var(--radio-1);
+  background: var(--c-superficie);
+}
+
+.texto {
+  margin: 0;
+  font-size: var(--texto-5);
+  font-weight: var(--peso-fuerte);
+}
+
+.monto {
+  margin: 0;
+  color: var(--c-texto-suave);
+  font-size: var(--texto-3);
+}
+
+.monto strong {
+  color: var(--c-texto);
+  font-size: var(--texto-5);
+}

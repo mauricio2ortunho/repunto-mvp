@@ -1,0 +1,39 @@
+/* Lo minimo para que todo arranque igual en cualquier navegador. Solo tokens. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+}
+
+body {
+  background: var(--c-fondo);
+  color: var(--c-texto);
+  font-family: var(--f-texto);
+  font-size: var(--texto-3);
+  line-height: var(--interlineado-texto);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+/* Sin la demora de 300 ms ni el zoom por doble toque: en caja se toca rapido. */
+button {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+:focus-visible {
+  outline: 3px solid var(--c-accion);
+  outline-offset: 2px;
+}

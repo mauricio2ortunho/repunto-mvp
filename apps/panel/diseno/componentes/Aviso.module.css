@@ -1,0 +1,22 @@
+.aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--espacio-4);
+  padding: var(--espacio-5) var(--espacio-6);
+  border-radius: var(--radio-2);
+  background: var(--c-alerta-velo);
+  color: var(--c-alerta);
+}
+
+.aviso svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+.aviso p {
+  margin: 0;
+  color: var(--c-texto);
+  font-size: var(--texto-6);
+  font-weight: var(--peso-medio);
+  line-height: 1.3;
+}

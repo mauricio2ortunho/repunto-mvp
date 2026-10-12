@@ -1,0 +1,221 @@
+/*
+ * Tokens de diseno de Repunto. El unico archivo con colores y medidas
+ * literales: todo lo demas usa estas variables, y un test lo verifica
+ * (diseno/sin-literales.test.ts).
+ *
+ * Tres capas, de abajo hacia arriba:
+ *
+ * 1. Paleta (--p-*). Los colores crudos, sin significado.
+ *    Cambiar el esmeralda de la marca: se cambia --p-esmeralda-*.
+ *
+ * 2. Roles (--c-*). Para que se usa cada color. Los componentes usan SOLO
+ *    roles. Que los botones cambien de color: se cambia --c-accion,
+ *    no cada boton.
+ *
+ * 3. Superficies ([data-superficie]). Un bloque que redefine los roles para lo
+ *    que tiene adentro. La caja bloqueada va sobre un fondo rojo claro: en
+ *    vez de que cada componente sepa sobre que color esta, la superficie
+ *    'alerta' cambia los roles y todo lo de adentro se adapta solo.
+ *
+ * Mas las escalas de letra, espacio, radio y movimiento. Un tamano nuevo se
+ * agrega a la escala; un componente no inventa el suyo.
+ *
+ * El color de cada negocio no esta aca: viene de la API y lo aplica
+ * diseno/marca.ts como --c-marca y --c-sobre-marca, con el texto elegido por
+ * contraste.
+ */
+
+:root {
+  /* ---------- 1. Paleta ---------- */
+
+  --p-blanco: #ffffff;
+  --p-negro: #000000;
+
+  /* Grises con un toque de verde: acompanan al esmeralda sin competir. */
+  --p-gris-50: #f1f4f2;
+  --p-gris-300: #d6ded9;
+  --p-gris-400: #b2c0b8;
+  --p-gris-600: #53645b;
+  --p-gris-900: #13201a;
+  --p-gris-900-velo: rgb(19 32 26 / 0.25);
+
+  --p-esmeralda-100: #d7ebe3;
+  --p-esmeralda-700: #0f5a43;
+  --p-esmeralda-800: #0a4332;
+
+  --p-menta-50: #e3f8ee;
+  --p-menta-300: #7fe0b3;
+  --p-menta-600: #1f9665;
+  --p-menta-900: #0d5638;
+
+  --p-rojo-50: #fdeceb;
+  --p-rojo-700: #b42318;
+
+  --p-verde-600: #2f8f5b;
+
+  /* ---------- 2. Roles ---------- */
+
+  /* Fondo de la pagina, y lo que se apoya encima. */
+  --c-fondo: var(--p-gris-50);
+  --c-superficie: var(--p-blanco);
+  --c-borde: var(--p-gris-300);
+  --c-borde-fuerte: var(--p-gris-400);
+
+  --c-texto: var(--p-gris-900);
+  --c-texto-suave: var(--p-gris-600);
+
+  /* Lo que se toca: botones, foco, seleccion. */
+  --c-accion: var(--p-esmeralda-700);
+  --c-accion-presionada: var(--p-esmeralda-800);
+  --c-accion-velo: var(--p-esmeralda-100);
+  --c-sobre-accion: var(--p-blanco);
+
+  /* Lo que se destaca sin ser accion: la barra de la frase, "Sellado". */
+  --c-acento: var(--p-esmeralda-700);
+
+  /* La tinta del sello y lo que va calado adentro. */
+  --c-sello: var(--p-esmeralda-700);
+  --c-sobre-sello: var(--p-blanco);
+
+  /*
+   * El premio. Para probar otro color se cambian estas cuatro lineas: la
+   * franja de la tarjeta completa, el borde de la casilla del premio, la
+   * version suave y el texto que se lee sobre ella.
+   *
+   * --c-premio nunca lleva texto encima: es solo franja. Sobre un fondo de
+   * color saturado la letra cansa aunque el contraste de bien.
+   */
+  --c-premio: var(--p-menta-300);
+  --c-premio-borde: var(--p-menta-600);
+  --c-premio-velo: var(--p-menta-50);
+  --c-sobre-premio-velo: var(--p-menta-900);
+
+  --c-alerta: var(--p-rojo-700);
+  --c-alerta-velo: var(--p-rojo-50);
+  --c-sobre-alerta: var(--p-blanco);
+
+  --c-exito: var(--p-verde-600);
+
+  /* Un bloque oscuro para lo que no se puede pasar por alto. */
+  --c-enfasis: var(--p-gris-900);
+  --c-sobre-enfasis: var(--p-blanco);
+
+  /* Fondo de un logo ajeno: blanco siempre, sea cual sea el color del negocio. */
+  --c-fondo-logo: var(--p-blanco);
+
+  /* Sin negocio cargado, la marca es la superficie de la caja. */
+  --c-marca: var(--c-superficie);
+  --c-sobre-marca: var(--c-texto);
+
+  /* ---------- Letra ---------- */
+
+  --f-texto: 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
+  --f-codigo: 'Atkinson Hyperlegible Mono Variable', ui-monospace, monospace;
+
+  /* Escala pensada para leerse a un brazo de distancia en una tablet. */
+  --texto-1: 15px;
+  --texto-2: 16px;
+  --texto-3: 18px;
+  --texto-4: 20px;
+  --texto-5: 22px;
+  --texto-6: 26px;
+  --texto-7: 28px;
+  --texto-8: 32px;
+  --texto-9: 36px;
+  --texto-10: 40px;
+  --texto-11: 46px;
+
+  --peso-normal: 400;
+  --peso-medio: 600;
+  --peso-fuerte: 700;
+  --peso-negro: 800;
+
+  --interlineado-justo: 1.1;
+  --interlineado-titulo: 1.25;
+  --interlineado-texto: 1.4;
+
+  /* ---------- Espacio ---------- */
+
+  --espacio-1: 4px;
+  --espacio-2: 8px;
+  --espacio-3: 12px;
+  --espacio-4: 16px;
+  --espacio-5: 20px;
+  --espacio-6: 24px;
+  --espacio-7: 32px;
+  --espacio-8: 40px;
+  --espacio-9: 48px;
+
+  /* ---------- Forma ---------- */
+
+  --radio-1: 12px;
+  --radio-2: 16px;
+  --radio-3: 20px;
+  --radio-pildora: 999px;
+
+  --borde-fino: 1px;
+  --borde-grueso: 2px;
+
+  /* Tamanos de toque: nada que se toque mide menos de --toque-minimo. */
+  --toque-minimo: 44px;
+  --alto-control: 56px;
+  --alto-control-grande: 80px;
+
+  /* El anillo de foco se pinta con --c-accion-velo: cambia solo dentro de cada superficie. */
+  --ancho-anillo-foco: 4px;
+
+  /* ---------- Medidas de la caja ---------- */
+
+  --ancho-contenido: 780px;
+  --ancho-costado: 360px;
+
+  /*
+   * Medidas de componente: un componente las lee y quien lo contiene puede
+   * achicarlas para su espacio, sin inventar un tamano.
+   */
+  --tamano-sello: 60px;
+  --tamano-sello-compacto: 44px;
+  --texto-frase: var(--texto-8);
+  --texto-frase-compacto: var(--texto-6);
+
+  /* ---------- Movimiento ---------- */
+
+  --duracion-estampar: 340ms;
+  --curva-estampar: cubic-bezier(0.2, 0.8, 0.3, 1.15);
+
+  color-scheme: light;
+}
+
+/* ---------- 3. Superficies ---------- */
+
+/*
+ * Regla: una superficie que cambia un fondo cambia tambien el texto que va
+ * encima. --c-accion siempre viaja con --c-sobre-accion; si no, el dia que
+ * cambie la paleta de base, un boton queda con el texto del mismo color que
+ * el fondo.
+ */
+
+/* La caja no puede operar. */
+[data-superficie='alerta'] {
+  --c-fondo: var(--c-alerta-velo);
+  --c-accion: var(--p-gris-900);
+  --c-accion-presionada: var(--p-negro);
+  --c-accion-velo: var(--p-gris-900-velo);
+  --c-sobre-accion: var(--p-blanco);
+
+  background: var(--c-fondo);
+  color: var(--c-texto);
+}
+
+/*
+ * El color del negocio, con su texto calculado (diseno/marca.ts). Adentro,
+ * todo texto usa el color calculado: ni el gris suave se salva, porque sobre
+ * un color cualquiera no se sabe si contrasta.
+ */
+[data-superficie='marca'] {
+  --c-texto: var(--c-sobre-marca);
+  --c-texto-suave: var(--c-sobre-marca);
+
+  background: var(--c-marca);
+  color: var(--c-sobre-marca);
+}
