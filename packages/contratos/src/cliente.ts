@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import type { CodigoDeErrorDeApi, CodigoDeErrorDeCaja } from './caja';
+
 /**
  * Contrato de `GET /mi/codigo`.
  *
@@ -205,3 +207,66 @@ export const esquemaDetalleDeTarjeta = esquemaTarjetaDelCliente.extend({
 });
 
 export type DetalleDeTarjeta = z.infer<typeof esquemaDetalleDeTarjeta>;
+
+/**
+ * Los errores que le pueden llegar a la app del cliente: los de sus endpoints
+ * (`/registros`, `/registros/mio`, `/mi/codigo`, `/mis/tarjetas`). Los de la
+ * caja —turno cerrado, tablet revocada— nunca le llegan, y escribirles un
+ * mensaje seria escribir para un caso que no existe.
+ *
+ * Si un endpoint del cliente empieza a devolver un codigo nuevo, va aca: el
+ * Record de abajo obliga a escribirle su mensaje.
+ */
+export const CODIGOS_DE_ERROR_DEL_CLIENTE = [
+  'TELEFONO_INVALIDO',
+  'REGISTRO_EN_CURSO',
+  'TARJETA_NO_ENCONTRADA',
+  'TOKEN_INVALIDO',
+  'TOPE_SUPERADO',
+  'PETICION_INVALIDA',
+  'FALTA_IDEMPOTENCY_KEY',
+  'IDEMPOTENCIA_DISTINTA',
+] as const satisfies readonly (CodigoDeErrorDeCaja | CodigoDeErrorDeApi)[];
+
+export type CodigoDeErrorDelCliente = (typeof CODIGOS_DE_ERROR_DEL_CLIENTE)[number];
+
+/** Para todo lo que no esta en la lista, y para los errores del servidor. */
+export const MENSAJE_GENERICO_PARA_EL_CLIENTE =
+  'Algo no salió bien. Volvé a intentarlo en un momento.';
+
+const PARA_EL_CLIENTE: Record<CodigoDeErrorDelCliente, string> = {
+  TELEFONO_INVALIDO: 'Ese número no parece válido. Revisalo: son ocho dígitos.',
+  REGISTRO_EN_CURSO:
+    'Ya hay un registro esperando con este número. Pedile al cajero que lo descarte y volvé a registrarte.',
+  TARJETA_NO_ENCONTRADA: 'No encontramos esa tarjeta.',
+  // Hoy no hay otra forma de volver a entrar: el ingreso por codigo de
+  // WhatsApp todavia no existe (CLAUDE.md, seccion 15).
+  TOKEN_INVALIDO:
+    'Se cerró tu sesión en este teléfono. Para volver a entrar, pedí ayuda en el local.',
+  TOPE_SUPERADO: 'Demasiados intentos seguidos. Esperá un momento y probá de nuevo.',
+  // En la practica es un QR que no es de ningun local: la app siempre manda un
+  // cuerpo valido.
+  PETICION_INVALIDA:
+    'No pudimos procesar el pedido. Si escaneaste un QR, usá el que está en el mostrador del local.',
+  // Bugs de la app, no del cliente: no hay nada que explicarle.
+  FALTA_IDEMPOTENCY_KEY: MENSAJE_GENERICO_PARA_EL_CLIENTE,
+  IDEMPOTENCIA_DISTINTA: MENSAJE_GENERICO_PARA_EL_CLIENTE,
+};
+
+function esCodigoDelCliente(codigo: string): codigo is CodigoDeErrorDelCliente {
+  return (CODIGOS_DE_ERROR_DEL_CLIENTE as readonly string[]).includes(codigo);
+}
+
+/**
+ * El mensaje que ve el cliente en su telefono. Le habla a el, no al cajero:
+ * la api responde con el mensaje para el cajero en `mensaje`, y la app no lo
+ * muestra; muestra este, a partir del `codigo`.
+ *
+ * Acepta cualquier texto porque la app puede recibir un codigo que todavia no
+ * conoce: ahi cae en el generico en lugar de romperse.
+ */
+export function mensajeParaElCliente(codigo: string): string {
+  return esCodigoDelCliente(codigo)
+    ? PARA_EL_CLIENTE[codigo]
+    : MENSAJE_GENERICO_PARA_EL_CLIENTE;
+}

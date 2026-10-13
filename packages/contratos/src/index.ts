@@ -59,7 +59,9 @@ export {
 export type { ColorDeTexto, IconoDeSello, PlantillaDeTarjeta } from './diseno';
 
 export {
+  CODIGOS_DE_ERROR_DEL_CLIENTE,
   ESTADOS_DE_TARJETA_DEL_CLIENTE,
+  MENSAJE_GENERICO_PARA_EL_CLIENTE,
   esquemaCodigoDelCliente,
   esquemaDetalleDeTarjeta,
   esquemaEstadoDelRegistro,
@@ -68,8 +70,10 @@ export {
   esquemaRegistroPeticion,
   esquemaRegistroRespuesta,
   esquemaTarjetaDelCliente,
+  mensajeParaElCliente,
 } from './cliente';
 export type {
+  CodigoDeErrorDelCliente,
   CodigoDelCliente,
   DetalleDeTarjeta,
   EstadoDeTarjetaDelCliente,
