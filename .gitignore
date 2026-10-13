@@ -5,9 +5,14 @@ out/
 .turbo/
 coverage/
 
-.env
-.env.local
-.env.*.local
+# Ningun .env se commitea, salvo los ejemplos y los valores de demo del
+# panel que `next dev` necesita. Antes esto era `.env`, `.env.local` y
+# `.env.*.local`, que dejaba pasar un `.env.production` con credenciales
+# de verdad.
+.env*
+!.env.example
+!apps/*/.env.example
+!apps/panel/.env.development
 
 *.log
 npm-debug.log*

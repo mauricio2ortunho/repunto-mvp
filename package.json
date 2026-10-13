@@ -17,6 +17,7 @@
     "test:cobertura": "vitest run --project unitarios --coverage",
     "test:integration": "vitest run --project integracion",
     "db:migrate": "prisma migrate dev && prisma generate",
+    "db:deploy": "prisma migrate deploy",
     "db:generate": "prisma generate",
     "db:seed": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON apps/api/scripts/seed.mts"
   },

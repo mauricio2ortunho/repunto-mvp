@@ -10,3 +10,10 @@ CLAUDE.md
 next-env.d.ts
 apps/api/src/generated/
 prisma/migrations/
+
+# Andamiaje de herramientas, no codigo del proyecto. Lo instalan los asistentes
+# y no se versiona: formatearlo es ruido en cada corrida de lint.
+.agents/
+.claude/
+.windsurf/
+skills-lock.json
