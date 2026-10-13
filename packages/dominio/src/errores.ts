@@ -50,6 +50,10 @@ export const CODIGOS_DE_ERROR = [
   'REGISTRO_NO_ENCONTRADO',
   /** Otro cajero del local lo confirmo o lo descarto primero. */
   'REGISTRO_YA_RESUELTO',
+  /** Ese telefono ya tiene un registro esperando en ese local, hecho desde
+   * otro equipo. No se reemplaza: si se reemplazara, cualquiera que conozca el
+   * telefono de quien se esta registrando se quedaria con su sesion. */
+  'REGISTRO_EN_CURSO',
 
   // Anulacion.
   /** No existe, o no es de este local. */

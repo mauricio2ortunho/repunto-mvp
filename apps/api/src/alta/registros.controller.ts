@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Inject,
+  Headers,
   Ip,
   Post,
   Req,
@@ -34,8 +35,12 @@ export class RegistrosController {
 
   @Post('registros')
   @HttpCode(HttpStatus.ACCEPTED)
-  registrar(@Body() cuerpo: unknown, @Ip() ip: string): Promise<RegistroRespuesta> {
-    return this.alta.registrar(validar(cuerpo), ip);
+  registrar(
+    @Body() cuerpo: unknown,
+    @Headers('idempotency-key') clave: unknown,
+    @Ip() ip: string,
+  ): Promise<RegistroRespuesta> {
+    return this.alta.registrar(validar(cuerpo), claveDeRegistro(clave), ip);
   }
 
   /**
@@ -52,6 +57,22 @@ export class RegistrosController {
 
 interface PeticionConTicket {
   headers: Record<string, string | string[] | undefined>;
+}
+
+/**
+ * La Idempotency-Key del alta. Obligatoria, como en todo endpoint que crea algo
+ * (CLAUDE.md, seccion 9), pero aca exige mas que en la caja: el ticket se
+ * deriva de ella (ver `ticketDeRegistro`), asi que quien adivine la clave de
+ * otro y conozca su telefono recibiria su ticket. 32 caracteres de un alfabeto
+ * de 64 son 192 bits: no se adivina. Un UUID v4 alcanza.
+ */
+const CLAVE_DE_REGISTRO = /^[A-Za-z0-9_-]{32,200}$/;
+
+function claveDeRegistro(clave: unknown): string {
+  if (typeof clave !== 'string' || !CLAVE_DE_REGISTRO.test(clave)) {
+    throw errorDeApi('FALTA_IDEMPOTENCY_KEY');
+  }
+  return clave;
 }
 
 function validar(cuerpo: unknown): RegistroPeticion {

@@ -209,6 +209,16 @@ presencial.** Sin esa distinción, cualquiera en la fila se lleva la cuenta de
 otro escribiendo su teléfono y dejando que el cajero vea un nombre razonable.
 Lo sostiene también la base: `registro_pendiente_sesion_solo_si_cuenta_nueva_chk`.
 
+**Un registro en curso no se reemplaza.** Si un teléfono ya tiene un registro
+esperando en un local, otro equipo que lo anote recibe `REGISTRO_EN_CURSO` y no
+toca nada. Antes se reemplazaba, y ese era el agujero: quien conociera el
+teléfono de alguien que se estaba registrando lo anotaba de nuevo desde su
+casa, se quedaba con el ticket y se llevaba la sesión cuando el cajero
+confirmaba a la persona de verdad. El reintento del mismo equipo sí funciona:
+el ticket se deriva de su `Idempotency-Key` (`ticketDeRegistro`), así que
+recibe el mismo ticket sin que la base lo guarde en claro. Solo se retoma un
+registro vencido, cuyo dueño ya no está esperando.
+
 **Una tablet, un turno abierto.** El turno de un sello sale del dispositivo y no
 del request (INV-2), así que "el turno abierto de esta tablet" tiene que resolver
 a uno solo. Lo garantiza un índice único parcial sobre `turno_caja(dispositivo_id)`
@@ -319,6 +329,11 @@ termina, y ahí lee su respuesta y la devuelve. Un rechazo no se guarda: si la
 transacción se deshizo, el reintento vuelve a decidir con el estado del momento.
 Misma clave con otro cuerpo se rechaza, porque no es un reintento.
 
+`POST /registros` es la excepción: es público, no hay tablet, y la tabla de
+arriba se indexa por dispositivo. Ahí la clave no se guarda: el ticket se
+deriva de ella, y el reintento la recalcula. Eso la convierte en parte de la
+credencial, y por eso se le exigen 32 caracteres en lugar de 8.
+
 **Migraciones.** Siempre por Prisma, versionadas, reversibles, nunca editar una ya
 aplicada. Las restricciones de unicidad de los invariantes viven en la base, no
 solo en el código.
@@ -343,6 +358,12 @@ semillas TOTP de los clientes en reposo (AES-256-GCM). Es distinta en cada
 entorno, y perderla en producción es perder todos los códigos de todos los
 clientes. La semilla descifrada no sale del proceso de la API: ni en una
 respuesta, ni en el log, ni en Sentry.
+
+De esa misma clave se derivan, con HKDF y un propósito distinto cada una, las
+claves de otros usos (`claveDerivada`): hoy, la que firma los tickets del alta.
+Derivar y no reusar, para que un uso no comprometa al otro; y sin otra variable
+que cargar en cada despliegue. Rotarla solo invalida los registros de la última
+media hora.
 
 **Entornos.** `local` (Docker Compose), `staging` (Railway + Vercel preview) y
 `produccion`. Ningún dato real en staging. `pnpm db:seed` crea un negocio de demo
@@ -547,9 +568,11 @@ es lo que falta terminar, y está acá para que no se pierda.
   Con ese flujo entra una regla que ya está decidida y todavía no implementada:
   **cuando el dueño real verifique ese teléfono por código, las sesiones creadas
   por confirmación presencial para esa cuenta se revocan. La verificación por
-  código gana siempre.** El estado está preparado: `dispositivo_cliente.origen`
-  distingue `presencial` de `codigo`, así que revocarlas es un `UPDATE` sobre
-  las presenciales de ese cliente.
+  código gana siempre.** El estado está preparado a medias:
+  `dispositivo_cliente.origen` distingue `presencial` de `codigo`, pero la
+  tabla todavía no tiene columna de revocación, y `/mi/codigo` tendría que
+  dejar de aceptar una sesión revocada. Hace falta una migración
+  (`revocada_el`) y el filtro, no solo un `UPDATE`.
 
 - **Dev y staging corren versiones distintas de Postgres.** Local es 16, el
   Docker del repo; Supabase da 17.11 y no se elige. Las migraciones aplican en
@@ -573,6 +596,20 @@ es lo que falta terminar, y está acá para que no se pierda.
   pasado por el mostrador —un cajero confirmó a una persona física— y porque el
   registro tiene tope por teléfono y por IP. No cerrarla es una decisión, no un
   descuido.
+
+  La misma lógica vale para `REGISTRO_EN_CURSO`: le dice a quien anota un
+  teléfono que ese teléfono ya está esperando en ese local. Es el precio de no
+  reemplazar el registro, y es chico al lado del agujero que cierra.
+
+- **Queda un ataque, más difícil, contra el alta.** No reemplazar protege a
+  quien se registró primero. Si el atacante se registra ANTES con el teléfono
+  de alguien —tiene que saber que esa persona va a ir a ese local en la próxima
+  media hora—, la persona real recibe `REGISTRO_EN_CURSO`, y si el cajero
+  confirma la fila del atacante en lugar de descartarla, la sesión es del
+  atacante. Lo cierra de verdad un número de emparejamiento: la app muestra dos
+  dígitos, la lista del cajero los mismos, y el cajero pregunta "¿qué número te
+  sale?" antes de confirmar. Cambia la pantalla del cajero, así que es decisión
+  de producto.
 
 - **Los trabajos programados de la sección 7.** Ninguno corre, y ahora además
   no hay dónde: Vercel no sostiene procesos largos. El diseño que queda es

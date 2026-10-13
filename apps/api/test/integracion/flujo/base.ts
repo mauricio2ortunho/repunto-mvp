@@ -60,9 +60,17 @@ export class Api {
     return this.pedir('GET', `/mi/codigo${query}`, { token });
   }
 
-  /** El alta: lo que hace el telefono del cliente. */
-  registrar(cuerpo: unknown): Promise<Respuesta> {
-    return this.pedir('POST', '/registros', { cuerpo });
+  /**
+   * El alta: lo que hace el telefono del cliente. Sin `clave`, una nueva en
+   * cada llamada, que es lo que manda un equipo distinto; con la misma clave,
+   * es el mismo equipo reintentando. `null` no manda la cabecera.
+   */
+  registrar(cuerpo: unknown, clave: string | null = randomUUID()): Promise<Respuesta> {
+    return this.pedir(
+      'POST',
+      '/registros',
+      clave === null ? { cuerpo } : { cuerpo, clave },
+    );
   }
 
   miRegistro(ticket?: string): Promise<Respuesta> {

@@ -34,6 +34,7 @@ import {
   TOPE_POR_TELEFONO,
   TopeDePeticiones,
 } from '../seguridad/tope';
+import { ticketDeRegistro } from '../seguridad/ticket';
 import { hashDeToken, nuevoToken } from '../seguridad/token';
 import { leerEstadoParaAlta } from './lectura';
 
@@ -61,6 +62,10 @@ const INTENTOS_DE_CODIGO = 5;
 interface FilaDeRegistro {
   local_id: string | null;
   registro_id: string | null;
+  /** El ticket y el nombre que quedaron en la fila, despues del insert o del
+   * conflicto. Si el ticket no es el de esta peticion, la fila es de otro. */
+  ticket_hash: string | null;
+  nombre: string | null;
 }
 
 interface FilaDeTicket {
@@ -83,17 +88,36 @@ export class AltaService {
    * `POST /registros`, el unico endpoint publico de la caja. La credencial es
    * el `qr_slug` impreso en el mostrador.
    */
-  async registrar(peticion: RegistroPeticion, ip: string): Promise<RegistroRespuesta> {
+  async registrar(
+    peticion: RegistroPeticion,
+    clave: string,
+    ip: string,
+  ): Promise<RegistroRespuesta> {
     const telefono = normalizarTelefono(peticion.telefono);
     if (telefono === null) throw errorDeRechazo(rechazo('TELEFONO_INVALIDO'), null);
 
     this.tope.exigir(`registro-ip:${ip}`, TOPE_POR_IP);
     this.tope.exigir(`registro-tel:${telefono}`, TOPE_POR_TELEFONO);
 
-    const ticket = nuevoToken();
+    // Derivado, no al azar: el reintento con la misma clave recibe el mismo
+    // ticket sin que la base guarde nada en claro (ver `ticketDeRegistro`).
+    const ticket = ticketDeRegistro(peticion.qr_slug, telefono, clave);
+    const ticketHash = hashDeToken(ticket);
+
     // Una sola consulta: resuelve el local, cuenta los pendientes que ya hay e
-    // inserta si entra. Si el mismo telefono ya estaba esperando, se actualiza
-    // esa fila en lugar de agregar otra a la lista del cajero.
+    // inserta si entra.
+    //
+    // Si ese telefono ya tiene un registro esperando en el local, la fila NO
+    // se reemplaza. Reemplazarla era el agujero: quien conociera el telefono
+    // de alguien que se esta registrando lo anotaba de nuevo, se quedaba con
+    // el ticket y se llevaba la sesion cuando el cajero confirmaba a la
+    // persona de verdad. Solo se retoma una fila VENCIDA, cuyo dueño ya no
+    // esta esperando.
+    //
+    // El DO UPDATE corre siempre, aunque no cambie nada, a proposito: asi el
+    // RETURNING devuelve la fila tambien en el conflicto, y si otro pedido la
+    // estaba insertando a la vez, Postgres espera a que termine y devuelve la
+    // suya. Dentro del SET, `registro_pendiente.*` es la fila de antes.
     const filas = await this.prisma.$queryRaw<FilaDeRegistro[]>`
       WITH loc AS (
         SELECT l.id FROM local l WHERE l.qr_slug = ${peticion.qr_slug} AND l.activo
@@ -104,17 +128,26 @@ export class AltaService {
           AND r.expira_el > now() AND r.telefono <> ${telefono}
       ), ins AS (
         INSERT INTO registro_pendiente (local_id, telefono, nombre, ticket_hash, expira_el)
-        SELECT loc.id, ${telefono}, ${peticion.nombre}, ${hashDeToken(ticket)},
+        SELECT loc.id, ${telefono}, ${peticion.nombre}, ${ticketHash},
                now() + make_interval(mins => ${MINUTOS_DE_VIDA})
         FROM loc, cupo
         WHERE cupo.n < ${PENDIENTES_POR_LOCAL}
         ON CONFLICT (telefono, local_id) WHERE estado = 'pendiente'
-        DO UPDATE SET nombre = EXCLUDED.nombre,
-                      ticket_hash = EXCLUDED.ticket_hash,
-                      expira_el = EXCLUDED.expira_el
-        RETURNING id
+        DO UPDATE SET
+          nombre = CASE WHEN registro_pendiente.expira_el <= now()
+                        THEN EXCLUDED.nombre ELSE registro_pendiente.nombre END,
+          ticket_hash = CASE WHEN registro_pendiente.expira_el <= now()
+                             THEN EXCLUDED.ticket_hash ELSE registro_pendiente.ticket_hash END,
+          creado_el = CASE WHEN registro_pendiente.expira_el <= now()
+                           THEN now() ELSE registro_pendiente.creado_el END,
+          expira_el = CASE WHEN registro_pendiente.expira_el <= now()
+                           THEN EXCLUDED.expira_el ELSE registro_pendiente.expira_el END
+        RETURNING id, ticket_hash, nombre
       )
-      SELECT (SELECT id FROM loc) AS local_id, (SELECT id FROM ins) AS registro_id`;
+      SELECT (SELECT id FROM loc) AS local_id,
+             (SELECT id FROM ins) AS registro_id,
+             (SELECT ticket_hash FROM ins) AS ticket_hash,
+             (SELECT nombre FROM ins) AS nombre`;
 
     const fila = filas[0];
     // El QR no resuelve a ningun local activo. Es un error del que escanea, no
@@ -124,6 +157,15 @@ export class AltaService {
 
     // Si el local llego al tope, la respuesta es la misma de siempre: quien
     // esta llenando la lista no tiene por que enterarse de que dejo de entrar.
+    if (fila.registro_id === null) return { estado: 'pendiente', ticket };
+
+    // La fila es de otro equipo: el registro de esa persona sigue intacto.
+    if (fila.ticket_hash !== ticketHash) {
+      throw errorDeRechazo(rechazo('REGISTRO_EN_CURSO'), null);
+    }
+    // Misma clave con otro nombre: no es un reintento (CLAUDE.md, seccion 9).
+    if (fila.nombre !== peticion.nombre) throw errorDeApi('IDEMPOTENCIA_DISTINTA');
+
     return { estado: 'pendiente', ticket };
   }
 

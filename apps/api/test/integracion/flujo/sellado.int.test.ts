@@ -426,6 +426,24 @@ describe('POST /caja/sellos · credencial e idempotencia', () => {
     expect(await contar(db, 'sello')).toBe(0);
   });
 
+  test('una Idempotency-Key de mas de 200 caracteres es un 400, no un 500', async ({
+    api,
+    db,
+  }) => {
+    // La base la rechaza con peticion_idempotente_clave_razonable_chk; sin el
+    // chequeo en el borde, ese rechazo volvia como error del servidor.
+    const { negocio, cliente } = await caja(db);
+
+    const respuesta = await api.sellar({
+      token: negocio.token,
+      clave: 'x'.repeat(201),
+      cuerpo: { codigo: codigoDe(cliente) },
+    });
+
+    expect(respuesta.estado).toBe(400);
+    expect(respuesta.cuerpo['codigo']).toBe('FALTA_IDEMPOTENCY_KEY');
+  });
+
   test('el doble toque con la misma clave devuelve lo mismo y sella una sola vez', async ({
     api,
     db,

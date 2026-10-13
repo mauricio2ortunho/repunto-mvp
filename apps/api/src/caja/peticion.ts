@@ -13,7 +13,9 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  */
 export function claveDeIdempotencia(peticion: PeticionDeCaja): string {
   const clave = peticion.headers['idempotency-key'];
-  if (typeof clave !== 'string' || clave.length < 8) {
+  // El tope de 200 es el de `peticion_idempotente_clave_razonable_chk`. Sin
+  // chequearlo aca, una clave mas larga llegaba a la base y volvia como 500.
+  if (typeof clave !== 'string' || clave.length < 8 || clave.length > 200) {
     throw errorDeApi('FALTA_IDEMPOTENCY_KEY');
   }
   return clave;

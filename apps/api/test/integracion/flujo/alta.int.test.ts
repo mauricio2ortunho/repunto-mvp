@@ -32,10 +32,19 @@ async function registrarse(
   qr: string,
   tel: string,
   nombre = 'Juan',
+  clave: string = randomUUID(),
 ): Promise<string> {
-  const respuesta = await api.registrar({ qr_slug: qr, telefono: tel, nombre });
+  const respuesta = await api.registrar({ qr_slug: qr, telefono: tel, nombre }, clave);
   expect(respuesta.estado).toBe(202);
   return String(respuesta.cuerpo['ticket']);
+}
+
+/** El id del unico registro que el cajero ve en su lista. */
+async function elRegistroDeLaLista(api: Api, negocio: NegocioDePrueba): Promise<string> {
+  const lista = await api.registros(negocio.token);
+  const registros = lista.cuerpo['registros'] as { id: string }[];
+  expect(registros).toHaveLength(1);
+  return registros[0]?.id ?? '';
 }
 
 describe('POST /registros · el cliente se anota desde su teléfono', () => {
@@ -106,20 +115,55 @@ describe('POST /registros · el cliente se anota desde su teléfono', () => {
     expect(await contar(db, 'registro_pendiente')).toBe(0);
   });
 
-  test('tocar enviar tres veces no llena la lista del cajero', async ({ api, db }) => {
+  test('el reintento del mismo equipo recibe el mismo ticket y no duplica la fila', async ({
+    api,
+    db,
+  }) => {
     const negocio = await crearNegocio(db);
     const qr = await qrDe(db, negocio);
+    const clave = randomUUID();
 
-    await registrarse(api, qr, '70124521', 'Juan');
-    await registrarse(api, qr, '70124521', 'Juan Carlos');
-    await registrarse(api, qr, '70124521', 'Juan Carlos');
+    // La respuesta se perdio en el wifi del local y la app reintenta.
+    const primero = await registrarse(api, qr, '70124521', 'Juan', clave);
+    const segundo = await registrarse(api, qr, '70124521', 'Juan', clave);
 
+    expect(segundo).toBe(primero);
     expect(await contar(db, 'registro_pendiente')).toBe(1);
-    const lista = await api.registros(negocio.token);
-    const registros = lista.cuerpo['registros'] as { nombre: string }[];
-    expect(registros).toHaveLength(1);
-    // El último nombre gana: es el que el cliente terminó de escribir.
-    expect(registros[0]?.nombre).toBe('Juan Carlos');
+    expect((await api.miRegistro(primero)).cuerpo['estado']).toBe('pendiente');
+  });
+
+  test('la misma clave con otro nombre no es un reintento', async ({ api, db }) => {
+    const negocio = await crearNegocio(db);
+    const qr = await qrDe(db, negocio);
+    const clave = randomUUID();
+    await registrarse(api, qr, '70124521', 'Juan', clave);
+
+    const otra = await api.registrar(
+      { qr_slug: qr, telefono: '70124521', nombre: 'Juan Carlos' },
+      clave,
+    );
+
+    expect(otra.estado).toBe(422);
+    expect(otra.cuerpo['codigo']).toBe('IDEMPOTENCIA_DISTINTA');
+  });
+
+  test('sin Idempotency-Key no registra: el ticket se deriva de ella', async ({
+    api,
+    db,
+  }) => {
+    const negocio = await crearNegocio(db);
+    const qr = await qrDe(db, negocio);
+    const cuerpo = { qr_slug: qr, telefono: '70124521', nombre: 'Juan' };
+
+    const sinClave = await api.registrar(cuerpo, null);
+    // Una clave corta se adivina, y con ella y el telefono se recalcula el
+    // ticket de otro.
+    const corta = await api.registrar(cuerpo, 'clave-corta-12345');
+
+    expect(sinClave.estado).toBe(400);
+    expect(sinClave.cuerpo['codigo']).toBe('FALTA_IDEMPOTENCY_KEY');
+    expect(corta.estado).toBe(400);
+    expect(await contar(db, 'registro_pendiente')).toBe(0);
   });
 
   test('hay tope de pendientes por local, y el que no entra no se entera', async ({
@@ -154,6 +198,109 @@ describe('POST /registros · el cliente se anota desde su teléfono', () => {
     await registrarse(api, await qrDe(db, negocio), '70124521');
 
     expect((await api.registros('no-soy-una-tablet')).estado).toBe(401);
+  });
+});
+
+describe('POST /registros · nadie se queda con el registro de otro', () => {
+  test('otro equipo con el mismo teléfono recibe REGISTRO_EN_CURSO y no toca nada', async ({
+    api,
+    db,
+  }) => {
+    const negocio = await crearNegocio(db);
+    const qr = await qrDe(db, negocio);
+    const deAna = await registrarse(api, qr, '70124521', 'Ana');
+
+    // Alguien que conoce el teléfono de Ana lo anota desde su casa: el QR está
+    // impreso en el mostrador.
+    const ajeno = await api.registrar({
+      qr_slug: qr,
+      telefono: '70124521',
+      nombre: 'Ana',
+    });
+
+    expect(ajeno.estado).toBe(409);
+    expect(ajeno.cuerpo['codigo']).toBe('REGISTRO_EN_CURSO');
+    expect(ajeno.cuerpo['ticket']).toBeUndefined();
+    expect(await contar(db, 'registro_pendiente')).toBe(1);
+    expect((await api.miRegistro(deAna)).cuerpo['estado']).toBe('pendiente');
+  });
+
+  test('el cajero confirma a Ana y la sesión es de Ana, no del que se coló', async ({
+    api,
+    db,
+  }) => {
+    const negocio = await crearNegocio(db);
+    const qr = await qrDe(db, negocio);
+    const deAna = await registrarse(api, qr, '70124521', 'Ana');
+    const ajeno = await api.registrar({
+      qr_slug: qr,
+      telefono: '70124521',
+      nombre: 'Ana',
+    });
+    expect(ajeno.estado).toBe(409);
+
+    await api.confirmar(negocio.token, await elRegistroDeLaLista(api, negocio), false);
+    const estado = await api.miRegistro(deAna);
+
+    expect(estado.cuerpo['estado']).toBe('confirmado');
+    expect(typeof estado.cuerpo['token']).toBe('string');
+  });
+
+  test('un registro vencido sí se retoma: su dueño ya no está esperando', async ({
+    api,
+    db,
+  }) => {
+    const negocio = await crearNegocio(db);
+    const qr = await qrDe(db, negocio);
+    const viejo = await registrarse(api, qr, '70124521', 'Ana');
+    await db.query(
+      `UPDATE registro_pendiente
+       SET creado_el = now() - interval '2 hours', expira_el = now() - interval '1 hour'`,
+    );
+
+    const nuevo = await registrarse(api, qr, '70124521', 'Ana María');
+
+    expect(nuevo).not.toBe(viejo);
+    expect(await contar(db, 'registro_pendiente')).toBe(1);
+    expect((await api.miRegistro(nuevo)).cuerpo['estado']).toBe('pendiente');
+    // Y vuelve a la lista del cajero como recién llegado, con su nombre nuevo.
+    const lista = await api.registros(negocio.token);
+    expect(lista.cuerpo['registros']).toEqual([
+      expect.objectContaining({ nombre: 'Ana María', telefono_final: '4521' }),
+    ]);
+  });
+
+  test('dos equipos a la vez con el mismo teléfono: uno solo se queda', async ({
+    api,
+    db,
+  }) => {
+    const negocio = await crearNegocio(db);
+    const qr = await qrDe(db, negocio);
+    const cuerpo = { qr_slug: qr, telefono: '70124521', nombre: 'Ana' };
+
+    const respuestas = await Promise.all([api.registrar(cuerpo), api.registrar(cuerpo)]);
+
+    expect(respuestas.map((r) => r.estado).sort()).toEqual([202, 409]);
+    expect(await contar(db, 'registro_pendiente')).toBe(1);
+  });
+
+  test('el doble toque simultáneo del mismo equipo da el mismo ticket', async ({
+    api,
+    db,
+  }) => {
+    const negocio = await crearNegocio(db);
+    const qr = await qrDe(db, negocio);
+    const cuerpo = { qr_slug: qr, telefono: '70124521', nombre: 'Ana' };
+    const clave = randomUUID();
+
+    const [a, b] = await Promise.all([
+      api.registrar(cuerpo, clave),
+      api.registrar(cuerpo, clave),
+    ]);
+
+    expect([a.estado, b.estado]).toEqual([202, 202]);
+    expect(a.cuerpo['ticket']).toBe(b.cuerpo['ticket']);
+    expect(await contar(db, 'registro_pendiente')).toBe(1);
   });
 });
 

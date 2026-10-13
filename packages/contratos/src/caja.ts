@@ -35,6 +35,7 @@ export const CODIGOS_DE_ERROR_DE_CAJA = [
   'TELEFONO_INVALIDO',
   'REGISTRO_NO_ENCONTRADO',
   'REGISTRO_YA_RESUELTO',
+  'REGISTRO_EN_CURSO',
   'SELLO_NO_ENCONTRADO',
   'SELLO_YA_ANULADO',
   'ANULACION_NO_PERMITIDA',
@@ -128,6 +129,8 @@ export function mensajeParaElCajero(
       return 'Ese registro ya no está. Pedile que escanee el QR de nuevo.';
     case 'REGISTRO_YA_RESUELTO':
       return 'Ya lo confirmó alguien del equipo.';
+    case 'REGISTRO_EN_CURSO':
+      return 'Esa persona ya tiene un registro esperando en la lista.';
     case 'SELLO_NO_ENCONTRADO':
       return 'Ese sello no está en esta caja.';
     case 'SELLO_YA_ANULADO':

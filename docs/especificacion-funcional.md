@@ -74,6 +74,12 @@ confirmación presencial.
 un máximo. Pasado ese número, el registro nuevo recibe la misma respuesta de
 siempre y no entra: el que la está llenando no tiene por qué enterarse.
 
+**Un registro en curso no se pisa.** Si alguien escribe un teléfono que ya está
+esperando confirmación en ese local, no reemplaza al anterior: la app le dice
+que hay un registro en curso con ese número y que le pida al cajero que lo
+descarte. El que se registró primero conserva su lugar, y nadie puede quedarse
+con el registro de la persona que está en el mostrador.
+
 El correo es opcional y no se pide en el registro. Se ofrece más adelante, cuando
 el cliente ya tiene sellos que le importa no perder.
 

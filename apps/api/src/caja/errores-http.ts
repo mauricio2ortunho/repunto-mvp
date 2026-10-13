@@ -38,6 +38,7 @@ const ESTADO_DE_CAJA: Record<CodigoDeError, number> = {
   // 404 y no 403: para esta caja, un registro de otra sucursal no existe.
   REGISTRO_NO_ENCONTRADO: 404,
   REGISTRO_YA_RESUELTO: 409,
+  REGISTRO_EN_CURSO: 409,
   SELLO_NO_ENCONTRADO: 404,
   SELLO_YA_ANULADO: 409,
   ANULACION_NO_PERMITIDA: 403,

@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
+import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from 'node:crypto';
 
 /**
  * Cifrado de la semilla TOTP del cliente, que esta cifrada en reposo.
@@ -61,4 +61,19 @@ export function descifrarSemilla(guardado: string): string {
     descifrador.update(Buffer.from(cifrado, 'base64url')),
     descifrador.final(),
   ]).toString('utf8');
+}
+
+/**
+ * Una clave para otro proposito, derivada de CLAVE_CIFRADO_SEMILLAS con HKDF.
+ *
+ * Derivar y no reusar: la misma clave para cifrar semillas y para firmar
+ * otra cosa mezclaria los dos usos, y un descuido en uno comprometeria el
+ * otro. Con HKDF y un `proposito` distinto, cada uso tiene su clave y ninguna
+ * revela a la maestra. Y no hace falta otra variable de entorno que cargar en
+ * cada despliegue.
+ */
+export function claveDerivada(proposito: string): Buffer {
+  return Buffer.from(
+    hkdfSync('sha256', clave(), Buffer.alloc(0), `repunto:${proposito}`, LARGO_CLAVE),
+  );
 }
