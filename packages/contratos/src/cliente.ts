@@ -171,3 +171,37 @@ export const esquemaMisTarjetas = z.object({
 });
 
 export type MisTarjetas = z.infer<typeof esquemaMisTarjetas>;
+
+/**
+ * `GET /mis/tarjetas/:id`: la tarjeta con todo lo que el detalle muestra. La
+ * tarjeta completa no es otra pantalla: es este mismo detalle con
+ * `estado: 'completa'` (especificacion, seccion 10).
+ */
+export const esquemaDetalleDeTarjeta = esquemaTarjetaDelCliente.extend({
+  /**
+   * El instante del servidor. La cuenta regresiva del vencimiento se mide
+   * contra esto y no contra el reloj del telefono, como en `/mi/codigo`.
+   */
+  ahora: z.iso.datetime(),
+  /** La condicion vigente del negocio (INV-7, INV-8). Nula si no hay ninguna. */
+  condicion: z
+    .object({
+      texto: z.string(),
+      /** Decimal como texto: la plata no viaja en coma flotante. */
+      monto_minimo: z.string().nullable(),
+    })
+    .nullable(),
+  /**
+   * Donde se entrega el premio cuando el negocio no lo entrega en cualquier
+   * sucursal: el local donde se abrio la tarjeta. Nulo, en cualquiera.
+   */
+  canje_en: z.string().nullable(),
+  /**
+   * Los sellos que cuentan, del mas reciente al mas viejo, con su local. Los
+   * anulados no aparecen. Los que pasaron de una tarjeta canjeada conservan
+   * su fecha y su local de origen (INV-15).
+   */
+  sellos: z.array(z.object({ fecha: z.iso.datetime(), local: z.string() })),
+});
+
+export type DetalleDeTarjeta = z.infer<typeof esquemaDetalleDeTarjeta>;

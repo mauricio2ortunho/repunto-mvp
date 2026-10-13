@@ -65,6 +65,10 @@ export class Api {
     return this.pedir('GET', `/mis/tarjetas${query}`, { token });
   }
 
+  miTarjeta(token: string | undefined, id: string): Promise<Respuesta> {
+    return this.pedir('GET', `/mis/tarjetas/${id}`, { token });
+  }
+
   /**
    * El alta: lo que hace el telefono del cliente. Sin `clave`, una nueva en
    * cada llamada, que es lo que manda un equipo distinto; con la misma clave,

@@ -67,6 +67,11 @@ export const CODIGOS_DE_ERROR = [
   'ANULACION_NO_PERMITIDA',
   /** El premio que incluia ese sello ya se entrego. */
   'SELLO_YA_CANJEADO',
+
+  // Tarjetas del cliente.
+  /** No existe, o es de otro cliente. Los dos dan lo mismo: si se
+   * distinguieran, probando ids se podria averiguar cuales existen. */
+  'TARJETA_NO_ENCONTRADA',
 ] as const;
 
 export type CodigoDeError = (typeof CODIGOS_DE_ERROR)[number];

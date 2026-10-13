@@ -61,6 +61,7 @@ export type { ColorDeTexto, IconoDeSello, PlantillaDeTarjeta } from './diseno';
 export {
   ESTADOS_DE_TARJETA_DEL_CLIENTE,
   esquemaCodigoDelCliente,
+  esquemaDetalleDeTarjeta,
   esquemaEstadoDelRegistro,
   esquemaMarcaDelNegocio,
   esquemaMisTarjetas,
@@ -70,6 +71,7 @@ export {
 } from './cliente';
 export type {
   CodigoDelCliente,
+  DetalleDeTarjeta,
   EstadoDeTarjetaDelCliente,
   EstadoDelRegistro,
   MarcaDelNegocio,

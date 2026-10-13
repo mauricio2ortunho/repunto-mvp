@@ -43,6 +43,8 @@ const ESTADO_DE_CAJA: Record<CodigoDeError, number> = {
   SELLO_YA_ANULADO: 409,
   ANULACION_NO_PERMITIDA: 403,
   SELLO_YA_CANJEADO: 409,
+  // 404 y no 403: una tarjeta de otro cliente, para este, no existe.
+  TARJETA_NO_ENCONTRADA: 404,
 };
 
 const ESTADO_DE_API: Record<CodigoDeErrorDeApi, number> = {

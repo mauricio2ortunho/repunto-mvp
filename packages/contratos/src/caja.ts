@@ -40,6 +40,7 @@ export const CODIGOS_DE_ERROR_DE_CAJA = [
   'SELLO_YA_ANULADO',
   'ANULACION_NO_PERMITIDA',
   'SELLO_YA_CANJEADO',
+  'TARJETA_NO_ENCONTRADA',
 ] as const;
 
 export type CodigoDeErrorDeCaja = (typeof CODIGOS_DE_ERROR_DE_CAJA)[number];
@@ -137,6 +138,8 @@ export function mensajeParaElCajero(
       return 'Ese sello ya estaba anulado.';
     case 'ANULACION_NO_PERMITIDA':
       return 'Solo podés deshacer tu último sello y dentro de los 5 minutos. Pedíselo a tu supervisor.';
+    case 'TARJETA_NO_ENCONTRADA':
+      return 'Esa tarjeta no está.';
     case 'SELLO_YA_CANJEADO':
       return 'Ese sello ya se usó en un premio entregado. Avisá al dueño.';
     case 'PROMO_NO_CONFIGURADA':

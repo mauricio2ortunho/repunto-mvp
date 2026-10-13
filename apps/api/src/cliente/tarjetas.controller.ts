@@ -1,6 +1,7 @@
-import { Controller, Get, Inject, Req, UseGuards } from '@nestjs/common';
-import type { MisTarjetas } from '@repunto/contratos';
+import { Controller, Get, Inject, Param, Req, UseGuards } from '@nestjs/common';
+import type { DetalleDeTarjeta, MisTarjetas } from '@repunto/contratos';
 
+import { idEnLaRuta } from '../caja/peticion';
 import { GuardDeCliente, type PeticionDelCliente } from './cliente.guard';
 import { TarjetasService } from './tarjetas.service';
 
@@ -17,5 +18,18 @@ export class TarjetasController {
   @Get('tarjetas')
   listar(@Req() peticion: PeticionDelCliente): Promise<MisTarjetas> {
     return this.tarjetas.de(peticion.tokenHash);
+  }
+
+  /**
+   * Una tarjeta del cliente del token. El id de la ruta elige cual, pero el
+   * dueño sale del token: con el id de una tarjeta ajena, la consulta no
+   * encuentra nada.
+   */
+  @Get('tarjetas/:id')
+  detalle(
+    @Req() peticion: PeticionDelCliente,
+    @Param('id') id: string,
+  ): Promise<DetalleDeTarjeta> {
+    return this.tarjetas.detalle(peticion.tokenHash, idEnLaRuta(id));
   }
 }

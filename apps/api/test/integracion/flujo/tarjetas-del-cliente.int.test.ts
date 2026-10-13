@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { describe, expect } from 'vitest';
 
 import {
@@ -258,5 +260,157 @@ describe('GET /mis/tarjetas', () => {
 
       expect((await api.misTarjetas('no-soy-un-telefono')).estado).toBe(401);
     });
+  });
+});
+
+describe('GET /mis/tarjetas/:id', () => {
+  async function selloEnElCentro(
+    db: Db,
+    tarjeta: string,
+    negocio: NegocioDePrueba,
+    haceHoras: number,
+  ): Promise<void> {
+    await db.query(
+      `INSERT INTO sello (tarjeta_id, negocio_id, local_id, turno_id, condicion_id, creado_el)
+       VALUES ($1, $2, $3, $4, $5, now() - make_interval(hours => $6::int))`,
+      [
+        tarjeta,
+        negocio.id,
+        negocio.otroLocal,
+        negocio.turnoOtroLocal,
+        negocio.condicion,
+        haceHoras,
+      ],
+    );
+  }
+
+  test('trae lo de la lista, la condición, el historial y la hora del servidor', async ({
+    api,
+    db,
+  }) => {
+    const negocio = await crearNegocio(db);
+    const cliente = await crearClienteEnCaja(db);
+    const tarjeta = await crearTarjeta(db, cliente.id, negocio);
+    await selloEnElCentro(db, tarjeta, negocio, 48);
+    await crearSello(db, tarjeta, negocio, 24);
+
+    const respuesta = await api.miTarjeta(cliente.token, tarjeta);
+    const [enLaLista] = tarjetasDe(await api.misTarjetas(cliente.token));
+
+    expect(respuesta.estado).toBe(200);
+    // La misma tarjeta se calcula igual en las dos pantallas.
+    expect(respuesta.cuerpo).toMatchObject({ ...enLaLista });
+    expect(respuesta.cuerpo).toMatchObject({
+      condicion: { texto: 'Cualquier capuchino', monto_minimo: null },
+      canje_en: null,
+    });
+    const sellos = respuesta.cuerpo['sellos'] as { fecha: string; local: string }[];
+    // Del mas reciente al mas viejo, cada uno con su local.
+    expect(sellos.map((s) => s.local)).toEqual(['Equipetrol', 'Centro']);
+    expect(sellos[0]?.fecha).toMatch(/Z$/);
+    expect(typeof respuesta.cuerpo['ahora']).toBe('string');
+  });
+
+  test('los sellos anulados no aparecen en el historial', async ({ api, db }) => {
+    const negocio = await crearNegocio(db);
+    const cliente = await crearClienteEnCaja(db);
+    const tarjeta = await crearTarjeta(db, cliente.id, negocio);
+    const sellos = await crearSellos(db, tarjeta, negocio, 2);
+    await anular(db, sellos[1] ?? '', negocio);
+
+    const respuesta = await api.miTarjeta(cliente.token, tarjeta);
+
+    expect(respuesta.cuerpo['progreso']).toBe(1);
+    expect(respuesta.cuerpo['sellos']).toHaveLength(1);
+  });
+
+  test('si el premio se entrega solo donde se abrió la tarjeta, dice dónde', async ({
+    api,
+    db,
+  }) => {
+    const negocio = await crearNegocio(db);
+    const cliente = await crearClienteEnCaja(db);
+    const tarjeta = await crearTarjeta(db, cliente.id, negocio);
+    await db.query('UPDATE negocio SET canje_cualquier_local = false WHERE id = $1', [
+      negocio.id,
+    ]);
+
+    const respuesta = await api.miTarjeta(cliente.token, tarjeta);
+
+    expect(respuesta.cuerpo['canje_en']).toBe('Equipetrol');
+  });
+
+  test('el monto mínimo de la condición viaja como texto, no como número', async ({
+    api,
+    db,
+  }) => {
+    const negocio = await crearNegocio(db);
+    const cliente = await crearClienteEnCaja(db);
+    const tarjeta = await crearTarjeta(db, cliente.id, negocio);
+    await db.query(
+      `INSERT INTO condicion_sello (negocio_id, texto, monto_minimo, vigente_desde, usuario_id)
+       VALUES ($1, 'Compra mayor a 30', 30, now(), $2)`,
+      [negocio.id, negocio.dueno],
+    );
+
+    const respuesta = await api.miTarjeta(cliente.token, tarjeta);
+
+    expect(respuesta.cuerpo['condicion']).toEqual({
+      texto: 'Compra mayor a 30',
+      monto_minimo: '30.00',
+    });
+  });
+
+  test('una tarjeta ya canjeada también se puede ver', async ({ api, db }) => {
+    // La app puede tenerla abierta justo cuando el cajero entrega el premio.
+    const negocio = await crearNegocio(db);
+    const cliente = await crearClienteEnCaja(db);
+    const tarjeta = await crearTarjeta(db, cliente.id, negocio);
+    await crearSellos(db, tarjeta, negocio, 10);
+    await crearCanje(db, tarjeta, negocio);
+    await db.query("UPDATE tarjeta SET estado = 'canjeada' WHERE id = $1", [tarjeta]);
+
+    const respuesta = await api.miTarjeta(cliente.token, tarjeta);
+
+    expect(respuesta.estado).toBe(200);
+    expect(respuesta.cuerpo['estado']).toBe('canjeada');
+  });
+
+  test('la de otro cliente da 404, exactamente igual que una que no existe', async ({
+    api,
+    db,
+  }) => {
+    const negocio = await crearNegocio(db);
+    const juan = await crearClienteEnCaja(db, 'Juan');
+    const ana = await crearClienteEnCaja(db, 'Ana');
+    const deAna = await crearTarjeta(db, ana.id, negocio);
+
+    const ajena = await api.miTarjeta(juan.token, deAna);
+    const inexistente = await api.miTarjeta(juan.token, randomUUID());
+
+    expect(ajena.estado).toBe(404);
+    expect(ajena.cuerpo['codigo']).toBe('TARJETA_NO_ENCONTRADA');
+    // Si se distinguieran, probando ids se sabria cuales existen.
+    expect(inexistente.estado).toBe(ajena.estado);
+    expect(inexistente.cuerpo).toEqual(ajena.cuerpo);
+  });
+
+  test('un id que no es un uuid es una petición inválida, no un 500', async ({
+    api,
+    db,
+  }) => {
+    const cliente = await crearClienteEnCaja(db);
+
+    const respuesta = await api.miTarjeta(cliente.token, 'no-soy-un-uuid');
+
+    expect(respuesta.estado).toBe(422);
+  });
+
+  test('sin token, 401', async ({ api, db }) => {
+    const negocio = await crearNegocio(db);
+    const cliente = await crearClienteEnCaja(db);
+    const tarjeta = await crearTarjeta(db, cliente.id, negocio);
+
+    expect((await api.miTarjeta(undefined, tarjeta)).estado).toBe(401);
   });
 });
