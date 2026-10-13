@@ -66,7 +66,9 @@ pnpm db:seed
 
 La clave de cifrado del seed **tiene que ser la misma que la de Vercel**: las
 semillas quedan cifradas con ella, y con otra clave los clientes de demo no
-pueden generar su código.
+pueden generar su código. Si la base ya se sembró con otra clave, alcanza con
+volver a correr el seed con la nueva: re-cifra las semillas de los clientes de
+demo y no toca nada más.
 
 `migrate deploy` y no `migrate dev`: nunca crea ni edita migraciones, solo
 aplica las que ya existen. Y nunca `db push`, que armaría la base desde
@@ -88,7 +90,7 @@ desde la raíz del monorepo y compila los paquetes compartidos antes de la app.
 | ----------------- | -------------- | --------- | ------------------------------------------------------------------------------ |
 | `repunto-api`     | `apps/api`     | Other     | `DATABASE_URL`, `CLAVE_CIFRADO_SEMILLAS`, `ORIGENES_PERMITIDOS`, `APP_VERSION` |
 | `repunto-cliente` | `apps/cliente` | Next.js   | `NEXT_PUBLIC_API_URL`                                                          |
-| `repunto-panel`   | `apps/panel`   | Next.js   | `NEXT_PUBLIC_API_URL`                                                          |
+| `repunto-panel`   | `apps/panel`   | Next.js   | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_TOKEN_TABLET`                              |
 
 Detalles que importan:
 
@@ -104,11 +106,19 @@ Detalles que importan:
   deliberado: si arrancara, el síntoma sería un error de CORS en la consola del
   navegador de alguien, que no menciona ninguna variable de entorno. Para los
   previews del hosting sirve el comodín de subdominio,
-  `https://*.netlify.app`, porque cada preview tiene su propia URL.
+  `https://*.vercel.app`, porque cada preview tiene su propia URL. Ojo: el
+  comodín también acepta sitios de terceros en ese dominio. Sin cookies el
+  riesgo es chico, pero en cuanto se conozca la URL del panel conviene
+  reemplazarlo por la URL exacta.
 - **Región de las funciones:** la más cercana a la base. Con Supabase en São
-  Paulo, `gru1`. Cada salto entre región de función y región de base son
+  Paulo, `gru1`, y ya está fijada en `apps/api/vercel.json` (`regions`): no
+  hay que tocarla en el panel de Vercel. Cada salto entre región de función y región de base son
   decenas de milisegundos por consulta, y el sellado hace varias.
 - `NEXT_PUBLIC_API_URL` es la URL del proyecto de la API, sin barra final.
+- `NEXT_PUBLIC_TOKEN_TABLET` es el token de la tablet de demo,
+  `demo-tablet-equipetrol`. Viaja en el JavaScript público del panel: con él,
+  cualquiera que abra la URL puede sellar en el negocio de demo. Solo staging.
+- `NODE_ENV` no se carga: Vercel ya la pone en `production`.
 
 ## 4. Verificar
 

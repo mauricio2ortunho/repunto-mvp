@@ -17,6 +17,14 @@ import { hashDeToken } from '../src/seguridad/token.ts';
  * `ON CONFLICT (id) DO NOTHING`, asi que correrlo dos veces no cambia nada y
  * no borra nada: ni un DELETE, ni un TRUNCATE (INV-17).
  *
+ * Una excepcion, a proposito: la semilla TOTP de los clientes de demo se
+ * vuelve a cifrar en cada corrida, con la CLAVE_CIFRADO_SEMILLAS del entorno.
+ * Sin eso, una base sembrada con una clave queda atada a ella para siempre:
+ * se despliega la api con la clave de verdad, no puede descifrar las
+ * semillas, y los clientes de demo no pueden generar su codigo. Las semillas
+ * de demo estan en este archivo y son publicas, asi que re-cifrarlas no
+ * expone nada. Ninguna otra fila se toca.
+ *
  * LOS TOKENS DE ESTE ARCHIVO SON PUBLICOS. Estan a la vista para poder tipear
  * una prueba desde un telefono. Un negocio real nunca se da de alta con esto:
  * el script se niega a correr con NODE_ENV=production.
@@ -180,7 +188,8 @@ async function sembrar(): Promise<void> {
       await db.query(
         `INSERT INTO cliente (id, telefono, nombre, semilla_totp, codigo_publico,
                               telefono_verificado)
-         VALUES ($1, $2, $3, $4, $5, true) ON CONFLICT (id) DO NOTHING`,
+         VALUES ($1, $2, $3, $4, $5, true)
+         ON CONFLICT (id) DO UPDATE SET semilla_totp = EXCLUDED.semilla_totp`,
         [id, telefono, nombre, cifrarSemilla(semilla), codigo],
       );
     }

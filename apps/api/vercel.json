@@ -2,7 +2,13 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
   "buildCommand": "cd ../.. && pnpm exec prisma generate && pnpm exec turbo run build --filter=@repunto/dominio --filter=@repunto/contratos",
-  "rewrites": [{ "source": "/(.*)", "destination": "/api" }],
+  "regions": ["gru1"],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api"
+    }
+  ],
   "functions": {
     "api/index.ts": {
       "maxDuration": 15

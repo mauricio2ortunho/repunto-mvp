@@ -1,17 +1,8 @@
-import { esquemaSalud } from '@repunto/contratos';
+import { redirect } from 'next/navigation';
 
-// Sin diseno y sin rutas de producto: esta pagina existe para confirmar que el
-// contrato compartido se importa, compila y valida dentro de Next.
-const salud = esquemaSalud.parse({ estado: 'ok', version: '0.1.0-dev', base: 'ok' });
-
-export default function Pagina() {
-  return (
-    <main>
-      <h1>Repunto — panel del negocio</h1>
-      <p>
-        Contrato compartido leido desde <code>@repunto/contratos</code>: estado{' '}
-        {salud.estado}, version {salud.version}.
-      </p>
-    </main>
-  );
+// Por ahora el panel es solo la caja. Esta pagina era un andamio para probar
+// que `@repunto/contratos` compilaba dentro de Next; eso ya lo prueba la caja
+// entera. Cuando exista el panel del dueño, la raiz va a ser suya.
+export default function Pagina(): never {
+  redirect('/caja');
 }
