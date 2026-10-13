@@ -50,6 +50,10 @@ export class CodigoService {
     // La actual y la siguiente: con las dos, la app aguanta un minuto sin
     // volver a pedir, que es lo que dura una fila.
     return esquemaCodigoDelCliente.parse({
+      // El reloj es el de la base, el mismo con el que la caja valida el
+      // codigo: si la app contara contra el del telefono, un equipo atrasado
+      // mostraria vigente un codigo que la caja ya no acepta.
+      ahora: ahora.toISOString(),
       codigos: [actual, actual + 1].map((ventana) => ({
         codigo: `${fila.codigo_publico}-${codigoDeVentana(semilla, ventana)}`,
         vence_el: finDeLaVentana(ventana).toISOString(),
@@ -58,7 +62,7 @@ export class CodigoService {
   }
 }
 
-/** Ultimo instante de esa ventana de 30 segundos. */
+/** Ultimo instante de esa ventana de 30 segundos: cuando deja de ser la actual. */
 function finDeLaVentana(ventana: number): Date {
   return new Date((ventana + 1) * VENTANA_SEGUNDOS * 1000 - 1);
 }

@@ -12,6 +12,17 @@ import { z } from 'zod';
  */
 export const esquemaCodigoDelCliente = z.object({
   /**
+   * El instante del servidor al armar la respuesta, en UTC.
+   *
+   * La cuenta regresiva se calcula contra esto y no contra el reloj del
+   * telefono, que puede estar corrido minutos: lo que falta es
+   * `vence_el - ahora`, y desde que llego la respuesta se descuenta con un
+   * reloj monotono (`performance.now()`), que no salta si el usuario cambia la
+   * hora. Con el reloj del telefono, un equipo atrasado mostraria un codigo
+   * vencido como vigente.
+   */
+  ahora: z.iso.datetime(),
+  /**
    * La ventana actual y la siguiente, en ese orden. Con las dos, la app
    * aguanta un minuto sin volver a pedir, que es lo que dura una fila.
    */
@@ -20,7 +31,12 @@ export const esquemaCodigoDelCliente = z.object({
       z.object({
         /** `K7Q4M-418329`. */
         codigo: z.string(),
-        /** Ultimo instante en que ese codigo sirve, en UTC. */
+        /**
+         * Cuando deja de ser el codigo actual, en UTC: es lo que mide la
+         * cuenta regresiva. La caja lo sigue aceptando 30 segundos mas, como
+         * ventana anterior, asi que el codigo que el cajero esta tipeando
+         * cuando la cuenta llega a cero todavia sirve.
+         */
         vence_el: z.iso.datetime(),
       }),
     )

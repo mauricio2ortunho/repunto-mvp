@@ -17,6 +17,7 @@ import { test } from './base';
  */
 
 interface CuerpoDeCodigos {
+  ahora: string;
   codigos: { codigo: string; vence_el: string }[];
 }
 
@@ -38,6 +39,29 @@ describe('GET /mi/codigo', () => {
     const primero = new Date(codigos[0]?.vence_el ?? '').getTime();
     const segundo = new Date(codigos[1]?.vence_el ?? '').getTime();
     expect(segundo - primero).toBe(VENTANA_SEGUNDOS * 1000);
+  });
+
+  test('dice la hora del servidor, para que la cuenta regresiva no dependa del telefono', async ({
+    api,
+    db,
+  }) => {
+    const cliente = await crearClienteEnCaja(db);
+
+    const antes = Date.now();
+    const respuesta = await api.miCodigo(cliente.token);
+    const despues = Date.now();
+
+    const { ahora, codigos } = respuesta.cuerpo as unknown as CuerpoDeCodigos;
+    const servidor = new Date(ahora).getTime();
+    // La base y este proceso comparten maquina: el reloj es el mismo.
+    expect(servidor).toBeGreaterThanOrEqual(antes - 1000);
+    expect(servidor).toBeLessThanOrEqual(despues + 1000);
+
+    // Lo que le falta al codigo actual, medido contra ese instante, cabe en
+    // una ventana: es lo que la app muestra como cuenta regresiva.
+    const falta = new Date(codigos[0]?.vence_el ?? '').getTime() - servidor;
+    expect(falta).toBeGreaterThanOrEqual(0);
+    expect(falta).toBeLessThan(VENTANA_SEGUNDOS * 1000);
   });
 
   test('el codigo que devuelve es el que el cajero puede sellar', async ({ api, db }) => {
