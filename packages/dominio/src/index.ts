@@ -64,6 +64,13 @@ export type { TarjetaElegida } from './tarjeta';
 
 export { PREFIJO_BOLIVIA, normalizarTelefono, ultimosCuatro } from './telefono';
 
+export {
+  ESTADOS_PARA_EL_CLIENTE,
+  estadoParaElCliente,
+  ordenarParaElCliente,
+} from './tarjeta-del-cliente';
+export type { EstadoParaElCliente, SituacionDeTarjeta } from './tarjeta-del-cliente';
+
 export { revisarCaja, revisarCajaParaSellar } from './caja';
 export type { Caja, PromoConfigurada, RevisionDeCaja } from './caja';
 

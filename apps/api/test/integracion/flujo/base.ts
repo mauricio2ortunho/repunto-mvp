@@ -60,6 +60,11 @@ export class Api {
     return this.pedir('GET', `/mi/codigo${query}`, { token });
   }
 
+  /** `query` existe para probar que un identificador de cliente se ignora. */
+  misTarjetas(token?: string, query = ''): Promise<Respuesta> {
+    return this.pedir('GET', `/mis/tarjetas${query}`, { token });
+  }
+
   /**
    * El alta: lo que hace el telefono del cliente. Sin `clave`, una nueva en
    * cada llamada, que es lo que manda un equipo distinto; con la misma clave,

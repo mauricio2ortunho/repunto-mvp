@@ -99,3 +99,75 @@ export const esquemaEstadoDelRegistro = z.discriminatedUnion('estado', [
 ]);
 
 export type EstadoDelRegistro = z.infer<typeof esquemaEstadoDelRegistro>;
+
+/**
+ * Los estados en que el cliente ve una tarjeta suya.
+ *
+ * Repetidos a proposito de `ESTADOS_PARA_EL_CLIENTE` de `@repunto/dominio`,
+ * que es quien los decide: la app los necesita para dibujar y contratos no
+ * puede importar dominio (CLAUDE.md, seccion 3). Un test en `apps/api` falla
+ * si dejan de coincidir.
+ */
+export const ESTADOS_DE_TARJETA_DEL_CLIENTE = [
+  'completa',
+  'en_curso',
+  'congelada',
+  'vencida',
+  'canjeada',
+] as const;
+
+export type EstadoDeTarjetaDelCliente = (typeof ESTADOS_DE_TARJETA_DEL_CLIENTE)[number];
+
+/**
+ * Como se ve el negocio en la tarjeta (especificacion, seccion 9). Los valores
+ * de diseño viajan como texto: la app los lee con `iconoDeSelloDe` y
+ * `plantillaDeTarjetaDe`, que caen en el de por defecto si no los conoce.
+ */
+export const esquemaMarcaDelNegocio = z.object({
+  nombre: z.string(),
+  /** Hex `#RRGGBB`. El texto encima se elige con `colorDeTextoSobre`. */
+  color_principal: z.string(),
+  /** Nulo mientras el dueño no lo entrega: se dibuja la inicial del nombre. */
+  logo_url: z.string().nullable(),
+  portada_url: z.string().nullable(),
+  plantilla_tarjeta: z.string(),
+  icono_sello: z.string(),
+});
+
+export type MarcaDelNegocio = z.infer<typeof esquemaMarcaDelNegocio>;
+
+/** Una tarjeta del cliente, como aparece en su lista. */
+export const esquemaTarjetaDelCliente = z.object({
+  id: z.uuid(),
+  negocio: esquemaMarcaDelNegocio,
+  /** Lo decide la api: la app no lo recalcula. */
+  estado: z.enum(ESTADOS_DE_TARJETA_DEL_CLIENTE),
+  /** Sellos no anulados (INV-10). */
+  progreso: z.int().nonnegative(),
+  /** Los del programa de ESTA tarjeta, no los del vigente (INV-6). */
+  sellos_requeridos: z.int().positive(),
+  faltan: z.int().nonnegative(),
+  premio: z.string(),
+  /**
+   * Fin del dia en La Paz en que vence, en UTC. Para mostrarlo, formatear con
+   * `timeZone: 'America/La_Paz'`, nunca con la zona del telefono. Nulo si la
+   * tarjeta todavia no tiene sellos (INV-12) o si el programa no vence.
+   */
+  vence_el: z.iso.datetime().nullable(),
+});
+
+export type TarjetaDelCliente = z.infer<typeof esquemaTarjetaDelCliente>;
+
+/**
+ * `GET /mis/tarjetas`. Una por negocio: la que esta en curso, o la ultima si ya
+ * no hay ninguna activa —asi un negocio no desaparece cuando la tarjeta vence—.
+ *
+ * Vienen ya ordenadas "por cercania a completarse" (especificacion, seccion
+ * 10): primero las completas, despues las que menos sellos les faltan, al
+ * final las congeladas y las vencidas. La app respeta el orden.
+ */
+export const esquemaMisTarjetas = z.object({
+  tarjetas: z.array(esquemaTarjetaDelCliente),
+});
+
+export type MisTarjetas = z.infer<typeof esquemaMisTarjetas>;

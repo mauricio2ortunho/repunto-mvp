@@ -10,11 +10,17 @@ export function progresoDe(sellos: readonly Sello[]): number {
   return sellos.filter((sello) => !sello.anulado).length;
 }
 
-export function estaCompleta(progreso: number, programa: Programa): boolean {
+export function estaCompleta(
+  progreso: number,
+  programa: Pick<Programa, 'sellos_requeridos'>,
+): boolean {
   return progreso >= programa.sellos_requeridos;
 }
 
-export function faltanPara(progreso: number, programa: Programa): number {
+export function faltanPara(
+  progreso: number,
+  programa: Pick<Programa, 'sellos_requeridos'>,
+): number {
   return Math.max(0, programa.sellos_requeridos - progreso);
 }
 
@@ -23,7 +29,7 @@ export function faltanPara(progreso: number, programa: Programa): number {
  * vez por dia, y un sello puede llegar antes. `vence_el` es el ultimo instante
  * valido, asi que el dia del vencimiento todavia se puede sellar y canjear.
  */
-export function estaVencida(tarjeta: Tarjeta, ahora: Date): boolean {
+export function estaVencida(tarjeta: Pick<Tarjeta, 'vence_el'>, ahora: Date): boolean {
   if (tarjeta.vence_el === null) return false;
   return ahora.getTime() > tarjeta.vence_el.getTime();
 }

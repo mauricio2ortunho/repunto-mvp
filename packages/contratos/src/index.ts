@@ -59,14 +59,22 @@ export {
 export type { ColorDeTexto, IconoDeSello, PlantillaDeTarjeta } from './diseno';
 
 export {
+  ESTADOS_DE_TARJETA_DEL_CLIENTE,
   esquemaCodigoDelCliente,
   esquemaEstadoDelRegistro,
+  esquemaMarcaDelNegocio,
+  esquemaMisTarjetas,
   esquemaRegistroPeticion,
   esquemaRegistroRespuesta,
+  esquemaTarjetaDelCliente,
 } from './cliente';
 export type {
   CodigoDelCliente,
+  EstadoDeTarjetaDelCliente,
   EstadoDelRegistro,
+  MarcaDelNegocio,
+  MisTarjetas,
   RegistroPeticion,
   RegistroRespuesta,
+  TarjetaDelCliente,
 } from './cliente';
