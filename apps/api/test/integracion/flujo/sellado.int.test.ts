@@ -23,6 +23,29 @@ import { type Db, contar, test } from './base';
  * la tablet, Idempotency-Key, y el cuerpo con el codigo y nada mas.
  */
 
+const UNA_HORA = 3_600_000;
+
+/** El del programa que crea `crearNegocio`. */
+const HORAS_ENTRE_SELLOS = 4;
+
+/**
+ * La hora de La Paz, calculada a mano.
+ *
+ * A proposito no usa `Intl` con `America/La_Paz`: seria la misma herramienta
+ * que usa la API, y el test estaria comprobando la implementacion contra si
+ * misma. La Paz es UTC-4 todo el año, sin horario de verano (CLAUDE.md,
+ * seccion 2), asi que restar cuatro horas es exacto.
+ */
+function horaEnLaPaz(instante: Date): string {
+  return horaUtc(new Date(instante.getTime() - 4 * UNA_HORA));
+}
+
+function horaUtc(instante: Date): string {
+  const hh = String(instante.getUTCHours()).padStart(2, '0');
+  const mm = String(instante.getUTCMinutes()).padStart(2, '0');
+  return `${hh}:${mm}`;
+}
+
 async function caja(
   db: Db,
 ): Promise<{ negocio: NegocioDePrueba; cliente: ClienteDePrueba }> {
@@ -175,6 +198,49 @@ describe('POST /caja/sellos · un caso por cada codigo de error', () => {
     expect(respuesta.estado).toBe(409);
     expect(respuesta.cuerpo['codigo']).toBe('DEMASIADO_PRONTO');
     expect(respuesta.cuerpo['mensaje']).toMatch(/volver a sellar a las \d\d:\d\d/);
+  });
+
+  test('y esa hora es la de La Paz, no la del servidor', async ({ api, db }) => {
+    // El test de arriba solo mira la FORMA de la hora, asi que pasa igual si
+    // la API la escribe en UTC. Este mira el valor.
+    //
+    // Hay que elegir el instante con cuidado: en los datos de demo el
+    // intervalo entre sellos es de 4 horas y La Paz es UTC-4, asi que la hora
+    // del mensaje coincide con la hora UTC del sello anterior y los dos
+    // errores se ven iguales. Fijando el sello a una hora conocida, no.
+    const { negocio, cliente } = await caja(db);
+    const tarjeta = await crearTarjeta(db, cliente.id, negocio);
+
+    const selloHecho = new Date(Date.now() - UNA_HORA);
+    await db.query(
+      `INSERT INTO sello (tarjeta_id, negocio_id, local_id, turno_id, condicion_id, creado_el)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        tarjeta,
+        negocio.id,
+        negocio.local,
+        negocio.turno,
+        negocio.condicion,
+        selloHecho.toISOString(),
+      ],
+    );
+    const puedeSellarDesde = new Date(
+      selloHecho.getTime() + HORAS_ENTRE_SELLOS * UNA_HORA,
+    );
+
+    const respuesta = await api.sellar({
+      token: negocio.token,
+      cuerpo: { codigo: codigoDe(cliente) },
+    });
+
+    expect(respuesta.cuerpo['codigo']).toBe('DEMASIADO_PRONTO');
+    expect(respuesta.cuerpo['mensaje']).toContain(
+      `a las ${horaEnLaPaz(puedeSellarDesde)}`,
+    );
+    // Y dicho al reves, que es como se veria el error: nunca la hora UTC.
+    expect(respuesta.cuerpo['mensaje']).not.toContain(
+      `a las ${horaUtc(puedeSellarDesde)}`,
+    );
   });
 
   test('TARJETA_COMPLETA cuando ya llego al premio', async ({ api, db }) => {
