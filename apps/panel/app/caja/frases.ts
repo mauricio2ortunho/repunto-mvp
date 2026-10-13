@@ -30,7 +30,9 @@ function saludo(nombre: string): string {
 
 export function fraseDeAvance(progreso: number, faltan: number): string {
   const falta =
-    faltan === 1 ? '¡Te falta uno solo para el premio!' : `Te faltan ${faltan} para el premio.`;
+    faltan === 1
+      ? '¡Te falta uno solo para el premio!'
+      : `Te faltan ${faltan} para el premio.`;
   if (progreso === 0) return falta;
   if (progreso === 1) return `Ese es tu primer sello. ${falta}`;
   return `Ya llevás ${progreso} sellos. ${falta}`;

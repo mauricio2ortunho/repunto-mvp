@@ -53,7 +53,10 @@ export function useCaja({ alRechazo }: { alRechazo?: () => void } = {}) {
     [idempotencia, alRechazo],
   );
 
-  const escribir = useCallback((codigo: string) => despachar({ tipo: 'escribio', codigo }), []);
+  const escribir = useCallback(
+    (codigo: string) => despachar({ tipo: 'escribio', codigo }),
+    [],
+  );
 
   /** Valida con el contrato antes de gastar una peticion en un campo vacio. */
   const leerCodigo = useCallback((codigo: string): string | null => {
@@ -68,7 +71,9 @@ export function useCaja({ alRechazo }: { alRechazo?: () => void } = {}) {
       if (enVuelo.current) return;
       const codigo = leerCodigo(escrito);
       if (codigo === null) return;
-      const r = await correr('sellar', `sellar:${codigo}`, (clave) => api.sellar({ codigo }, clave));
+      const r = await correr('sellar', `sellar:${codigo}`, (clave) =>
+        api.sellar({ codigo }, clave),
+      );
       if (r?.ok === true) despachar({ tipo: 'sellado', datos: r.datos });
     },
     [correr, leerCodigo],
@@ -93,8 +98,10 @@ export function useCaja({ alRechazo }: { alRechazo?: () => void } = {}) {
    */
   const confirmar = useCallback(
     async (registro: RegistroEnCaja, conSello: boolean): Promise<boolean> => {
-      const r = await correr('confirmar', `confirmar:${registro.id}:${conSello}`, (clave) =>
-        api.confirmarRegistro(registro.id, { sellar: conSello }, clave),
+      const r = await correr(
+        'confirmar',
+        `confirmar:${registro.id}:${conSello}`,
+        (clave) => api.confirmarRegistro(registro.id, { sellar: conSello }, clave),
       );
       if (r === null) return false;
       if (r.ok) {

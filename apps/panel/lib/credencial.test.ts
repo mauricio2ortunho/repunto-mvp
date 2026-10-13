@@ -1,9 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { crearCredencial, type Almacen } from './credencial';
 
-const almacen = (inicial: Record<string, string> = {}): Almacen & { datos: Record<string, string> } => {
+const almacen = (
+  inicial: Record<string, string> = {},
+): Almacen & { datos: Record<string, string> } => {
   const datos = { ...inicial };
-  return { datos, getItem: (k) => datos[k] ?? null, setItem: (k, v) => void (datos[k] = v) };
+  return {
+    datos,
+    getItem: (k) => datos[k] ?? null,
+    setItem: (k, v) => void (datos[k] = v),
+  };
 };
 
 describe('el token de la tablet', () => {
@@ -31,8 +37,12 @@ describe('el token de la tablet', () => {
 
   it('si el almacenamiento tira error, el token vive en memoria', () => {
     const roto: Almacen = {
-      getItem: () => { throw new Error('bloqueado'); },
-      setItem: () => { throw new Error('bloqueado'); },
+      getItem: () => {
+        throw new Error('bloqueado');
+      },
+      setItem: () => {
+        throw new Error('bloqueado');
+      },
     };
     const c = crearCredencial(roto, 'compartido');
     expect(c.token()).toBe('compartido');

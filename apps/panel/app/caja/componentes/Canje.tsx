@@ -44,7 +44,13 @@ export function Canje(p: Props) {
               : (p.contexto ?? 'Tiene el premio listo')}
           </h2>
           <p className={css.insignia}>
-            <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false">
+            <svg
+              viewBox="0 0 20 20"
+              width="18"
+              height="18"
+              aria-hidden="true"
+              focusable="false"
+            >
               <path
                 d="M4.5 10.5l3.5 3.5 7.5-8"
                 fill="none"
@@ -60,7 +66,11 @@ export function Canje(p: Props) {
 
         {tarjeta !== null && (
           <>
-            <Sellos progreso={tarjeta.progreso} faltan={tarjeta.faltan} nuevo={tarjeta.progreso - 1} />
+            <Sellos
+              progreso={tarjeta.progreso}
+              faltan={tarjeta.faltan}
+              nuevo={tarjeta.progreso - 1}
+            />
             <Frase texto={fraseDeTarjetaCompleta(tarjeta.nombre)} />
             <p className={css.premio}>
               <span>Premio</span>

@@ -20,8 +20,12 @@ describe('frases para decir en voz alta', () => {
   });
 
   it('el primer sello y el ultimo que falta se dicen distinto', () => {
-    expect(fraseDeAvance(1, 9)).toBe('Ese es tu primer sello. Te faltan 9 para el premio.');
-    expect(fraseDeAvance(9, 1)).toBe('Ya llevás 9 sellos. ¡Te falta uno solo para el premio!');
+    expect(fraseDeAvance(1, 9)).toBe(
+      'Ese es tu primer sello. Te faltan 9 para el premio.',
+    );
+    expect(fraseDeAvance(9, 1)).toBe(
+      'Ya llevás 9 sellos. ¡Te falta uno solo para el premio!',
+    );
   });
 
   it('el alta sin sello dice que ya tiene la tarjeta', () => {
@@ -31,7 +35,9 @@ describe('frases para decir en voz alta', () => {
   });
 
   it('el canje menciona los sellos que pasan a la tarjeta nueva solo si hay', () => {
-    expect(fraseDelCanje({ nombre: 'Ana', premio: 'Café', sobrantes: 0 })).toBe('¡Acá tenés tu premio, Ana!');
+    expect(fraseDelCanje({ nombre: 'Ana', premio: 'Café', sobrantes: 0 })).toBe(
+      '¡Acá tenés tu premio, Ana!',
+    );
     expect(fraseDelCanje({ nombre: 'Ana', premio: 'Café', sobrantes: 1 })).toBe(
       '¡Acá tenés tu premio, Ana! Y ya arrancás la tarjeta nueva con 1 sello.',
     );
@@ -57,12 +63,12 @@ describe('hace cuanto', () => {
 
 describe('despues de deshacer', () => {
   it('dice como quedo la tarjeta', () => {
-    expect(fraseDeAnulacion({ nombre: 'Juan', progreso: 7, faltan: 3, completa: false })).toBe(
-      'Quedó con 7 sellos: le faltan 3 para el premio.',
-    );
-    expect(fraseDeAnulacion({ nombre: 'Juan', progreso: 1, faltan: 1, completa: false })).toBe(
-      'Quedó con 1 sello: le falta 1 para el premio.',
-    );
+    expect(
+      fraseDeAnulacion({ nombre: 'Juan', progreso: 7, faltan: 3, completa: false }),
+    ).toBe('Quedó con 7 sellos: le faltan 3 para el premio.');
+    expect(
+      fraseDeAnulacion({ nombre: 'Juan', progreso: 1, faltan: 1, completa: false }),
+    ).toBe('Quedó con 1 sello: le falta 1 para el premio.');
   });
 });
 

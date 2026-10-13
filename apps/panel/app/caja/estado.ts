@@ -87,7 +87,14 @@ export const estadoInicial: Estado = {
 };
 
 function aSellar(e: Estado, ultimo: Ultimo, codigo: string): Estado {
-  return { modo: 'sellar', codigo, ocupado: null, vuelta: e.vuelta + 1, seleccionar: false, ultimo };
+  return {
+    modo: 'sellar',
+    codigo,
+    ocupado: null,
+    vuelta: e.vuelta + 1,
+    seleccionar: false,
+    ultimo,
+  };
 }
 
 function aCanjear(
@@ -122,7 +129,10 @@ export function reducir(e: Estado, ev: Evento): Estado {
       return {
         ...e,
         ocupado: ev.accion,
-        ultimo: ev.accion === 'descartar' || ev.accion === 'anular' ? e.ultimo : { tipo: 'nada' },
+        ultimo:
+          ev.accion === 'descartar' || ev.accion === 'anular'
+            ? e.ultimo
+            : { tipo: 'nada' },
       };
 
     case 'sellado':
@@ -153,7 +163,13 @@ export function reducir(e: Estado, ev: Evento): Estado {
 
     case 'fallo':
       if (e.modo === 'canjear') {
-        return { ...e, ocupado: null, vuelta: e.vuelta + 1, seleccionar: true, aviso: ev.mensaje };
+        return {
+          ...e,
+          ocupado: null,
+          vuelta: e.vuelta + 1,
+          seleccionar: true,
+          aviso: ev.mensaje,
+        };
       }
       if (ev.codigo === 'TARJETA_COMPLETA') return aCanjear(e, null, ev.mensaje);
       return {

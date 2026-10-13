@@ -29,9 +29,17 @@ import { interpretar, pedir, pedirCrudo, type Fallo, type Respuesta } from './ht
 
 const segmento = (id: string) => encodeURIComponent(id);
 
-export function sellar(peticion: SellarPeticion, clave: string): Promise<Respuesta<SellarRespuesta>> {
+export function sellar(
+  peticion: SellarPeticion,
+  clave: string,
+): Promise<Respuesta<SellarRespuesta>> {
   return pedir(
-    { metodo: 'POST', ruta: '/caja/sellos', cuerpo: peticion, claveDeIdempotencia: clave },
+    {
+      metodo: 'POST',
+      ruta: '/caja/sellos',
+      cuerpo: peticion,
+      claveDeIdempotencia: clave,
+    },
     esquemaSellarRespuesta,
   );
 }
@@ -41,7 +49,12 @@ export function canjear(
   clave: string,
 ): Promise<Respuesta<CanjearRespuesta>> {
   return pedir(
-    { metodo: 'POST', ruta: '/caja/canjes', cuerpo: peticion, claveDeIdempotencia: clave },
+    {
+      metodo: 'POST',
+      ruta: '/caja/canjes',
+      cuerpo: peticion,
+      claveDeIdempotencia: clave,
+    },
     esquemaCanjearRespuesta,
   );
 }
@@ -67,14 +80,25 @@ export function descartarRegistro(
   clave: string,
 ): Promise<Respuesta<DescartarRespuesta>> {
   return pedir(
-    { metodo: 'POST', ruta: `/caja/registros/${segmento(id)}/descartar`, claveDeIdempotencia: clave },
+    {
+      metodo: 'POST',
+      ruta: `/caja/registros/${segmento(id)}/descartar`,
+      claveDeIdempotencia: clave,
+    },
     esquemaDescartarRespuesta,
   );
 }
 
-export function anularSello(id: string, clave: string): Promise<Respuesta<AnularRespuesta>> {
+export function anularSello(
+  id: string,
+  clave: string,
+): Promise<Respuesta<AnularRespuesta>> {
   return pedir(
-    { metodo: 'POST', ruta: `/caja/sellos/${segmento(id)}/anulacion`, claveDeIdempotencia: clave },
+    {
+      metodo: 'POST',
+      ruta: `/caja/sellos/${segmento(id)}/anulacion`,
+      claveDeIdempotencia: clave,
+    },
     esquemaAnularRespuesta,
   );
 }

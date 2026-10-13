@@ -41,7 +41,8 @@ export function AparienciaDeTarjeta(p: {
   const valor = useMemo<Apariencia>(
     () => ({
       icono: p.icono == null ? PorDefecto.icono : iconoDeSelloDe(p.icono),
-      plantilla: p.plantilla == null ? PorDefecto.plantilla : plantillaDeTarjetaDe(p.plantilla),
+      plantilla:
+        p.plantilla == null ? PorDefecto.plantilla : plantillaDeTarjetaDe(p.plantilla),
     }),
     [p.icono, p.plantilla],
   );

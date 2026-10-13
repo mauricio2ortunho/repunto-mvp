@@ -34,7 +34,9 @@ function buscar(patron: RegExp, soloCss = false): string[] {
   return fuentes
     .filter((f) => !soloCss || f.nombre.endsWith('.css'))
     .flatMap((f) =>
-      f.lineas.flatMap((linea, i) => (patron.test(linea) ? [`${f.nombre}:${i + 1}  ${linea.trim()}`] : [])),
+      f.lineas.flatMap((linea, i) =>
+        patron.test(linea) ? [`${f.nombre}:${i + 1}  ${linea.trim()}`] : [],
+      ),
     );
 }
 

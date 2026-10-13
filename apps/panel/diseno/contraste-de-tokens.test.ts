@@ -12,15 +12,17 @@ import { CONTRASTE_MINIMO, contrasteEntre, esColorHex } from '@repunto/contratos
  * ilegible, y donde, antes de verlo en una tablet.
  */
 
-const css = readFileSync(fileURLToPath(new URL('./tokens.css', import.meta.url)), 'utf8').replace(
-  /\/\*[\s\S]*?\*\//g,
-  '',
-);
+const css = readFileSync(
+  fileURLToPath(new URL('./tokens.css', import.meta.url)),
+  'utf8',
+).replace(/\/\*[\s\S]*?\*\//g, '');
 
 function declaraciones(selector: RegExp): Map<string, string> {
   const bloque = selector.exec(css)?.[1];
   if (bloque === undefined) throw new Error(`No esta el bloque ${selector}`);
-  return new Map([...bloque.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)].map((m) => [m[1]!, m[2]!.trim()]));
+  return new Map(
+    [...bloque.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)].map((m) => [m[1]!, m[2]!.trim()]),
+  );
 }
 
 const raiz = declaraciones(/:root\s*\{([^}]*)\}/);
@@ -34,20 +36,28 @@ const superficie = (nombre: string) =>
 
 /** El valor computado en la raiz: var() se resuelve contra la raiz. */
 function enRaiz(nombre: string, vistos: string[] = []): string {
-  if (vistos.includes(nombre)) throw new Error(`Ciclo: ${[...vistos, nombre].join(' -> ')}`);
+  if (vistos.includes(nombre))
+    throw new Error(`Ciclo: ${[...vistos, nombre].join(' -> ')}`);
   const valor = raiz.get(nombre);
   if (valor === undefined) throw new Error(`No existe ${nombre}`);
-  return valor.replace(/var\((--[\w-]+)\)/g, (_, v: string) => enRaiz(v, [...vistos, nombre]));
+  return valor.replace(/var\((--[\w-]+)\)/g, (_, v: string) =>
+    enRaiz(v, [...vistos, nombre]),
+  );
 }
 
 /**
  * Dentro de una superficie: lo que la superficie redefine se resuelve ahi;
  * lo que no, se hereda ya computado de la raiz. Igual que en CSS.
  */
-function enSuperficie(decl: Map<string, string>, nombre: string, vistos: string[] = []): string {
+function enSuperficie(
+  decl: Map<string, string>,
+  nombre: string,
+  vistos: string[] = [],
+): string {
   const valor = decl.get(nombre);
   if (valor === undefined) return enRaiz(nombre);
-  if (vistos.includes(nombre)) throw new Error(`Ciclo: ${[...vistos, nombre].join(' -> ')}`);
+  if (vistos.includes(nombre))
+    throw new Error(`Ciclo: ${[...vistos, nombre].join(' -> ')}`);
   return valor.replace(/var\((--[\w-]+)\)/g, (_, v: string) =>
     enSuperficie(decl, v, [...vistos, nombre]),
   );
@@ -59,8 +69,12 @@ type Resolver = (nombre: string) => string;
 function medir(resolver: Resolver, frente: string, fondo: string): number {
   const a = resolver(frente);
   const b = resolver(fondo);
-  for (const [token, valor] of [[frente, a], [fondo, b]] as const) {
-    if (!esColorHex(valor)) throw new Error(`${token} = ${valor}: tiene que ser #RRGGBB opaco`);
+  for (const [token, valor] of [
+    [frente, a],
+    [fondo, b],
+  ] as const) {
+    if (!esColorHex(valor))
+      throw new Error(`${token} = ${valor}: tiene que ser #RRGGBB opaco`);
   }
   return contrasteEntre(a, b);
 }
@@ -104,7 +118,9 @@ const PARES_DE_SUPERFICIE: Par[] = [
 function revisar(resolver: Resolver, pares: Par[]): string[] {
   return pares.flatMap(([frente, fondo, minimo]) => {
     const c = medir(resolver, frente, fondo);
-    return c >= minimo ? [] : [`${frente} sobre ${fondo}: ${c.toFixed(2)} (minimo ${minimo})`];
+    return c >= minimo
+      ? []
+      : [`${frente} sobre ${fondo}: ${c.toFixed(2)} (minimo ${minimo})`];
   });
 }
 

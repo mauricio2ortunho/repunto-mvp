@@ -4,7 +4,12 @@ import { estadoInicial, reducir, type Estado, type Evento } from './estado';
 const correr = (...eventos: Evento[]): Estado => eventos.reduce(reducir, estadoInicial);
 const SELLO_ID = '3f1c2b9e-8d4a-4c6b-9a7e-1b2c3d4e5f60';
 const sello = (progreso: number, faltan: number, completa = false) => ({
-  nombre: 'Ana Rojas', progreso, faltan, completa, premio: 'Café americano', sello_id: SELLO_ID,
+  nombre: 'Ana Rojas',
+  progreso,
+  faltan,
+  completa,
+  premio: 'Café americano',
+  sello_id: SELLO_ID,
 });
 
 describe('la caja', () => {
@@ -18,8 +23,17 @@ describe('la caja', () => {
   });
 
   it('un sello que no completa deja el resultado y el campo vacio', () => {
-    const e = correr({ tipo: 'escribio', codigo: 'X' }, { tipo: 'empezo', accion: 'sellar' }, { tipo: 'sellado', datos: sello(8, 2) });
-    expect(e).toMatchObject({ modo: 'sellar', codigo: '', ocupado: null, ultimo: { tipo: 'sello' } });
+    const e = correr(
+      { tipo: 'escribio', codigo: 'X' },
+      { tipo: 'empezo', accion: 'sellar' },
+      { tipo: 'sellado', datos: sello(8, 2) },
+    );
+    expect(e).toMatchObject({
+      modo: 'sellar',
+      codigo: '',
+      ocupado: null,
+      ultimo: { tipo: 'sello' },
+    });
   });
 
   it('la tarjeta completa la decide `completa`, no `faltan`', () => {
@@ -29,19 +43,42 @@ describe('la caja', () => {
   });
 
   it('al completar, el canje arranca con el campo vacio: el codigo ya se gasto', () => {
-    const e = correr({ tipo: 'escribio', codigo: 'A9P2X-000001' }, { tipo: 'sellado', datos: sello(10, 0, true) });
-    expect(e).toMatchObject({ modo: 'canjear', codigo: '', tarjeta: { nombre: 'Ana Rojas' } });
+    const e = correr(
+      { tipo: 'escribio', codigo: 'A9P2X-000001' },
+      { tipo: 'sellado', datos: sello(10, 0, true) },
+    );
+    expect(e).toMatchObject({
+      modo: 'canjear',
+      codigo: '',
+      tarjeta: { nombre: 'Ana Rojas' },
+    });
   });
 
   it('TARJETA_COMPLETA al sellar lleva al canje con el mensaje de la API', () => {
-    const e = correr({ tipo: 'fallo', codigo: 'TARJETA_COMPLETA', mensaje: 'Ya tiene el premio listo.' });
-    expect(e).toMatchObject({ modo: 'canjear', tarjeta: null, contexto: 'Ya tiene el premio listo.' });
+    const e = correr({
+      tipo: 'fallo',
+      codigo: 'TARJETA_COMPLETA',
+      mensaje: 'Ya tiene el premio listo.',
+    });
+    expect(e).toMatchObject({
+      modo: 'canjear',
+      tarjeta: null,
+      contexto: 'Ya tiene el premio listo.',
+    });
   });
 
   it('un rechazo deja el codigo seleccionado y vuelve el foco', () => {
     const antes = correr({ tipo: 'escribio', codigo: 'K7Q4M-1' });
-    const e = reducir(antes, { tipo: 'fallo', codigo: 'CODIGO_INVALIDO', mensaje: 'No vale.' });
-    expect(e).toMatchObject({ codigo: 'K7Q4M-1', seleccionar: true, ultimo: { tipo: 'aviso', mensaje: 'No vale.' } });
+    const e = reducir(antes, {
+      tipo: 'fallo',
+      codigo: 'CODIGO_INVALIDO',
+      mensaje: 'No vale.',
+    });
+    expect(e).toMatchObject({
+      codigo: 'K7Q4M-1',
+      seleccionar: true,
+      ultimo: { tipo: 'aviso', mensaje: 'No vale.' },
+    });
     expect(e.vuelta).toBe(antes.vuelta + 1);
   });
 
@@ -56,7 +93,10 @@ describe('la caja', () => {
   it('entregar el premio vuelve a la caja con el resultado del canje', () => {
     const e = correr(
       { tipo: 'sellado', datos: sello(10, 0, true) },
-      { tipo: 'canjeado', datos: { nombre: 'Ana Rojas', premio: 'Café americano', sobrantes: 0 } },
+      {
+        tipo: 'canjeado',
+        datos: { nombre: 'Ana Rojas', premio: 'Café americano', sobrantes: 0 },
+      },
     );
     expect(e).toMatchObject({ modo: 'sellar', ultimo: { tipo: 'canje' } });
   });
@@ -71,7 +111,11 @@ describe('la caja', () => {
   });
 
   it('descartar no borra el resultado que estaba en pantalla', () => {
-    const e = correr({ tipo: 'sellado', datos: sello(7, 3) }, { tipo: 'empezo', accion: 'descartar' }, { tipo: 'descartado' });
+    const e = correr(
+      { tipo: 'sellado', datos: sello(7, 3) },
+      { tipo: 'empezo', accion: 'descartar' },
+      { tipo: 'descartado' },
+    );
     expect(e.modo === 'sellar' && e.ultimo.tipo).toBe('sello');
   });
 
@@ -81,7 +125,10 @@ describe('la caja', () => {
   });
 
   it('mientras se deshace, la tarjeta sigue en pantalla: es el mismo cliente', () => {
-    const e = correr({ tipo: 'sellado', datos: sello(8, 2) }, { tipo: 'empezo', accion: 'anular' });
+    const e = correr(
+      { tipo: 'sellado', datos: sello(8, 2) },
+      { tipo: 'empezo', accion: 'anular' },
+    );
     expect(e).toMatchObject({ ocupado: 'anular', ultimo: { tipo: 'sello' } });
   });
 
@@ -89,7 +136,10 @@ describe('la caja', () => {
     const e = correr(
       { tipo: 'sellado', datos: sello(10, 0, true) },
       { tipo: 'empezo', accion: 'anular' },
-      { tipo: 'anulado', datos: { nombre: 'Ana Rojas', progreso: 9, faltan: 1, completa: false } },
+      {
+        tipo: 'anulado',
+        datos: { nombre: 'Ana Rojas', progreso: 9, faltan: 1, completa: false },
+      },
     );
     expect(e).toMatchObject({ modo: 'sellar', codigo: '', ultimo: { tipo: 'anulado' } });
   });

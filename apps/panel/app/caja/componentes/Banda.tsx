@@ -13,14 +13,19 @@ const TEXTO_DE_CONEXION: Record<Conexion, string> = {
  * fondo con --c-marca y el texto con --c-sobre-marca, que VistaDeCaja define
  * con `variablesDeMarca`: blanco o negro por contraste, nunca elegido.
  */
-export function Banda({ datos, conexion }: { datos: EstadoDeCaja | null; conexion: Conexion }) {
+export function Banda({
+  datos,
+  conexion,
+}: {
+  datos: EstadoDeCaja | null;
+  conexion: Conexion;
+}) {
   return (
     <header className={css.banda} data-superficie="marca">
       <div className={css.marca}>
         {datos?.negocio.logo_url != null && datos.negocio.logo_url !== '' && (
           <span className={css.logo}>
             {/* El logo sale de la base de cada negocio: no pasa por next/image. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={datos.negocio.logo_url}
               alt=""
@@ -37,7 +42,9 @@ export function Banda({ datos, conexion }: { datos: EstadoDeCaja | null; conexio
         </div>
       </div>
       <div className={css.derecha}>
-        {datos?.turno != null && <span className={css.turno}>Turno de {datos.turno.usuario}</span>}
+        {datos?.turno != null && (
+          <span className={css.turno}>Turno de {datos.turno.usuario}</span>
+        )}
         <span className={css.conexion} data-estado={conexion} role="status">
           {TEXTO_DE_CONEXION[conexion]}
         </span>

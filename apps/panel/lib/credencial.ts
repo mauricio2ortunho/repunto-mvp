@@ -30,7 +30,10 @@ export interface Credencial {
  * datos bloqueados). En ese caso el token vive en memoria hasta que se cierre
  * la pagina: la caja sigue andando, aunque no recuerde la sesion.
  */
-export function crearCredencial(almacen: Almacen | null, deEntorno: string | null): Credencial {
+export function crearCredencial(
+  almacen: Almacen | null,
+  deEntorno: string | null,
+): Credencial {
   let enMemoria: string | null = null;
 
   const leer = (): string | null => {

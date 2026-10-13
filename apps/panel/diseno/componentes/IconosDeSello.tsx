@@ -15,7 +15,10 @@ import type { IconoDeSello } from '@repunto/contratos';
 export const DIBUJO_DE_SELLO: Record<IconoDeSello, ReactElement> = {
   cafe: (
     <g>
-      <path d="M4 9.5h12v4.5a5.5 5.5 0 0 1-5.5 5.5h-1A5.5 5.5 0 0 1 4 14Z" fill="currentColor" />
+      <path
+        d="M4 9.5h12v4.5a5.5 5.5 0 0 1-5.5 5.5h-1A5.5 5.5 0 0 1 4 14Z"
+        fill="currentColor"
+      />
       <path
         d="M16 11h1.6a2.6 2.6 0 0 1 0 5.2H15.6M8 3.5v3M12 3.5v3"
         fill="none"

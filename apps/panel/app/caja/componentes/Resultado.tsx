@@ -73,7 +73,11 @@ export function Resultado(p: Props) {
           nombre={d.nombre}
           pie={deshacer(d.sello_id, d.nombre)}
         >
-          <Sellos progreso={d.progreso} faltan={d.faltan} nuevo={d.sello ? d.progreso - 1 : null} />
+          <Sellos
+            progreso={d.progreso}
+            faltan={d.faltan}
+            nuevo={d.sello ? d.progreso - 1 : null}
+          />
           <Frase texto={fraseDelAlta(d)} />
           <Premio premio={d.premio} />
         </Tarjeta>

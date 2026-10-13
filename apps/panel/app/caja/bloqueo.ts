@@ -27,7 +27,9 @@ export interface Bloqueo {
   tono: TonoDeBloqueo;
 }
 
-const SE_RESUELVEN_EN_EL_MOSTRADOR: ReadonlySet<CodigoDeError> = new Set(['TURNO_CERRADO']);
+const SE_RESUELVEN_EN_EL_MOSTRADOR: ReadonlySet<CodigoDeError> = new Set([
+  'TURNO_CERRADO',
+]);
 
 export function tonoDeBloqueo(codigo: CodigoDeError): TonoDeBloqueo {
   return SE_RESUELVEN_EN_EL_MOSTRADOR.has(codigo) ? 'instruccion' : 'alarma';

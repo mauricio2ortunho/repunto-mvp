@@ -4,10 +4,9 @@
  */
 
 /** Sin barra final, para poder concatenar rutas que empiezan con `/`. */
-export const urlDeLaApi = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001').replace(
-  /\/+$/,
-  '',
-);
+export const urlDeLaApi = (
+  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
+).replace(/\/+$/, '');
 
 /**
  * Token compartido para desarrollo y staging. Solo siembra el almacenamiento

@@ -20,10 +20,13 @@ const QUE_PASO: Record<CausaIncierta, string> = {
 
 const QUE_HACER: Record<Accion, string> = {
   sellar: 'Tocá Sellar de nuevo: si ya se había sellado, no se sella dos veces.',
-  canjear: 'Tocá Entregar premio de nuevo: si ya se había entregado, no se entrega dos veces.',
-  confirmar: 'Tocá el mismo botón de nuevo: si ya se había confirmado, no se confirma dos veces.',
+  canjear:
+    'Tocá Entregar premio de nuevo: si ya se había entregado, no se entrega dos veces.',
+  confirmar:
+    'Tocá el mismo botón de nuevo: si ya se había confirmado, no se confirma dos veces.',
   descartar: 'Tocá Descartar de nuevo.',
-  anular: 'Tocá Deshacer sello de nuevo: si ya se había deshecho, no se deshace dos veces.',
+  anular:
+    'Tocá Deshacer sello de nuevo: si ya se había deshecho, no se deshace dos veces.',
 };
 
 export function mensajeIncierto(causa: CausaIncierta, accion: Accion): string {

@@ -98,7 +98,10 @@ export function useRegistrosPendientes() {
     setOcultos((prev) => new Set(prev).add(id));
   }, []);
 
-  const registros = useMemo(() => lista.filter((r) => !ocultos.has(r.id)), [lista, ocultos]);
+  const registros = useMemo(
+    () => lista.filter((r) => !ocultos.has(r.id)),
+    [lista, ocultos],
+  );
 
   return { registros, conexion, problema, ocultar };
 }

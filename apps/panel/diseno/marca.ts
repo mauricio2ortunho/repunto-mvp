@@ -11,7 +11,12 @@ import { colorDeTextoSobre, esColorHex } from '@repunto/contratos';
  * pinta nada y quedan los de la caja: `colorDeTextoSobre` igual devolveria un
  * color, pero para un fondo que nadie deberia estar pintando.
  */
-export function variablesDeMarca(color: string | null | undefined): CSSProperties | undefined {
+export function variablesDeMarca(
+  color: string | null | undefined,
+): CSSProperties | undefined {
   if (color == null || !esColorHex(color)) return undefined;
-  return { '--c-marca': color, '--c-sobre-marca': colorDeTextoSobre(color) } as CSSProperties;
+  return {
+    '--c-marca': color,
+    '--c-sobre-marca': colorDeTextoSobre(color),
+  } as CSSProperties;
 }

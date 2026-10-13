@@ -17,7 +17,9 @@ export type CodigoDeError = ErrorDeLaApi['codigo'];
 
 /** Lo que el panel usa de un esquema de Zod, sin importar zod. */
 export interface Esquema<T> {
-  safeParse(datos: unknown): { success: true; data: T } | { success: false; error: unknown };
+  safeParse(
+    datos: unknown,
+  ): { success: true; data: T } | { success: false; error: unknown };
 }
 
 export type CausaIncierta =
@@ -75,7 +77,10 @@ export async function pedirCrudo(
   const cortarDesdeAfuera = () => controlador.abort();
   pedido.senal?.addEventListener('abort', cortarDesdeAfuera, { once: true });
 
-  const cabeceras: Record<string, string> = { Accept: 'application/json', ...pedido.cabeceras };
+  const cabeceras: Record<string, string> = {
+    Accept: 'application/json',
+    ...pedido.cabeceras,
+  };
   // Sin token no se inventa nada: la peticion sale sin cabecera, la API
   // contesta TOKEN_INVALIDO y el cajero lee "Esta tablet no esta vinculada".
   const token = credencialDeLaTablet().token();
@@ -147,20 +152,35 @@ export function interpretar<T>(crudo: Crudo, esquema: Esquema<T>): Respuesta<T> 
   // Un codigo nuevo que este paquete todavia no lista: el mensaje igual esta
   // escrito para el cajero, asi que se muestra.
   const suelto = mensajeSuelto(cuerpo);
-  if (suelto !== null) return { ok: false, tipo: 'rechazo', codigo: null, mensaje: suelto, estado };
+  if (suelto !== null)
+    return { ok: false, tipo: 'rechazo', codigo: null, mensaje: suelto, estado };
 
   const codigo: CodigoDeError =
-    estado === 401 ? 'TOKEN_INVALIDO' : estado === 429 ? 'TOPE_SUPERADO' : 'PETICION_INVALIDA';
-  return { ok: false, tipo: 'rechazo', codigo, mensaje: mensajeParaElCajero(codigo), estado };
+    estado === 401
+      ? 'TOKEN_INVALIDO'
+      : estado === 429
+        ? 'TOPE_SUPERADO'
+        : 'PETICION_INVALIDA';
+  return {
+    ok: false,
+    tipo: 'rechazo',
+    codigo,
+    mensaje: mensajeParaElCajero(codigo),
+    estado,
+  };
 }
 
 function mensajeSuelto(cuerpo: unknown): string | null {
-  if (typeof cuerpo !== 'object' || cuerpo === null || !('mensaje' in cuerpo)) return null;
+  if (typeof cuerpo !== 'object' || cuerpo === null || !('mensaje' in cuerpo))
+    return null;
   const { mensaje } = cuerpo;
   return typeof mensaje === 'string' && mensaje.trim() !== '' ? mensaje : null;
 }
 
-export async function pedir<T>(pedido: Pedido, esquema: Esquema<T>): Promise<Respuesta<T>> {
+export async function pedir<T>(
+  pedido: Pedido,
+  esquema: Esquema<T>,
+): Promise<Respuesta<T>> {
   const crudo = await pedirCrudo(pedido);
   if (crudo === 'cancelado' || crudo === 'sin_conexion') {
     return { ok: false, tipo: 'incierto', causa: 'sin_conexion' };

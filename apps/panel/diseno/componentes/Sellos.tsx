@@ -127,14 +127,24 @@ function Sello(p: { indice: number; nuevo: boolean; icono: IconoDeSello }) {
       focusable="false"
     >
       <g filter={`url(#tinta-${(indice % 3) + 1})`}>
-        <circle cx="32" cy="32" r="28" fill="none" stroke="currentColor" strokeWidth="3.5" />
+        <circle
+          cx="32"
+          cy="32"
+          r="28"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3.5"
+        />
         <circle cx="32" cy="32" r="21.5" fill="currentColor" />
       </g>
       {/*
        * El icono va afuera del filtro: la tinta gasta el borde, pero un dibujo
        * de 24 unidades erosionado deja de leerse. Centrado en el disco.
        */}
-      <g transform="translate(18.2 18.2) scale(1.15)" style={{ color: 'var(--c-sobre-sello)' }}>
+      <g
+        transform="translate(18.2 18.2) scale(1.15)"
+        style={{ color: 'var(--c-sobre-sello)' }}
+      >
         {DIBUJO_DE_SELLO[p.icono]}
       </g>
     </svg>
@@ -143,7 +153,11 @@ function Sello(p: { indice: number; nuevo: boolean; icono: IconoDeSello }) {
 
 function Casilla({ indice, esElPremio }: { indice: number; esElPremio: boolean }) {
   return (
-    <span className={css.casilla} data-premio={esElPremio || undefined} aria-hidden="true">
+    <span
+      className={css.casilla}
+      data-premio={esElPremio || undefined}
+      aria-hidden="true"
+    >
       {esElPremio ? <IconoPremio /> : indice + 1}
     </span>
   );

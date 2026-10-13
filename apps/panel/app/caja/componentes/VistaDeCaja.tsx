@@ -2,7 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { RegistroEnCaja } from '@repunto/contratos';
-import { AparienciaDeTarjeta, DefinicionesDeTinta, variablesDeMarca } from '../../../diseno';
+import {
+  AparienciaDeTarjeta,
+  DefinicionesDeTinta,
+  variablesDeMarca,
+} from '../../../diseno';
 import { useCaja } from '../usar-caja';
 import { useEstadoDeCaja } from '../usar-estado';
 import { useAhora, useRegistrosPendientes } from '../usar-registros';
@@ -15,7 +19,8 @@ import { Registros, type QueHaceLaFila } from './Registros';
 import { Resultado } from './Resultado';
 import css from './VistaDeCaja.module.css';
 
-const REGISTROS_EN_CANJE = 'Para confirmar registros, entregá el premio o volvé sin entregar.';
+const REGISTROS_EN_CANJE =
+  'Para confirmar registros, entregá el premio o volvé sin entregar.';
 const REGISTROS_BLOQUEADOS = 'La caja no puede confirmar registros ahora.';
 
 /**
@@ -29,13 +34,17 @@ const REGISTROS_BLOQUEADOS = 'La caja no puede confirmar registros ahora.';
  */
 export function VistaDeCaja() {
   const caja = useEstadoDeCaja();
-  const { estado, escribir, sellar, canjear, confirmar, descartar, deshacer, volver } = useCaja({
-    alRechazo: caja.revisar,
-  });
+  const { estado, escribir, sellar, canjear, confirmar, descartar, deshacer, volver } =
+    useCaja({
+      alRechazo: caja.revisar,
+    });
   const pendientes = useRegistrosPendientes();
   const ahora = useAhora();
   const campo = useRef<HTMLInputElement>(null);
-  const [filaOcupada, setFilaOcupada] = useState<{ id: string; que: QueHaceLaFila } | null>(null);
+  const [filaOcupada, setFilaOcupada] = useState<{
+    id: string;
+    que: QueHaceLaFila;
+  } | null>(null);
 
   // Despues de cada accion -sello, rechazo, registro confirmado- el foco
   // vuelve al campo. Tras un rechazo el codigo queda seleccionado.
@@ -46,7 +55,11 @@ export function VistaDeCaja() {
     if (estado.seleccionar) el.select();
   }, [estado.vuelta, estado.modo, estado.seleccionar, caja.bloqueo?.codigo]);
 
-  const enFila = async (r: RegistroEnCaja, que: QueHaceLaFila, hacer: () => Promise<boolean>) => {
+  const enFila = async (
+    r: RegistroEnCaja,
+    que: QueHaceLaFila,
+    hacer: () => Promise<boolean>,
+  ) => {
     setFilaOcupada({ id: r.id, que });
     const resuelto = await hacer();
     setFilaOcupada(null);
@@ -63,14 +76,21 @@ export function VistaDeCaja() {
       icono={caja.datos?.negocio.icono_sello}
       plantilla={caja.datos?.negocio.plantilla_tarjeta}
     >
-      <div className={css.pantalla} style={variablesDeMarca(caja.datos?.negocio.color_principal)}>
+      <div
+        className={css.pantalla}
+        style={variablesDeMarca(caja.datos?.negocio.color_principal)}
+      >
         <DefinicionesDeTinta />
 
         <Banda datos={caja.datos} conexion={pendientes.conexion} />
 
         <main className={css.principal} data-superficie={superficie}>
           {caja.bloqueo !== null ? (
-            <Bloqueo bloqueo={caja.bloqueo} revisando={caja.revisando} alRevisar={caja.revisar} />
+            <Bloqueo
+              bloqueo={caja.bloqueo}
+              revisando={caja.revisando}
+              alRevisar={caja.revisar}
+            />
           ) : (
             <>
               {pendientes.problema !== null && (
