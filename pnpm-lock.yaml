@@ -93,6 +93,9 @@ importers:
       '@repunto/contratos':
         specifier: workspace:*
         version: link:../../packages/contratos
+      '@repunto/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       next:
         specifier: ^15.5.4
         version: 15.5.25(@types/node@24.13.5)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)

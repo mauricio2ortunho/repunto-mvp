@@ -1,9 +1,10 @@
 import type { NextConfig } from 'next';
 
-// El service worker de la PWA todavia no se configura: va cuando existan
-// tarjetas que valga la pena ver sin conexion.
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // El sistema de diseno compartido se publica como codigo fuente, con sus
+  // modulos CSS: lo compila esta app, no un build propio.
+  transpilePackages: ['@repunto/ui'],
 };
 
 export default nextConfig;
