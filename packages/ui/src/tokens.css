@@ -169,6 +169,9 @@
   --ancho-contenido: 780px;
   --ancho-costado: 360px;
 
+  /* La columna de la app del cliente: un telefono, y no mas ancha en una tablet. */
+  --ancho-telefono: 480px;
+
   /*
    * Medidas de componente: un componente las lee y quien lo contiene puede
    * achicarlas para su espacio, sin inventar un tamano.

@@ -1,0 +1,19 @@
+.pantalla {
+  display: grid;
+  gap: var(--espacio-6);
+  align-content: start;
+  width: 100%;
+  max-width: var(--ancho-telefono);
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: var(--espacio-6) var(--espacio-5)
+    calc(var(--espacio-9) + env(safe-area-inset-bottom));
+}
+
+.nombre {
+  margin: 0;
+  color: var(--c-acento);
+  font-size: var(--texto-4);
+  font-weight: var(--peso-negro);
+  letter-spacing: -0.01em;
+}
