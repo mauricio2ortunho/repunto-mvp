@@ -1,0 +1,86 @@
+.codigo {
+  display: grid;
+  gap: var(--espacio-5);
+  justify-items: center;
+  padding-top: var(--espacio-6);
+  text-align: center;
+}
+
+.instruccion {
+  margin: 0;
+  font-size: var(--texto-5);
+  font-weight: var(--peso-fuerte);
+}
+
+/* El maximo contraste del sistema: lo lee el cajero, a veces con sol de frente. */
+.numero {
+  display: grid;
+  gap: var(--espacio-2);
+  width: 100%;
+  margin: 0;
+  padding: var(--espacio-7) var(--espacio-4);
+  border: var(--borde-grueso) solid var(--c-texto);
+  border-radius: var(--radio-3);
+  background: var(--c-superficie);
+  color: var(--c-texto);
+  font-family: var(--f-codigo);
+  font-weight: var(--peso-negro);
+}
+
+.prefijo {
+  font-size: var(--texto-9);
+  letter-spacing: 0.14em;
+}
+
+.digitos {
+  font-size: var(--texto-codigo);
+  line-height: 1;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.barra {
+  width: 100%;
+  height: var(--espacio-2);
+  overflow: hidden;
+  border-radius: var(--radio-pildora);
+  background: var(--c-accion-velo);
+}
+
+.barra span {
+  display: block;
+  height: 100%;
+  background: var(--c-accion);
+  transform-origin: left center;
+  transition: transform 250ms linear;
+}
+
+.cuenta {
+  margin: 0;
+  font-size: var(--texto-4);
+  font-weight: var(--peso-fuerte);
+  font-variant-numeric: tabular-nums;
+}
+
+.nota,
+.espera {
+  margin: 0;
+  color: var(--c-texto-suave);
+}
+
+.espera {
+  padding-top: var(--espacio-9);
+  text-align: center;
+}
+
+.problema {
+  display: grid;
+  gap: var(--espacio-4);
+  padding-top: var(--espacio-6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .barra span {
+    transition: none;
+  }
+}

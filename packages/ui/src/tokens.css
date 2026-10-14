@@ -179,6 +179,8 @@
   --tamano-sello: 60px;
   --tamano-sello-compacto: 44px;
   --texto-frase: var(--texto-8);
+  /* El codigo en el telefono del cliente: lo lee el cajero desde el otro lado del mostrador. */
+  --texto-codigo: clamp(48px, 15vw, 76px);
   --texto-frase-compacto: var(--texto-6);
 
   /* ---------- Movimiento ---------- */
