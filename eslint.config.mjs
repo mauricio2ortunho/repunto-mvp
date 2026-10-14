@@ -262,5 +262,19 @@ export default tseslint.config(
     },
   },
 
+  {
+    // El service worker corre en su propio ambito, no en una pagina.
+    files: ['apps/cliente/public/sw.js'],
+    languageOptions: {
+      globals: {
+        self: 'readonly',
+        caches: 'readonly',
+        fetch: 'readonly',
+        Response: 'readonly',
+        URL: 'readonly',
+      },
+    },
+  },
+
   prettier,
 );

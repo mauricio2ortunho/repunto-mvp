@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Un sello de tinta sobre el verde de la app: los mismos colores que tokens.css. -->
+  <rect width="512" height="512" rx="112" fill="#0f5a43"/>
+  <circle cx="256" cy="256" r="150" fill="none" stroke="#ffffff" stroke-width="22"/>
+  <circle cx="256" cy="256" r="112" fill="#ffffff"/>
+  <path d="M206 316V196h52a38 38 0 0 1 0 76h-52m52 0 40 44" fill="none" stroke="#0f5a43" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
