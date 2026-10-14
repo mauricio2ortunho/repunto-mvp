@@ -74,24 +74,6 @@ export function fraseDeAnulacion(r: AnularRespuesta): string {
   return `Quedó con ${sellos}: ${falta} para el premio.`;
 }
 
-/**
- * `30.00` -> `Bs 30`, `1500.5` -> `Bs 1.500,50`. Trabaja sobre el texto: el
- * monto no pasa por un numero de punto flotante. Si no tiene forma de monto,
- * se muestra tal cual.
- */
-export function formatearBolivianos(monto: string): string {
-  const m = /^(\d+)(?:[.,](\d+))?$/.exec(monto.trim());
-  if (m?.[1] === undefined) return `Bs ${monto.trim()}`;
-  const entero = m[1].replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  const decimales = (m[2] ?? '').padEnd(2, '0');
-  return /^0*$/.test(decimales) ? `Bs ${entero}` : `Bs ${entero},${decimales}`;
-}
-
-/** Un monto minimo de cero no es condicion: no se muestra. */
-export function esMontoCero(monto: string): boolean {
-  return /^0*(?:[.,]0*)?$/.test(monto.trim());
-}
-
 /** Para distinguir dos registros con el mismo nombre. Tolera relojes corridos. */
 export function haceCuanto(creadoEl: string, ahora: number): string {
   const minutos = Math.floor((ahora - Date.parse(creadoEl)) / 60_000);

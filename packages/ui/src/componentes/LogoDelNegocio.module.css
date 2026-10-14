@@ -1,0 +1,29 @@
+.inicial,
+.logo {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--alto-control);
+  height: var(--alto-control);
+  border-radius: var(--radio-pildora);
+}
+
+/* La inicial va calada en el color calculado: contrasta con cualquier marca. */
+.inicial {
+  border: var(--borde-grueso) solid currentColor;
+  font-size: var(--texto-6);
+  font-weight: var(--peso-negro);
+  line-height: 1;
+}
+
+/* Un logo ajeno va siempre sobre blanco: no se sabe de que color es. */
+.logo {
+  overflow: hidden;
+  background: var(--c-fondo-logo);
+}
+
+.logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}

@@ -1,5 +1,5 @@
 import type { EstadoDeCaja } from '@repunto/contratos';
-import { esMontoCero, formatearBolivianos } from '../frases';
+import { esMontoCero, formatearBolivianos } from '@repunto/ui';
 import css from './Condicion.module.css';
 
 /**

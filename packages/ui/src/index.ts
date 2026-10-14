@@ -18,4 +18,6 @@ export { Boton, type TamanoDeBoton, type VarianteDeBoton } from './componentes/B
 export { BotonDeDosToques } from './componentes/BotonDeDosToques';
 export { DIBUJO_DE_SELLO } from './componentes/IconosDeSello';
 export { DefinicionesDeTinta, Sellos } from './componentes/Sellos';
+export { LogoDelNegocio } from './componentes/LogoDelNegocio';
 export { variablesDeMarca } from './marca';
+export { esMontoCero, formatearBolivianos } from './montos';
