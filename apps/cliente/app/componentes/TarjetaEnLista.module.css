@@ -1,0 +1,58 @@
+.tarjeta {
+  display: block;
+  overflow: hidden;
+  border: var(--borde-fino) solid var(--c-borde);
+  border-radius: var(--radio-3);
+  background: var(--c-superficie);
+  color: var(--c-texto);
+  text-decoration: none;
+}
+
+.tarjeta:active {
+  border-color: var(--c-borde-fuerte);
+}
+
+.marca {
+  display: flex;
+  gap: var(--espacio-3);
+  align-items: center;
+  padding: var(--espacio-4);
+}
+
+.marca h2 {
+  margin: 0;
+  font-size: var(--texto-5);
+  font-weight: var(--peso-fuerte);
+  line-height: var(--interlineado-titulo);
+}
+
+.cuerpo {
+  display: grid;
+  gap: var(--espacio-2);
+  padding: var(--espacio-4);
+  --tamano-sello: var(--tamano-sello-compacto);
+}
+
+.titulo {
+  margin: var(--espacio-2) 0 0;
+  font-size: var(--texto-5);
+  font-weight: var(--peso-negro);
+}
+
+.premio,
+.vence {
+  margin: 0;
+  color: var(--c-texto-suave);
+}
+
+/* La completa se nota de lejos: la franja del premio arriba de los sellos. */
+.tarjeta[data-estado='completa'] .cuerpo {
+  border-top: var(--espacio-2) solid var(--c-premio);
+}
+
+/* Las que ya no suman, mas apagadas. */
+.tarjeta[data-estado='vencida'] .cuerpo,
+.tarjeta[data-estado='congelada'] .cuerpo,
+.tarjeta[data-estado='canjeada'] .cuerpo {
+  opacity: 0.6;
+}

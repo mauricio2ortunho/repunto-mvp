@@ -1,0 +1,9 @@
+/* Pegado abajo mientras se recorre la lista, sobre el fondo de la pagina. */
+.pie {
+  position: sticky;
+  bottom: 0;
+  margin: 0 calc(var(--espacio-5) * -1);
+  padding: var(--espacio-4) var(--espacio-5)
+    calc(var(--espacio-4) + env(safe-area-inset-bottom));
+  background: linear-gradient(transparent, var(--c-fondo) var(--espacio-5));
+}

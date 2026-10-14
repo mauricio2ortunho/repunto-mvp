@@ -1,0 +1,124 @@
+.tarjeta {
+  overflow: hidden;
+  border: var(--borde-fino) solid var(--c-borde);
+  border-radius: var(--radio-3);
+  background: var(--c-superficie);
+}
+
+.marca {
+  display: flex;
+  gap: var(--espacio-3);
+  align-items: center;
+  padding: var(--espacio-5) var(--espacio-4);
+}
+
+.marca h1 {
+  margin: 0;
+  font-size: var(--texto-6);
+  font-weight: var(--peso-negro);
+  line-height: var(--interlineado-titulo);
+}
+
+.cuerpo {
+  display: grid;
+  gap: var(--espacio-3);
+  padding: var(--espacio-5) var(--espacio-4);
+}
+
+/* La completa: la franja del premio, la misma de la caja. */
+.tarjeta[data-estado='completa'] .cuerpo {
+  border-top: var(--espacio-2) solid var(--c-premio);
+}
+
+.tarjeta[data-estado='vencida'] .cuerpo,
+.tarjeta[data-estado='congelada'] .cuerpo,
+.tarjeta[data-estado='canjeada'] .cuerpo {
+  opacity: 0.7;
+}
+
+.titulo {
+  margin: 0;
+  font-size: var(--texto-7);
+  font-weight: var(--peso-negro);
+  line-height: var(--interlineado-titulo);
+}
+
+.explicacion {
+  margin: 0 0 var(--espacio-2);
+  color: var(--c-texto-suave);
+}
+
+.datos {
+  display: grid;
+  gap: var(--espacio-3);
+  margin: var(--espacio-3) 0 0;
+}
+
+.datos div {
+  display: grid;
+  gap: var(--espacio-1);
+}
+
+.datos dt {
+  color: var(--c-texto-suave);
+  font-size: var(--texto-2);
+}
+
+.datos dd {
+  margin: 0;
+  font-weight: var(--peso-fuerte);
+}
+
+.seccion {
+  display: grid;
+  gap: var(--espacio-2);
+}
+
+.seccion h2 {
+  margin: 0;
+  font-size: var(--texto-5);
+  font-weight: var(--peso-fuerte);
+}
+
+.seccion p {
+  margin: 0;
+}
+
+.monto {
+  color: var(--c-texto-suave);
+}
+
+.historial {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.historial li {
+  display: flex;
+  gap: var(--espacio-3);
+  justify-content: space-between;
+  padding: var(--espacio-3) 0;
+  border-bottom: var(--borde-fino) solid var(--c-borde);
+  font-variant-numeric: tabular-nums;
+}
+
+.local {
+  color: var(--c-texto-suave);
+  text-align: right;
+}
+
+.nota {
+  margin: 0;
+  color: var(--c-texto-suave);
+}
+
+.sinConexion {
+  margin: 0;
+  padding: var(--espacio-3) var(--espacio-4);
+  border-radius: var(--radio-1);
+  background: var(--c-premio-velo);
+  color: var(--c-sobre-premio-velo);
+  font-weight: var(--peso-medio);
+}

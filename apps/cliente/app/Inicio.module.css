@@ -1,0 +1,47 @@
+.titulo {
+  margin: 0;
+  font-size: var(--texto-8);
+  font-weight: var(--peso-negro);
+  line-height: var(--interlineado-titulo);
+}
+
+.lista {
+  display: grid;
+  gap: var(--espacio-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nota {
+  margin: 0;
+  color: var(--c-texto-suave);
+}
+
+.sinConexion {
+  margin: 0;
+  padding: var(--espacio-3) var(--espacio-4);
+  border-radius: var(--radio-1);
+  background: var(--c-premio-velo);
+  color: var(--c-sobre-premio-velo);
+  font-weight: var(--peso-medio);
+}
+
+.bienvenida {
+  display: grid;
+  gap: var(--espacio-3);
+  padding-top: var(--espacio-6);
+}
+
+.bienvenida h1 {
+  margin: 0;
+  font-size: var(--texto-9);
+  font-weight: var(--peso-negro);
+  line-height: var(--interlineado-titulo);
+}
+
+.bienvenida p {
+  margin: 0;
+  color: var(--c-texto-suave);
+  font-size: var(--texto-4);
+}
