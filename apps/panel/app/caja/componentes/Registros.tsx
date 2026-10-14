@@ -1,5 +1,5 @@
 import type { RegistroEnCaja } from '@repunto/contratos';
-import { Boton, BotonDeDosToques } from '../../../diseno';
+import { Boton, BotonDeDosToques } from '@repunto/ui';
 import { haceCuanto } from '../frases';
 import css from './Registros.module.css';
 

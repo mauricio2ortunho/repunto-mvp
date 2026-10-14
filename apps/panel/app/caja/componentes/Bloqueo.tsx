@@ -1,4 +1,4 @@
-import { Boton } from '../../../diseno';
+import { Boton } from '@repunto/ui';
 import type { Bloqueo as DatosDelBloqueo } from '../bloqueo';
 import css from './Bloqueo.module.css';
 

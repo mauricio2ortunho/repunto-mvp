@@ -1,5 +1,5 @@
 import type { Ref } from 'react';
-import { Aviso, Boton, BotonDeDosToques, Sellos } from '../../../diseno';
+import { Aviso, Boton, BotonDeDosToques, Sellos } from '@repunto/ui';
 import type { TarjetaCompleta } from '../estado';
 import { fraseDeTarjetaCompleta, primerNombre } from '../frases';
 import { CampoDeCodigo } from './CampoDeCodigo';

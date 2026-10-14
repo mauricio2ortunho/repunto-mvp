@@ -6,10 +6,13 @@ import tseslint from 'typescript-eslint';
 /**
  * La regla de dependencias de CLAUDE.md, seccion 3:
  *
- *   cliente ─┐
- *   panel  ──┼──> contratos <── api ──> dominio
- *            ┘                            │
- *                                     (no importa nada)
+ *   cliente ─┬──> ui ──┐
+ *   panel  ──┘         ├──> contratos <── api ──> dominio
+ *            ──────────┘                            │
+ *                                               (no importa nada)
+ *
+ * `ui` es el sistema de diseno compartido: importa React y contratos, nunca
+ * Next, el dominio ni las apps.
  *
  * Se aplica en dos capas porque ninguna sola alcanza:
  *
@@ -25,7 +28,9 @@ import tseslint from 'typescript-eslint';
 const MENSAJE_DOMINIO =
   'packages/dominio no importa nada: recibe datos planos y devuelve decisiones (CLAUDE.md, seccion 3).';
 const MENSAJE_FRONTEND =
-  'Los frontends solo importan @repunto/contratos. Nunca apps/api ni packages/dominio (CLAUDE.md, seccion 3).';
+  'Los frontends solo importan @repunto/contratos y @repunto/ui. Nunca apps/api ni packages/dominio (CLAUDE.md, seccion 3).';
+const MENSAJE_UI =
+  'packages/ui solo importa React y @repunto/contratos: ni Next, ni dominio, ni las apps. Asi lo usan las dos (CLAUDE.md, seccion 3).';
 const MENSAJE_CONTRATOS =
   'packages/contratos es una hoja compartida: no importa apps ni dominio (CLAUDE.md, seccion 3).';
 const MENSAJE_API =
@@ -104,6 +109,18 @@ export default tseslint.config(
             },
             { target: './apps/api', from: './apps/cliente', message: MENSAJE_API },
             { target: './apps/api', from: './apps/panel', message: MENSAJE_API },
+            { target: './packages/ui', from: './apps', message: MENSAJE_UI },
+            { target: './packages/ui', from: './packages/dominio', message: MENSAJE_UI },
+            {
+              target: './packages/contratos',
+              from: './packages/ui',
+              message: MENSAJE_CONTRATOS,
+            },
+            {
+              target: './packages/dominio',
+              from: './packages/ui',
+              message: MENSAJE_DOMINIO,
+            },
           ],
         },
       ],
@@ -167,8 +184,39 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ['@repunto/dominio', '@nestjs/*', 'next', 'next/*', '@prisma/*'],
+              group: [
+                '@repunto/dominio',
+                '@repunto/ui',
+                '@nestjs/*',
+                'next',
+                'next/*',
+                '@prisma/*',
+              ],
               message: MENSAJE_CONTRATOS,
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
+    files: ['packages/ui/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '@repunto/dominio',
+                '@repunto/dominio/*',
+                '@nestjs/*',
+                '@prisma/*',
+                'next',
+                'next/*',
+              ],
+              message: MENSAJE_UI,
             },
           ],
         },

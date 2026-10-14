@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { EstadoDeCaja } from '@repunto/contratos';
-import { Aviso, BotonDeDosToques, Sellos } from '../../../diseno';
+import { Aviso, BotonDeDosToques, Sellos } from '@repunto/ui';
 import type { Ultimo } from '../estado';
 import {
   fraseDeAnulacion,

@@ -77,6 +77,7 @@ apps/
 packages/
   dominio/       Lógica de negocio pura. Sin HTTP, sin Prisma, sin reloj del sistema.
   contratos/     Tipos y esquemas Zod compartidos entre api y frontends.
+  ui/            Sistema de diseño compartido por las dos apps: tokens, fuentes, componentes.
 docs/
 prisma/
   schema.prisma
@@ -86,17 +87,24 @@ prisma/
 **Regla de dependencias, no negociable:**
 
 ```
-cliente ─┐
-panel  ──┼──> contratos <── api ──> dominio
-         ┘                            │
-                                  (no importa nada)
+cliente ─┬──> ui ──┐
+panel  ──┘         ├──> contratos <── api ──> dominio
+         ──────────┘                            │
+                                            (no importa nada)
 ```
 
 - `packages/dominio` no importa Prisma, Nest, Next ni nada de infraestructura.
   Recibe datos planos y devuelve decisiones. Se testea sin base de datos.
 - `apps/api` traduce HTTP y Prisma hacia y desde `dominio`. Los controllers no
   contienen reglas de negocio: validan, llaman al caso de uso, mapean el error.
-- Ningún frontend importa de `apps/api` ni de `packages/dominio`. Solo `contratos`.
+- Ningún frontend importa de `apps/api` ni de `packages/dominio`. Solo
+  `contratos` y `ui`.
+- `packages/ui` dibuja: la tarjeta con sus sellos se ve igual en la caja y en
+  el teléfono, y un color o un ícono se cambia en un solo lugar. Importa React
+  y `contratos`, nunca Next —así no queda atado a una app—, nunca `dominio` ni
+  las apps. No tiene build: cada app lo compila con `transpilePackages`. Las
+  reglas que decide algo visual —el contraste, qué ícono corresponde— no viven
+  acá sino en `contratos`; `ui` las usa.
 - `dominio` nunca lee la hora del sistema. El reloj se pasa como parámetro. Es lo
   que hace testeables el vencimiento, el intervalo entre sellos y la ventana del
   código.

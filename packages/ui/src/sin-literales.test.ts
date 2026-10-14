@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -7,25 +7,37 @@ import { describe, expect, it } from 'vitest';
  * La guardia de los tokens. Si alguien escribe un color o un tamano de letra
  * a mano en un componente, este test falla y dice donde. Asi cambiar la
  * paleta o la escala sigue siendo cambiar un solo archivo.
+ *
+ * Vive en el sistema de diseno pero recorre tambien las dos apps: un color a
+ * mano en la pantalla del cliente rompe la regla igual que uno en la caja.
  */
 
-const PANEL = fileURLToPath(new URL('..', import.meta.url));
-const CARPETAS = ['app', 'diseno', 'lib'];
+const RAIZ = fileURLToPath(new URL('../../..', import.meta.url));
+const CARPETAS = [
+  'packages/ui/src',
+  'apps/panel/app',
+  'apps/panel/lib',
+  'apps/cliente/app',
+  'apps/cliente/lib',
+];
 /** Donde los literales SI van: la definicion de los tokens. */
-const PERMITIDOS = new Set(['diseno/tokens.css']);
+const PERMITIDOS = new Set(['packages/ui/src/tokens.css']);
 
 function archivos(carpeta: string): string[] {
+  if (!existsSync(carpeta)) return [];
   return readdirSync(carpeta).flatMap((nombre) => {
     const ruta = join(carpeta, nombre);
     if (statSync(ruta).isDirectory()) return archivos(ruta);
-    return /\.(css|tsx?)$/.test(nombre) && !/\.test\.tsx?$/.test(nombre) ? [ruta] : [];
+    return /\.(css|tsx?)$/.test(nombre) && !/\.(test|d)\.tsx?$/.test(nombre)
+      ? [ruta]
+      : [];
   });
 }
 
-const fuentes = CARPETAS.flatMap((c) => archivos(join(PANEL, c)))
-  // En Windows `relative` devuelve `diseno\\tokens.css`: se normaliza a `/`.
+const fuentes = CARPETAS.flatMap((c) => archivos(join(RAIZ, c)))
+  // En Windows `relative` devuelve barras invertidas: se normalizan a `/`.
   .map((ruta) => ({
-    nombre: relative(PANEL, ruta).split(sep).join('/'),
+    nombre: relative(RAIZ, ruta).split(sep).join('/'),
     lineas: readFileSync(ruta, 'utf8').split(/\r?\n/),
   }))
   .filter((f) => !PERMITIDOS.has(f.nombre));

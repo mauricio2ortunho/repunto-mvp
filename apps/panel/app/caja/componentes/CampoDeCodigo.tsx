@@ -1,5 +1,5 @@
 import type { Ref } from 'react';
-import { Boton } from '../../../diseno';
+import { Boton } from '@repunto/ui';
 import css from './CampoDeCodigo.module.css';
 
 interface Props {

@@ -2,11 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { RegistroEnCaja } from '@repunto/contratos';
-import {
-  AparienciaDeTarjeta,
-  DefinicionesDeTinta,
-  variablesDeMarca,
-} from '../../../diseno';
+import { AparienciaDeTarjeta, DefinicionesDeTinta, variablesDeMarca } from '@repunto/ui';
 import { useCaja } from '../usar-caja';
 import { useEstadoDeCaja } from '../usar-estado';
 import { useAhora, useRegistrosPendientes } from '../usar-registros';
