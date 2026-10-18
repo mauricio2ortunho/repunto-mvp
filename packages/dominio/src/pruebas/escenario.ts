@@ -51,6 +51,7 @@ export const TURNO: Turno = {
   usuario_id: 'cajero-1',
   local_id: LOCAL.id,
   rol: 'cajero',
+  usuario_activo: true,
   cerrado_el: null,
 };
 

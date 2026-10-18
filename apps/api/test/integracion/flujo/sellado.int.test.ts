@@ -277,6 +277,25 @@ describe('POST /caja/sellos · un caso por cada codigo de error', () => {
     expect(respuesta.cuerpo['codigo']).toBe('LOCAL_NO_AUTORIZADO');
   });
 
+  test('TURNO_CERRADO cuando al cajero lo dieron de baja con el turno abierto', async ({
+    api,
+    db,
+  }) => {
+    const { negocio, cliente } = await caja(db);
+    await db.query('UPDATE usuario_negocio SET activo = false WHERE id = $1', [
+      negocio.cajero,
+    ]);
+
+    const respuesta = await api.sellar({
+      token: negocio.token,
+      cuerpo: { codigo: codigoDe(cliente) },
+    });
+
+    expect(respuesta.estado).toBe(409);
+    expect(respuesta.cuerpo['codigo']).toBe('TURNO_CERRADO');
+    expect(await contar(db, 'sello')).toBe(0);
+  });
+
   test('LOCAL_NO_AUTORIZADO cuando el local esta dado de baja', async ({ api, db }) => {
     const { negocio, cliente } = await caja(db);
     await db.query('UPDATE local SET activo = false WHERE id = $1', [negocio.local]);

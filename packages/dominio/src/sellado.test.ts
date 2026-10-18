@@ -44,6 +44,11 @@ describe('decidirSello · cada validacion tiene su caso que la dispara', () => {
     ['TURNO_CERRADO', 'el turno ya se cerro', { turno: { ...TURNO, cerrado_el: AHORA } }],
     ['TURNO_CERRADO', 'nadie abrio turno en esa tablet', { turno: null }],
     [
+      'TURNO_CERRADO',
+      'al usuario del turno lo dieron de baja',
+      { turno: { ...TURNO, usuario_activo: false } },
+    ],
+    [
       'LOCAL_NO_AUTORIZADO',
       'el local esta dado de baja',
       { local: { ...LOCAL, activo: false } },

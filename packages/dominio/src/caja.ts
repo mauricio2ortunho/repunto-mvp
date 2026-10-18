@@ -45,6 +45,9 @@ export function revisarCaja(caja: Caja): RevisionDeCaja {
   if (turno.dispositivo_id !== dispositivo.id) return no('LOCAL_NO_AUTORIZADO');
   if (turno.local_id !== local.id) return no('LOCAL_NO_AUTORIZADO');
   if (turno.cerrado_el !== null) return no('TURNO_CERRADO');
+  // Dado de baja con el turno abierto: para la caja, ese turno ya no existe.
+  // Lo que hay que hacer es que otra persona abra el suyo.
+  if (!turno.usuario_activo) return no('TURNO_CERRADO');
 
   // Un cajero solo opera en los locales que tiene asignados, y la asignacion
   // tiene que seguir activa: la FK garantiza que existio, no que siga vigente

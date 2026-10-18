@@ -39,7 +39,8 @@ export function cteDeCaja(tokenHash: string): Prisma.Sql {
       -- turno_caja_uno_abierto_por_dispositivo: aca no hay nada que elegir.
       -- El rol sale de aca, del usuario que abrio el turno, y nunca del
       -- request: es lo que decide quien puede anular que.
-      SELECT t.id, t.dispositivo_id, t.usuario_id, t.local_id, t.cerrado_el, u.rol
+      SELECT t.id, t.dispositivo_id, t.usuario_id, t.local_id, t.cerrado_el, u.rol,
+             u.activo AS usuario_activo
       FROM turno_caja t
       JOIN disp ON t.dispositivo_id = disp.id
       JOIN usuario_negocio u ON u.id = t.usuario_id
@@ -76,6 +77,7 @@ export interface FilaDeCaja {
     usuario_id: string;
     local_id: string;
     rol: Rol;
+    usuario_activo: boolean;
     cerrado_el: string | null;
   } | null;
   asignacion: { usuario_id: string; local_id: string; activo: boolean } | null;

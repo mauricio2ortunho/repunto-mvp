@@ -39,6 +39,12 @@ export interface Turno {
    * 5), igual que el local sale del dispositivo (INV-2).
    */
   rol: Rol;
+  /**
+   * Si el usuario que abrio el turno sigue activo en el negocio. Sale de
+   * usuario_negocio igual que el rol: a un cajero que se fue se le da de baja
+   * y, aunque haya dejado su turno abierto, no opera mas.
+   */
+  usuario_activo: boolean;
   cerrado_el: Date | null;
 }
 
