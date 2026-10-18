@@ -71,7 +71,7 @@ export {
 } from './tarjeta-del-cliente';
 export type { EstadoParaElCliente, SituacionDeTarjeta } from './tarjeta-del-cliente';
 
-export { revisarCaja, revisarCajaParaSellar } from './caja';
+export { revisarCaja, revisarCajaParaSellar, revisarTablet } from './caja';
 export type { Caja, PromoConfigurada, RevisionDeCaja } from './caja';
 
 export { decidirSello, planDeSellado } from './sellado';

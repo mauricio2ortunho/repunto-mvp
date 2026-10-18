@@ -24,6 +24,7 @@ import {
 
 import { type Transaccion, cteDeCaja } from '../caja/caja.sql';
 import { errorDeApi, errorDeRechazo } from '../caja/errores-http';
+import { exigirTablet } from '../caja/tablet';
 import { guardarRespuesta, reservarIdempotencia } from '../caja/idempotencia';
 import { PrismaService } from '../prisma/prisma.service';
 import { cifrarSemilla } from '../seguridad/cifrado';
@@ -221,6 +222,7 @@ export class AltaService {
 
   /** `GET /caja/registros`: la lista que el cajero mira. */
   async pendientes(tokenHash: string): Promise<RegistrosPendientes> {
+    await exigirTablet(this.prisma, tokenHash);
     const filas = await this.prisma.$queryRaw<
       { id: string; nombre: string; telefono: string; creado_el: Date }[]
     >`
@@ -230,12 +232,6 @@ export class AltaService {
       WHERE r.local_id = loc.id AND r.estado = 'pendiente' AND r.expira_el > now()
       ORDER BY r.creado_el
       LIMIT ${PENDIENTES_POR_LOCAL}`;
-
-    // El token no resuelve a ninguna tablet: la consulta no devuelve nada,
-    // pero tampoco tiene por que devolver nada un local sin registros. Se
-    // distingue con una consulta al dispositivo solo cuando la lista viene
-    // vacia, que es el caso barato.
-    if (filas.length === 0) await this.exigirDispositivo(tokenHash);
 
     return esquemaRegistrosPendientes.parse({
       registros: filas.map((fila) => ({
@@ -335,13 +331,6 @@ export class AltaService {
       await guardarRespuesta(tx, peticion, respuesta);
       return respuesta;
     });
-  }
-
-  /** Falla con 401 si ese token no es de ninguna tablet. */
-  private async exigirDispositivo(tokenHash: string): Promise<void> {
-    const filas = await this.prisma.$queryRaw<{ id: string }[]>`
-      SELECT id FROM dispositivo_caja WHERE token_hash = ${tokenHash}`;
-    if (filas.length === 0) throw errorDeApi('TOKEN_INVALIDO');
   }
 }
 

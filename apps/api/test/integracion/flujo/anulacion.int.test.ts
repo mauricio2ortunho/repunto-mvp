@@ -244,4 +244,17 @@ describe('GET /caja/sellos/recientes', () => {
 
     expect((await api.sellosRecientes('no-soy-una-tablet')).estado).toBe(401);
   });
+
+  test('una tablet revocada ya no ve los sellos', async ({ api, db }) => {
+    const { negocio } = await conUnSelloReciente(db);
+    await db.query('UPDATE dispositivo_caja SET revocado_el = now() WHERE id = $1', [
+      negocio.dispositivo,
+    ]);
+
+    const respuesta = await api.sellosRecientes(negocio.token);
+
+    expect(respuesta.estado).toBe(403);
+    expect(respuesta.cuerpo['codigo']).toBe('DISPOSITIVO_REVOCADO');
+    expect(respuesta.cuerpo['sellos']).toBeUndefined();
+  });
 });

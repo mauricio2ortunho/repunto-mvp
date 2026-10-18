@@ -199,6 +199,34 @@ describe('POST /registros · el cliente se anota desde su teléfono', () => {
 
     expect((await api.registros('no-soy-una-tablet')).estado).toBe(401);
   });
+
+  test('una tablet revocada ya no ve la lista: son nombres de clientes', async ({
+    api,
+    db,
+  }) => {
+    const negocio = await crearNegocio(db);
+    await registrarse(api, await qrDe(db, negocio), '70124521', 'Ana');
+    await db.query('UPDATE dispositivo_caja SET revocado_el = now() WHERE id = $1', [
+      negocio.dispositivo,
+    ]);
+
+    const respuesta = await api.registros(negocio.token);
+
+    expect(respuesta.estado).toBe(403);
+    expect(respuesta.cuerpo['codigo']).toBe('DISPOSITIVO_REVOCADO');
+    expect(JSON.stringify(respuesta.cuerpo)).not.toContain('Ana');
+  });
+
+  test('la tablet de un local dado de baja tampoco', async ({ api, db }) => {
+    const negocio = await crearNegocio(db);
+    await crearRegistro(db, negocio.local);
+    await db.query('UPDATE local SET activo = false WHERE id = $1', [negocio.local]);
+
+    const respuesta = await api.registros(negocio.token);
+
+    expect(respuesta.estado).toBe(403);
+    expect(respuesta.cuerpo['codigo']).toBe('LOCAL_NO_AUTORIZADO');
+  });
 });
 
 describe('POST /registros · nadie se queda con el registro de otro', () => {

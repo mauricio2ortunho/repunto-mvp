@@ -11,6 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { cteDeCaja } from './caja.sql';
 import { errorDeApi, errorDeRechazo } from './errores-http';
 import { guardarRespuesta, reservarIdempotencia } from './idempotencia';
+import { exigirTablet } from './tablet';
 import { leerEstadoParaAnulacion } from './lectura-anulacion';
 
 /**
@@ -94,6 +95,7 @@ export class AnulacionService {
    * abierto. Un cajero nunca ve la base de clientes.
    */
   async recientes(tokenHash: string): Promise<SellosRecientes> {
+    await exigirTablet(this.prisma, tokenHash);
     const filas = await this.prisma.$queryRaw<FilaDeSelloReciente[]>`
       WITH ${cteDeCaja(tokenHash)}
       SELECT s.id, c.nombre, u.nombre AS cajero, s.creado_el, s.anulado
@@ -111,8 +113,6 @@ export class AnulacionService {
       ORDER BY s.creado_el DESC
       LIMIT ${SELLOS_RECIENTES}`;
 
-    if (filas.length === 0) await this.exigirDispositivo(tokenHash);
-
     return esquemaSellosRecientes.parse({
       sellos: filas.map((fila) => ({
         id: fila.id,
@@ -122,11 +122,5 @@ export class AnulacionService {
         anulado: fila.anulado,
       })),
     });
-  }
-
-  private async exigirDispositivo(tokenHash: string): Promise<void> {
-    const filas = await this.prisma.$queryRaw<{ id: string }[]>`
-      SELECT id FROM dispositivo_caja WHERE token_hash = ${tokenHash}`;
-    if (filas.length === 0) throw errorDeApi('TOKEN_INVALIDO');
   }
 }

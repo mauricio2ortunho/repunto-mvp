@@ -35,12 +35,9 @@ export function revisarCaja(caja: Caja): RevisionDeCaja {
 
   const no = (codigo: CodigoDeError): RevisionDeCaja => ({ valido: false, codigo });
 
-  if (dispositivo.revocado_el !== null) return no('DISPOSITIVO_REVOCADO');
-
-  // El local sale del dispositivo, nunca del request (INV-2).
-  if (local.id !== dispositivo.local_id) return no('LOCAL_NO_AUTORIZADO');
+  const tablet = revisarTablet({ dispositivo, local });
+  if (tablet !== null) return no(tablet);
   if (local.negocio_id !== negocio.id) return no('LOCAL_NO_AUTORIZADO');
-  if (!local.activo) return no('LOCAL_NO_AUTORIZADO');
 
   // Nadie abrio turno en esa tablet, o el que habia ya se cerro: el mismo
   // codigo para los dos casos, porque la respuesta del cajero es la misma.
@@ -60,6 +57,27 @@ export function revisarCaja(caja: Caja): RevisionDeCaja {
   if (negocio.estado === 'suspendido') return no('NEGOCIO_SUSPENDIDO');
 
   return { valido: true, turno };
+}
+
+/**
+ * La primera mitad de `revisarCaja`: si el equipo mismo puede seguir
+ * operando, antes de mirar turno o persona. Devuelve el codigo del rechazo, o
+ * null si la tablet esta habilitada.
+ *
+ * Existe aparte porque las lecturas de la caja —la lista de registros, los
+ * sellos recientes— no necesitan turno, pero una tablet revocada tampoco las
+ * puede leer: la perdieron, y lo que muestran son nombres de clientes.
+ */
+export function revisarTablet({
+  dispositivo,
+  local,
+}: Pick<Caja, 'dispositivo' | 'local'>): CodigoDeError | null {
+  if (dispositivo.revocado_el !== null) return 'DISPOSITIVO_REVOCADO';
+
+  // El local sale del dispositivo, nunca del request (INV-2).
+  if (local.id !== dispositivo.local_id) return 'LOCAL_NO_AUTORIZADO';
+  if (!local.activo) return 'LOCAL_NO_AUTORIZADO';
+  return null;
 }
 
 /**

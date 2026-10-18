@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { type Caja, type PromoConfigurada, revisarCajaParaSellar } from './caja';
+import {
+  type Caja,
+  type PromoConfigurada,
+  revisarCajaParaSellar,
+  revisarTablet,
+} from './caja';
 import {
   AHORA,
   ASIGNACION,
@@ -72,5 +77,40 @@ describe('revisarCajaParaSellar', () => {
         { condicionVigente: false, programaVigente: false },
       ),
     ).toBe('TURNO_CERRADO');
+  });
+});
+
+describe('revisarTablet', () => {
+  it('una tablet vinculada a su local activo esta habilitada', () => {
+    expect(revisarTablet({ dispositivo: DISPOSITIVO, local: LOCAL })).toBeNull();
+  });
+
+  it('una tablet revocada no lee nada, ni siquiera sin turno', () => {
+    const revocada = { ...DISPOSITIVO, revocado_el: AHORA };
+    expect(revisarTablet({ dispositivo: revocada, local: LOCAL })).toBe(
+      'DISPOSITIVO_REVOCADO',
+    );
+  });
+
+  it('revocada tiene precedencia sobre el local dado de baja', () => {
+    const revocada = { ...DISPOSITIVO, revocado_el: AHORA };
+    const cerrado = { ...LOCAL, activo: false };
+    expect(revisarTablet({ dispositivo: revocada, local: cerrado })).toBe(
+      'DISPOSITIVO_REVOCADO',
+    );
+  });
+
+  it('el local dado de baja deja a su tablet sin acceso', () => {
+    const cerrado = { ...LOCAL, activo: false };
+    expect(revisarTablet({ dispositivo: DISPOSITIVO, local: cerrado })).toBe(
+      'LOCAL_NO_AUTORIZADO',
+    );
+  });
+
+  it('un local que no es el de la tablet es LOCAL_NO_AUTORIZADO (INV-2)', () => {
+    const otro = { ...LOCAL, id: 'otro-local' };
+    expect(revisarTablet({ dispositivo: DISPOSITIVO, local: otro })).toBe(
+      'LOCAL_NO_AUTORIZADO',
+    );
   });
 });
