@@ -26,16 +26,19 @@ const INVITACION = 'Tipeá el código que el cliente tiene en la app y tocá Sel
 /** El area grande debajo del campo: lo que acaba de pasar con este cliente. */
 export function Resultado(p: Props) {
   const { ultimo } = p;
-  const deshacer = (selloId: string | null, nombre: string) =>
+  const deshacer = (selloId: string | null, nombre: string, aviso?: string) =>
     selloId === null ? null : (
-      <BotonDeDosToques
-        texto="Deshacer sello"
-        confirmar={`Tocá de nuevo para deshacer el sello de ${primerNombre(nombre) || 'este cliente'}`}
-        trabajando={p.deshaciendo}
-        textoTrabajando="Deshaciendo…"
-        disabled={p.ocupado}
-        alConfirmar={() => p.alDeshacer(selloId)}
-      />
+      <>
+        {aviso !== undefined && <Aviso mensaje={aviso} />}
+        <BotonDeDosToques
+          texto="Deshacer sello"
+          confirmar={`Tocá de nuevo para deshacer el sello de ${primerNombre(nombre) || 'este cliente'}`}
+          trabajando={p.deshaciendo}
+          textoTrabajando="Deshaciendo…"
+          disabled={p.ocupado}
+          alConfirmar={() => p.alDeshacer(selloId)}
+        />
+      </>
     );
 
   switch (ultimo.tipo) {
@@ -57,7 +60,11 @@ export function Resultado(p: Props) {
     case 'sello': {
       const d = ultimo.datos;
       return (
-        <Tarjeta hecho="Sellado" nombre={d.nombre} pie={deshacer(d.sello_id, d.nombre)}>
+        <Tarjeta
+          hecho="Sellado"
+          nombre={d.nombre}
+          pie={deshacer(d.sello_id, d.nombre, ultimo.aviso)}
+        >
           <Sellos progreso={d.progreso} faltan={d.faltan} nuevo={d.progreso - 1} />
           <Frase texto={fraseDelSello(d)} />
           <Premio premio={d.premio} />
@@ -71,7 +78,7 @@ export function Resultado(p: Props) {
         <Tarjeta
           hecho={d.sello ? 'Registrado y sellado' : 'Registrado'}
           nombre={d.nombre}
-          pie={deshacer(d.sello_id, d.nombre)}
+          pie={deshacer(d.sello_id, d.nombre, ultimo.aviso)}
         >
           <Sellos
             progreso={d.progreso}

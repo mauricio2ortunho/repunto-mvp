@@ -132,6 +132,43 @@ describe('la caja', () => {
     expect(e).toMatchObject({ ocupado: 'anular', ultimo: { tipo: 'sello' } });
   });
 
+  it('si deshacer falla, el sello sigue en pantalla con el motivo y se puede reintentar', () => {
+    const e = correr(
+      { tipo: 'sellado', datos: sello(8, 2) },
+      { tipo: 'empezo', accion: 'anular' },
+      { tipo: 'fallo', codigo: null, mensaje: 'Se cortó la conexión.' },
+    );
+    expect(e).toMatchObject({
+      modo: 'sellar',
+      ocupado: null,
+      ultimo: { tipo: 'sello', aviso: 'Se cortó la conexión.' },
+    });
+    expect(
+      e.modo === 'sellar' && e.ultimo.tipo === 'sello' && e.ultimo.datos.sello_id,
+    ).toBe(SELLO_ID);
+  });
+
+  it('al reintentar deshacer, el motivo del fallo anterior se borra', () => {
+    const e = correr(
+      { tipo: 'sellado', datos: sello(8, 2) },
+      { tipo: 'empezo', accion: 'anular' },
+      { tipo: 'fallo', codigo: null, mensaje: 'Se cortó la conexión.' },
+      { tipo: 'empezo', accion: 'anular' },
+    );
+    expect(
+      e.modo === 'sellar' && e.ultimo.tipo === 'sello' && e.ultimo.aviso,
+    ).toBeUndefined();
+  });
+
+  it('el fallo de otra cosa reemplaza el resultado, como siempre', () => {
+    const e = correr(
+      { tipo: 'sellado', datos: sello(8, 2) },
+      { tipo: 'empezo', accion: 'sellar' },
+      { tipo: 'fallo', codigo: 'CODIGO_INVALIDO', mensaje: 'Ese código no es válido.' },
+    );
+    expect(e).toMatchObject({ ultimo: { tipo: 'aviso' } });
+  });
+
   it('deshacer desde el canje vuelve a la caja: ya no hay premio que entregar', () => {
     const e = correr(
       { tipo: 'sellado', datos: sello(10, 0, true) },

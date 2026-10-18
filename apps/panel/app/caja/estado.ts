@@ -21,11 +21,15 @@ import type { Accion } from '../../lib/api/mensajes';
  * Lo que muestra el area grande debajo del campo. `n` distingue un resultado
  * de otro igual: la vista lo usa de key para que el sello nuevo se estampe
  * cada vez, y solo cuando hay un resultado nuevo.
+ *
+ * `aviso` en un sello o un alta es por que fallo deshacerlo. Va adentro del
+ * resultado y no en su lugar: si reemplazara la tarjeta, se iria con ella el
+ * boton de deshacer, y el cajero no tendria como reintentar.
  */
 export type Ultimo =
   | { tipo: 'nada' }
-  | { tipo: 'sello'; n: number; datos: SellarRespuesta }
-  | { tipo: 'alta'; n: number; datos: ConfirmarRespuesta }
+  | { tipo: 'sello'; n: number; datos: SellarRespuesta; aviso?: string }
+  | { tipo: 'alta'; n: number; datos: ConfirmarRespuesta; aviso?: string }
   | { tipo: 'canje'; n: number; datos: CanjearRespuesta }
   | { tipo: 'anulado'; n: number; datos: AnularRespuesta }
   | { tipo: 'aviso'; n: number; mensaje: string };
@@ -115,6 +119,12 @@ function aCanjear(
   };
 }
 
+function sinAviso(ultimo: Ultimo): Ultimo {
+  if (ultimo.tipo === 'sello') return { tipo: 'sello', n: ultimo.n, datos: ultimo.datos };
+  if (ultimo.tipo === 'alta') return { tipo: 'alta', n: ultimo.n, datos: ultimo.datos };
+  return ultimo;
+}
+
 export function reducir(e: Estado, ev: Evento): Estado {
   switch (ev.tipo) {
     case 'escribio':
@@ -130,9 +140,11 @@ export function reducir(e: Estado, ev: Evento): Estado {
         ...e,
         ocupado: ev.accion,
         ultimo:
-          ev.accion === 'descartar' || ev.accion === 'anular'
-            ? e.ultimo
-            : { tipo: 'nada' },
+          ev.accion === 'anular'
+            ? sinAviso(e.ultimo)
+            : ev.accion === 'descartar'
+              ? e.ultimo
+              : { tipo: 'nada' },
       };
 
     case 'sellado':
@@ -172,6 +184,18 @@ export function reducir(e: Estado, ev: Evento): Estado {
         };
       }
       if (ev.codigo === 'TARJETA_COMPLETA') return aCanjear(e, null, ev.mensaje);
+      // Fallo deshacer: el sello sigue en pantalla, con su boton, y el motivo.
+      if (
+        e.ocupado === 'anular' &&
+        (e.ultimo.tipo === 'sello' || e.ultimo.tipo === 'alta')
+      ) {
+        return {
+          ...e,
+          ocupado: null,
+          vuelta: e.vuelta + 1,
+          ultimo: { ...e.ultimo, aviso: ev.mensaje },
+        };
+      }
       return {
         ...e,
         ocupado: null,
