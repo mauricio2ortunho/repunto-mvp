@@ -628,6 +628,32 @@ model PeticionIdempotente {
   @@map("peticion_idempotente")
 }
 
+/// Los topes de peticiones: cuantas veces se pidio algo en una hora.
+///
+/// Viven en la base y no en memoria porque la api corre serverless: cada
+/// invocacion puede ser otro proceso, y una cuenta en memoria no cuenta nada
+/// (CLAUDE.md, seccion 2). La cuenta sube con un solo
+/// `INSERT ... ON CONFLICT DO UPDATE`, atomico aunque lleguen dos instancias a
+/// la vez.
+///
+/// La ventana es la hora fija del reloj de la base, no "los ultimos sesenta
+/// minutos": un solo viaje por peticion, a cambio de que en el borde de una
+/// hora se junten hasta dos topes.
+model TopePeticion {
+  /// HMAC de lo que se cuenta —"registro-tel:+591...", "codigo:<id>"—, nunca
+  /// en claro: la tabla no es otro lugar donde leer telefonos ni IPs.
+  clave     String
+  /// El comienzo de la hora, en la base.
+  ventana   DateTime @db.Timestamptz(3)
+  cuenta    Int
+  /// El cron la purga a las 24 horas, como codigo_usado.
+  creado_el DateTime @default(now()) @db.Timestamptz(3)
+
+  @@id([clave, ventana])
+  @@index([ventana])
+  @@map("tope_peticion")
+}
+
 // ---------------------------------------------------------------------------
 // Lo que Prisma no sabe expresar (indices unicos parciales, CHECK y triggers)
 // vive como SQL crudo al final de cada migration.sql. El inventario completo

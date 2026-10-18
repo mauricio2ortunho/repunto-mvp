@@ -10,7 +10,6 @@ import { Pool, type PoolClient } from 'pg';
 import { inject, test as testDeVitest } from 'vitest';
 
 import { AppModule } from '../../../src/app.module';
-import { TopeDePeticiones } from '../../../src/seguridad/tope';
 import { configurarEntorno, exigirBaseVacia } from '../base';
 
 /**
@@ -42,9 +41,6 @@ export interface Llamada {
 }
 
 export class Api {
-  /** Lo completa el fixture: reinicia los topes en memoria de la api. */
-  reiniciarTopes: () => void = () => undefined;
-
   constructor(private readonly url: string) {}
 
   sellar(llamada: Llamada): Promise<Respuesta> {
@@ -156,27 +152,36 @@ export class Api {
   }
 }
 
-export const test = testDeVitest.extend<{ api: Api; pool: Pool; db: Db }>({
-  api: [
-    // eslint-disable-next-line no-empty-pattern -- Vitest exige desestructurar el contexto del fixture aunque no use nada de el.
-    async ({}, use) => {
-      configurarEntorno();
-      const app: INestApplication = await NestFactory.create(AppModule, {
-        logger: false,
-      });
-      await app.listen(0, '127.0.0.1');
-      const servidor = app.getHttpServer() as Server;
-      const direccion = servidor.address() as AddressInfo;
-      const api = new Api(`http://127.0.0.1:${direccion.port}`);
-      // Los topes viven en memoria del proceso y la api dura todo el archivo:
-      // sin esto, el tercer test hereda las cuentas de los dos anteriores.
-      api.reiniciarTopes = () => app.get(TopeDePeticiones).reiniciar();
-      await use(api);
+/**
+ * Arranca una api de verdad en un puerto libre. El fixture usa una por
+ * archivo; un test que necesita dos —como en serverless, donde cada
+ * invocacion puede ser otro proceso— levanta la segunda con esto.
+ */
+export async function levantarApi(): Promise<{ api: Api; apagar: () => Promise<void> }> {
+  configurarEntorno();
+  const app: INestApplication = await NestFactory.create(AppModule, { logger: false });
+  await app.listen(0, '127.0.0.1');
+  const servidor = app.getHttpServer() as Server;
+  const direccion = servidor.address() as AddressInfo;
+  return {
+    api: new Api(`http://127.0.0.1:${direccion.port}`),
+    apagar: async () => {
       // fetch deja los sockets abiertos con keep-alive, y con un socket vivo el
       // servidor no cierra nunca: sin esto, la suite se cuelga al terminar el
       // primer archivo.
       servidor.closeAllConnections();
       await app.close();
+    },
+  };
+}
+
+export const test = testDeVitest.extend<{ api: Api; pool: Pool; db: Db }>({
+  api: [
+    // eslint-disable-next-line no-empty-pattern -- Vitest exige desestructurar el contexto del fixture aunque no use nada de el.
+    async ({}, use) => {
+      const { api, apagar } = await levantarApi();
+      await use(api);
+      await apagar();
     },
     { scope: 'file' },
   ],
@@ -192,11 +197,10 @@ export const test = testDeVitest.extend<{ api: Api; pool: Pool; db: Db }>({
     { scope: 'file' },
   ],
 
-  db: async ({ pool, api }, use) => {
+  db: async ({ pool }, use) => {
     const conexion = await pool.connect();
     try {
       await exigirBaseVacia(conexion);
-      api.reiniciarTopes();
       await use(conexion);
     } finally {
       await vaciarBase(conexion);

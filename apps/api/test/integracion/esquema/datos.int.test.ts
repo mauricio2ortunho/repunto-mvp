@@ -311,6 +311,30 @@ describe('Cordura y unicidad operativa', () => {
     );
   });
 
+  test('Seccion 6 · rechaza dos cuentas del mismo tope en la misma hora', async ({
+    db,
+  }) => {
+    const CONTAR = `INSERT INTO tope_peticion (clave, ventana, cuenta)
+                    VALUES ('huella', date_trunc('hour', now()), 1)`;
+    await db.query(CONTAR);
+    await esperarRechazo(db, 'tope_peticion_pkey', CONTAR);
+    // La hora siguiente es otra cuenta.
+    await esperarAceptacion(
+      db,
+      `INSERT INTO tope_peticion (clave, ventana, cuenta)
+       VALUES ('huella', date_trunc('hour', now()) + interval '1 hour', 1)`,
+    );
+  });
+
+  test('Seccion 6 · rechaza un tope con cuenta cero', async ({ db }) => {
+    await esperarRechazo(
+      db,
+      'tope_peticion_cuenta_positiva_chk',
+      `INSERT INTO tope_peticion (clave, ventana, cuenta)
+       VALUES ('huella', date_trunc('hour', now()), 0)`,
+    );
+  });
+
   test('Seccion 5 · rechaza dos equipos de cliente con el mismo token', async ({
     db,
   }) => {

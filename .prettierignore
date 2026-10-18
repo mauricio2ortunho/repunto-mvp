@@ -7,6 +7,7 @@ pnpm-lock.yaml
 # Documentos fuente escritos a mano: no se reformatean.
 docs/especificacion-funcional.md
 CLAUDE.md
+AGENTS.md
 next-env.d.ts
 apps/api/src/generated/
 prisma/migrations/

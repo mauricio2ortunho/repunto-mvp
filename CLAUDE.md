@@ -624,18 +624,10 @@ es lo que falta terminar, y está acá para que no se pierda.
   Vercel Cron pegándole a un endpoint protegido por un secreto, con el candado
   en la base en lugar de en memoria. El más urgente sigue siendo vencer
   tarjetas: mientras no exista, una tarjeta vencida solo se cierra cuando el
-  cliente vuelve a sellar. A la purga de `codigo_usado` se le suma la de
-  `peticion_idempotente`, con el mismo criterio de 24 horas. Los
+  cliente vuelve a sellar. A la purga de `codigo_usado` se le suman las de
+  `peticion_idempotente` y `tope_peticion`, con el mismo criterio de 24 horas. Los
   `registro_pendiente` no se purgan: uno que nadie confirmó es la señal de que
   en ese local no están ofreciendo la tarjeta (especificación, sección 11).
-- **Los topes de peticiones ya no cuentan bien, y es urgente.** Están en
-  memoria del proceso —120 por hora por cliente en `/mi/codigo`, 5 por teléfono
-  y 60 por IP en `/registros`— y en serverless cada invocación puede ser otra
-  instancia, así que el tope real es indeterminado y tiende a no existir. El
-  endpoint público del registro queda sin freno efectivo más allá del tope de
-  pendientes por local, que sí vive en la base. Mudarlos a una tabla con la
-  ventana como parte de la clave es el arreglo, y conviene hacerlo antes de
-  darle la URL a alguien de afuera.
 - **El log estructurado de la sección 8.** Todavía no hay `request_id` ni las
   líneas JSON con `cliente_id`, `local_id` y `turno_id` del flujo de sellado.
   Hoy, "qué pasó con el sello de Juan el martes" se responde con SQL.

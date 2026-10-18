@@ -1,19 +1,22 @@
-import { Injectable } from '@nestjs/common';
+import { createHmac } from 'node:crypto';
+
+import { Inject, Injectable } from '@nestjs/common';
 
 import { errorDeApi } from '../caja/errores-http';
+import { PrismaService } from '../prisma/prisma.service';
+import { claveDerivada } from './cifrado';
 
 /**
- * Topes de peticiones por hora, contados en memoria.
+ * Topes de peticiones por hora, contados en la base (`tope_peticion`).
  *
  * Los usan el endpoint del codigo del cliente y el registro publico, que es el
  * unico de la caja sin credencial: el QR del mostrador se puede fotografiar.
  *
- * LIMITACION: vive en memoria del proceso. Con una sola instancia de la api
- * —que es el MVP— alcanza; con dos, cada una cuenta la suya y el tope real se
- * duplica. Cuando haya mas de una instancia, esto se muda a la base o a Redis.
+ * En la base y no en memoria porque la api corre serverless: cada invocacion
+ * puede ser otro proceso, y un contador en una variable no cuenta lo que
+ * parece contar (CLAUDE.md, seccion 2). La ventana es la hora fija del reloj
+ * de la base; ver el modelo en schema.prisma.
  */
-
-const VENTANA_MS = 3_600_000;
 
 /** El codigo que muestra el cliente: dos ventanas por pedido. */
 export const TOPE_DEL_CODIGO = 120;
@@ -34,35 +37,34 @@ export const TOPE_POR_IP = 60;
 
 @Injectable()
 export class TopeDePeticiones {
-  private readonly pedidos = new Map<string, number[]>();
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  /** Registra una peticion de esa clave y falla si paso el tope. */
-  exigir(clave: string, tope: number, ahora: number = Date.now()): void {
-    const desde = ahora - VENTANA_MS;
-    const recientes = (this.pedidos.get(clave) ?? []).filter(
-      (instante) => instante > desde,
-    );
+  /**
+   * Registra una peticion de esa clave y falla si paso el tope.
+   *
+   * Va fuera de cualquier transaccion a proposito: si la peticion despues se
+   * rechaza y su transaccion se deshace, el intento igual cuenta.
+   */
+  async exigir(clave: string, tope: number): Promise<void> {
+    const filas = await this.prisma.$queryRaw<{ cuenta: number }[]>`
+      INSERT INTO tope_peticion (clave, ventana, cuenta)
+      VALUES (${huella(clave)}, date_trunc('hour', now()), 1)
+      ON CONFLICT (clave, ventana)
+        DO UPDATE SET cuenta = tope_peticion.cuenta + 1
+      RETURNING cuenta`;
 
-    if (recientes.length >= tope) {
-      this.pedidos.set(clave, recientes);
-      throw errorDeApi('TOPE_SUPERADO');
-    }
-
-    recientes.push(ahora);
-    this.pedidos.set(clave, recientes);
-    this.olvidarViejos(desde);
+    const cuenta = filas[0]?.cuenta ?? 0;
+    if (cuenta > tope) throw errorDeApi('TOPE_SUPERADO');
   }
+}
 
-  /** Solo para los tests: deja las cuentas en cero entre caso y caso. */
-  reiniciar(): void {
-    this.pedidos.clear();
-  }
-
-  /** Sin esto, quien pidio una vez se queda en memoria para siempre. */
-  private olvidarViejos(desde: number): void {
-    for (const [clave, instantes] of this.pedidos) {
-      const ultimo = instantes[instantes.length - 1];
-      if (ultimo === undefined || ultimo <= desde) this.pedidos.delete(clave);
-    }
-  }
+/**
+ * HMAC y no SHA-256 a secas: un telefono boliviano son ocho digitos, y su
+ * hash se revierte probandolos todos en una tarde. Con la clave derivada,
+ * quien lea la tabla no puede.
+ */
+function huella(clave: string): string {
+  return createHmac('sha256', claveDerivada('tope-de-peticiones'))
+    .update(clave, 'utf8')
+    .digest('hex');
 }

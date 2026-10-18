@@ -41,7 +41,7 @@ export class CodigoService {
 
     const fila = filas[0];
     if (fila === undefined) throw errorDeApi('TOKEN_INVALIDO');
-    this.tope.exigir(`codigo:${fila.id}`, TOPE_DEL_CODIGO);
+    await this.tope.exigir(`codigo:${fila.id}`, TOPE_DEL_CODIGO);
 
     const ahora = fila.ahora instanceof Date ? fila.ahora : new Date(fila.ahora);
     const semilla = descifrarSemilla(fila.semilla_totp);

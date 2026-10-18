@@ -159,6 +159,7 @@ confirma de cuerpo presente (especificación funcional, sección 3).
 | `condicion_sello_monto_minimo_no_negativo_chk` | `condicion_sello`      | CHECK | nulo, o `monto_minimo >= 0`        | Cordura    | Un monto mínimo negativo.                                                                               |
 | `codigo_usado_ventana_no_negativa_chk`         | `codigo_usado`         | CHECK | `ventana >= 0`                     | INV-9      | Una ventana de código anterior a 1970.                                                                  |
 | `peticion_idempotente_clave_razonable_chk`     | `peticion_idempotente` | CHECK | `char_length(clave)` entre 8 y 200 | Sección 9  | Una clave de idempotencia de un caracter, que le devolvería a un cajero la respuesta del sello de otro. |
+| `tope_peticion_cuenta_positiva_chk`            | `tope_peticion`        | CHECK | `cuenta > 0`                       | Sección 6  | Una cuenta de tope en cero o negativa, que dejaría pasar más pedidos de los que dice el tope.           |
 
 ## Estructura
 
@@ -200,6 +201,7 @@ borrar: sin ellas, esas FK no se pueden crear.
 | `canje_pkey`                 | `canje`                 | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
 | `peticion_idempotente_pkey`  | `peticion_idempotente`  | PK   | `(dispositivo_id, endpoint, clave)` | Sección 9  | Dos respuestas guardadas para el mismo reintento. La clave es por tablet y por endpoint: la misma clave en otro endpoint es otra petición. |
 | `registro_pendiente_pkey`    | `registro_pendiente`    | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
+| `tope_peticion_pkey`         | `tope_peticion`         | PK   | `(clave, ventana)`                  | Sección 6  | Dos cuentas para lo mismo en la misma hora: cada instancia de la api sumaría en la suya y el tope dejaría de contar.                       |
 
 ### FK simples
 

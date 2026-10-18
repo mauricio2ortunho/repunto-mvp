@@ -96,8 +96,8 @@ export class AltaService {
     const telefono = normalizarTelefono(peticion.telefono);
     if (telefono === null) throw errorDeRechazo(rechazo('TELEFONO_INVALIDO'), null);
 
-    this.tope.exigir(`registro-ip:${ip}`, TOPE_POR_IP);
-    this.tope.exigir(`registro-tel:${telefono}`, TOPE_POR_TELEFONO);
+    await this.tope.exigir(`registro-ip:${ip}`, TOPE_POR_IP);
+    await this.tope.exigir(`registro-tel:${telefono}`, TOPE_POR_TELEFONO);
 
     // Derivado, no al azar: el reintento con la misma clave recibe el mismo
     // ticket sin que la base guarde nada en claro (ver `ticketDeRegistro`).
@@ -179,7 +179,7 @@ export class AltaService {
    * cajero confirme un nombre razonable y llevarse la cuenta ajena entera.
    */
   async estadoDelRegistro(ticketHash: string): Promise<EstadoDelRegistro> {
-    this.tope.exigir(`ticket:${ticketHash}`, TOPE_DEL_TICKET);
+    await this.tope.exigir(`ticket:${ticketHash}`, TOPE_DEL_TICKET);
 
     return this.prisma.$transaction(async (tx) => {
       const filas = await tx.$queryRaw<FilaDeTicket[]>`
