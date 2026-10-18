@@ -150,8 +150,10 @@ export function mensajeParaElCajero(
     case 'IDEMPOTENCIA_DISTINTA':
     case 'PETICION_INVALIDA':
       return 'No se pudo procesar. Volvé a intentarlo; si sigue igual, avisá al dueño.';
+    // En caja solo lo dispara el tope de codigos equivocados, que se libera
+    // con la hora siguiente del reloj.
     case 'TOPE_SUPERADO':
-      return 'Demasiados intentos seguidos. Esperá un momento.';
+      return 'Demasiados códigos equivocados en esta tablet. Se libera a la hora en punto; si vuelve a pasar, avisá al dueño.';
   }
 }
 

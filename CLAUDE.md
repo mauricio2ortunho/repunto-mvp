@@ -265,6 +265,9 @@ funciones puras.
   vacías no cuentan.
 - **Tope de envío de códigos:** 3 por teléfono por hora, 10 por día; 20 por IP por
   hora.
+- **Tope de códigos equivocados en caja:** 20 `CODIGO_INVALIDO` por tablet por
+  hora del reloj; después, `TOPE_SUPERADO` hasta la hora siguiente. Por tablet
+  y no por cliente: por cliente, cualquiera bloquearía el código de otro.
 - **Tope de notificaciones del negocio:** 2 por semana por negocio.
 - **Retención de respaldos:** diario, 30 días.
 

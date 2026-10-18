@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { HttpException, Inject, Injectable } from '@nestjs/common';
 import {
   type CanjearPeticion,
   type CanjearRespuesta,
@@ -20,6 +20,7 @@ import {
 } from '@repunto/dominio';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { TOPE_DE_CODIGOS_EQUIVOCADOS, TopeDePeticiones } from '../seguridad/tope';
 import { errorDeApi, errorDeRechazo } from './errores-http';
 import { guardarRespuesta, reservarIdempotencia } from './idempotencia';
 import { type EstadoDeCaja, type Transaccion, leerEstado } from './lectura';
@@ -45,9 +46,55 @@ export class CajaService {
   // La inyeccion va por token explicito y no por el tipo: los tests compilan
   // con esbuild, que no emite `design:paramtypes`. Declararlo a mano evita
   // sumar un compilador mas solo para los tests.
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(TopeDePeticiones) private readonly tope: TopeDePeticiones,
+  ) {}
 
   async sellar(
+    tokenHash: string,
+    clave: string,
+    cuerpo: SellarPeticion,
+  ): Promise<SellarRespuesta> {
+    return this.conTopeDeEquivocados(tokenHash, () =>
+      this.sellarEnTransaccion(tokenHash, clave, cuerpo),
+    );
+  }
+
+  async canjear(
+    tokenHash: string,
+    clave: string,
+    cuerpo: CanjearPeticion,
+  ): Promise<CanjearRespuesta> {
+    return this.conTopeDeEquivocados(tokenHash, () =>
+      this.canjearEnTransaccion(tokenHash, clave, cuerpo),
+    );
+  }
+
+  /**
+   * Limita los codigos equivocados por tablet: sin esto, una tablet puede
+   * probar codigos sin freno hasta adivinar el TOTP de alguien.
+   *
+   * Se mira antes y se suma despues, FUERA de la transaccion: el rechazo la
+   * deshace entera, y una cuenta escrita adentro se iria con ella. Solo cuenta
+   * CODIGO_INVALIDO; un codigo ya usado o una tarjeta completa no son
+   * intentos de adivinar nada.
+   */
+  private async conTopeDeEquivocados<T>(
+    tokenHash: string,
+    operar: () => Promise<T>,
+  ): Promise<T> {
+    const clave = `codigo-equivocado:${tokenHash}`;
+    await this.tope.verificar(clave, TOPE_DE_CODIGOS_EQUIVOCADOS);
+    try {
+      return await operar();
+    } catch (error) {
+      if (codigoDelError(error) === 'CODIGO_INVALIDO') await this.tope.sumar(clave);
+      throw error;
+    }
+  }
+
+  private async sellarEnTransaccion(
     tokenHash: string,
     clave: string,
     cuerpo: SellarPeticion,
@@ -96,7 +143,7 @@ export class CajaService {
     });
   }
 
-  async canjear(
+  private async canjearEnTransaccion(
     tokenHash: string,
     clave: string,
     cuerpo: CanjearPeticion,
@@ -139,6 +186,14 @@ export class CajaService {
       return respuesta;
     });
   }
+}
+
+/** El codigo de error que lleva una respuesta de la api, si lleva uno. */
+function codigoDelError(error: unknown): string | null {
+  if (!(error instanceof HttpException)) return null;
+  const cuerpo = error.getResponse();
+  if (typeof cuerpo !== 'object' || !('codigo' in cuerpo)) return null;
+  return typeof cuerpo.codigo === 'string' ? cuerpo.codigo : null;
 }
 
 /**

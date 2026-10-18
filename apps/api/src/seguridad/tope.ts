@@ -35,6 +35,14 @@ export const TOPE_POR_TELEFONO = 5;
  */
 export const TOPE_POR_IP = 60;
 
+/**
+ * Codigos equivocados por tablet. Un cajero que se equivoca tipeando no llega
+ * a veinte en una hora; quien prueba codigos al azar para adivinar el TOTP de
+ * alguien, si. Es por tablet y no por cliente a proposito: por cliente,
+ * cualquiera podria bloquearle el codigo a otro equivocandose con su prefijo.
+ */
+export const TOPE_DE_CODIGOS_EQUIVOCADOS = 20;
+
 @Injectable()
 export class TopeDePeticiones {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
@@ -46,15 +54,30 @@ export class TopeDePeticiones {
    * rechaza y su transaccion se deshace, el intento igual cuenta.
    */
   async exigir(clave: string, tope: number): Promise<void> {
+    if ((await this.sumar(clave)) > tope) throw errorDeApi('TOPE_SUPERADO');
+  }
+
+  /**
+   * Falla si esa clave ya llego al tope en esta hora, sin contar nada. Para
+   * los topes que cuentan solo los fracasos: se mira antes de intentar y se
+   * suma despues, si salio mal.
+   */
+  async verificar(clave: string, tope: number): Promise<void> {
+    const filas = await this.prisma.$queryRaw<{ cuenta: number }[]>`
+      SELECT cuenta FROM tope_peticion
+      WHERE clave = ${huella(clave)} AND ventana = date_trunc('hour', now())`;
+    if ((filas[0]?.cuenta ?? 0) >= tope) throw errorDeApi('TOPE_SUPERADO');
+  }
+
+  /** Suma uno a la cuenta de esta hora y la devuelve. */
+  async sumar(clave: string): Promise<number> {
     const filas = await this.prisma.$queryRaw<{ cuenta: number }[]>`
       INSERT INTO tope_peticion (clave, ventana, cuenta)
       VALUES (${huella(clave)}, date_trunc('hour', now()), 1)
       ON CONFLICT (clave, ventana)
         DO UPDATE SET cuenta = tope_peticion.cuenta + 1
       RETURNING cuenta`;
-
-    const cuenta = filas[0]?.cuenta ?? 0;
-    if (cuenta > tope) throw errorDeApi('TOPE_SUPERADO');
+    return filas[0]?.cuenta ?? 0;
   }
 }
 
