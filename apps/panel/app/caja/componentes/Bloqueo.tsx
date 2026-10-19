@@ -20,11 +20,9 @@ export function Bloqueo({ bloqueo, revisando, alRevisar }: Props) {
   );
 
   if (bloqueo.tono === 'instruccion') {
-    // Lo de todas las mananas: la misma tarjeta que el resto, sin color.
-    // Cuando exista el endpoint de abrir turno, el nombre y el PIN van aca,
-    // como accion principal, y "Volver a revisar" pasa a secundario.
-    // POST /caja/turnos NO lleva Idempotency-Key: no pasarlo por `correr` de
-    // useCaja, que la genera siempre y guarda en memoria una firma con el PIN.
+    // Lo que se resuelve en el mostrador: la misma tarjeta que el resto, sin
+    // color. TURNO_CERRADO no llega aca —lo atiende AbrirTurno, con la lista y
+    // el PIN—; esta rama queda para el proximo codigo de ese tono.
     return (
       <section className={css.tarjeta} role="status" aria-labelledby="titulo-bloqueo">
         <h2 id="titulo-bloqueo" className={css.instruccion}>

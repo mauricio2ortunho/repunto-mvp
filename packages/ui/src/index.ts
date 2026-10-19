@@ -16,6 +16,7 @@ export { AparienciaDeTarjeta, useApariencia, type Apariencia } from './aparienci
 export { Aviso } from './componentes/Aviso';
 export { Boton, type TamanoDeBoton, type VarianteDeBoton } from './componentes/Boton';
 export { BotonDeDosToques } from './componentes/BotonDeDosToques';
+export { TecladoDePin } from './componentes/TecladoDePin';
 export { DIBUJO_DE_SELLO } from './componentes/IconosDeSello';
 export { DefinicionesDeTinta, Sellos } from './componentes/Sellos';
 export { LogoDelNegocio } from './componentes/LogoDelNegocio';

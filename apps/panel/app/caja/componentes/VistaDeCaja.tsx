@@ -6,6 +6,7 @@ import { AparienciaDeTarjeta, DefinicionesDeTinta, variablesDeMarca } from '@rep
 import { useCaja } from '../usar-caja';
 import { useEstadoDeCaja } from '../usar-estado';
 import { useAhora, useRegistrosPendientes } from '../usar-registros';
+import { AbrirTurno } from './AbrirTurno';
 import { Banda } from './Banda';
 import { Bloqueo } from './Bloqueo';
 import { CampoDeCodigo } from './CampoDeCodigo';
@@ -78,10 +79,28 @@ export function VistaDeCaja() {
       >
         <DefinicionesDeTinta />
 
-        <Banda datos={caja.datos} conexion={pendientes.conexion} />
+        <Banda
+          datos={caja.datos}
+          conexion={pendientes.conexion}
+          cerrando={caja.cerrando}
+          puedeCerrar={!ocupado}
+          alCerrarTurno={() =>
+            void caja.cerrarTurno().then((cerrado) => {
+              if (cerrado) volver();
+            })
+          }
+        />
 
         <main className={css.principal} data-superficie={superficie}>
-          {caja.bloqueo !== null ? (
+          {caja.bloqueo?.codigo === 'TURNO_CERRADO' ? (
+            <AbrirTurno
+              alAbrir={(nuevo) => {
+                caja.aplicar(nuevo);
+                // Lo que quedo en pantalla era del turno anterior.
+                volver();
+              }}
+            />
+          ) : caja.bloqueo !== null ? (
             <Bloqueo
               bloqueo={caja.bloqueo}
               revisando={caja.revisando}

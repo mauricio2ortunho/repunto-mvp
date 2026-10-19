@@ -6,6 +6,7 @@ import { vencimientoDesde } from '@repunto/dominio';
 import { Client } from 'pg';
 
 import { cifrarSemilla } from '../src/seguridad/cifrado.ts';
+import { hashDePin } from '../src/seguridad/pin.ts';
 import { hashDeToken } from '../src/seguridad/token.ts';
 
 /**
@@ -23,9 +24,11 @@ import { hashDeToken } from '../src/seguridad/token.ts';
  * se despliega la api con la clave de verdad, no puede descifrar las
  * semillas, y los clientes de demo no pueden generar su codigo. Las semillas
  * de demo estan en este archivo y son publicas, asi que re-cifrarlas no
- * expone nada. Ninguna otra fila se toca.
+ * expone nada. Lo mismo con el PIN de los cajeros de demo: se vuelve a
+ * hashear, asi una base sembrada antes de que existiera el PIN lo recibe.
+ * Ninguna otra fila se toca.
  *
- * LOS TOKENS DE ESTE ARCHIVO SON PUBLICOS. Estan a la vista para poder tipear
+ * LOS TOKENS Y LOS PIN DE ESTE ARCHIVO SON PUBLICOS. Estan a la vista para poder tipear
  * una prueba desde un telefono. Un negocio real nunca se da de alta con esto:
  * el script se niega a correr con NODE_ENV=production.
  *
@@ -56,6 +59,9 @@ const ID = {
     '11111111-1111-4111-8111-000000000013',
   ],
 } as const;
+
+/** PIN de demo, publicos como los tokens: para abrir turno en la tablet. */
+const PIN = { cajera: '1234', supervisor: '5678' } as const;
 
 const RAIZ = resolve(fileURLToPath(new URL('.', import.meta.url)), '../../..');
 const DIA = 86_400_000;
@@ -118,17 +124,24 @@ async function sembrar(): Promise<void> {
     }
 
     // El dueño entra por telefono; la cajera y el supervisor, por PIN sobre la
-    // tablet. El pin_hash queda nulo: abrir turno todavia no existe como
-    // endpoint, asi que inventar un esquema de hash aca seria adivinar.
-    for (const [id, rol, telefono, nombre] of [
-      [ID.dueno, 'dueno', '+59170000001', 'Rocio (dueña)'],
-      [ID.cajera, 'cajero', null, 'Marta'],
-      [ID.supervisor, 'supervisor', null, 'Diego'],
+    // tablet.
+    for (const [id, rol, telefono, nombre, pin] of [
+      [ID.dueno, 'dueno', '+59170000001', 'Rocio (dueña)', null],
+      [ID.cajera, 'cajero', null, 'Marta', PIN.cajera],
+      [ID.supervisor, 'supervisor', null, 'Diego', PIN.supervisor],
     ] as const) {
       await db.query(
-        `INSERT INTO usuario_negocio (id, negocio_id, rol, telefono, nombre)
-         VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id) DO NOTHING`,
-        [id, ID.negocio, rol, telefono, nombre],
+        `INSERT INTO usuario_negocio (id, negocio_id, rol, telefono, nombre, pin_hash)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (id) DO UPDATE SET pin_hash = EXCLUDED.pin_hash`,
+        [
+          id,
+          ID.negocio,
+          rol,
+          telefono,
+          nombre,
+          pin === null ? null : await hashDePin(pin),
+        ],
       );
     }
 
@@ -158,11 +171,11 @@ async function sembrar(): Promise<void> {
       );
     }
 
-    // Turno abierto de Marta en la tablet de Equipetrol: sin turno, la caja
-    // responde TURNO_CERRADO a todo.
+    // Un turno de Marta ya cerrado: es el de los sellos de Juan. La caja de
+    // demo arranca pidiendo turno, como cada mañana; se abre con su PIN.
     await db.query(
-      `INSERT INTO turno_caja (id, dispositivo_id, usuario_id, local_id, abierto_el)
-       VALUES ($1, $2, $3, $4, now()) ON CONFLICT (id) DO NOTHING`,
+      `INSERT INTO turno_caja (id, dispositivo_id, usuario_id, local_id, abierto_el, cerrado_el)
+       VALUES ($1, $2, $3, $4, now(), now()) ON CONFLICT (id) DO NOTHING`,
       [ID.turno, ID.tabletEquipetrol, ID.cajera, ID.equipetrol],
     );
 
@@ -261,8 +274,11 @@ function resumen(): void {
     Centro      ${QR.centro}
 
   Tokens de las tablets (cabecera Authorization: Bearer ...)
-    Equipetrol  ${TOKEN.tabletEquipetrol}   (turno abierto de Marta)
-    Centro      ${TOKEN.tabletCentro}       (sin turno: responde TURNO_CERRADO)
+    Equipetrol  ${TOKEN.tabletEquipetrol}
+    Centro      ${TOKEN.tabletCentro}
+  Las dos arrancan pidiendo turno. PIN de demo:
+    Marta (cajera, Equipetrol)              ${PIN.cajera}
+    Diego (supervisor, Equipetrol y Centro) ${PIN.supervisor}
 
   Tokens de los clientes
     Juan  ${TOKEN.juan}     codigo ${CODIGO_PUBLICO.juan}, ${ID.sellosDeJuan.length} sellos
@@ -273,7 +289,12 @@ function resumen(): void {
     1. En el telefono, el codigo que Juan muestra en caja:
        curl ${base}/mi/codigo -H "Authorization: Bearer ${TOKEN.juan}"
 
-    2. En la tablet, tipear ese codigo:
+    2. En la tablet, abrir turno y tipear ese codigo:
+       curl -X POST ${base}/caja/turnos \\
+         -H "Authorization: Bearer ${TOKEN.tabletEquipetrol}" \\
+         -H "Content-Type: application/json" \\
+         -d '{"usuario_id":"${ID.cajera}","pin":"${PIN.cajera}"}'
+
        curl -X POST ${base}/caja/sellos \\
          -H "Authorization: Bearer ${TOKEN.tabletEquipetrol}" \\
          -H "Idempotency-Key: prueba-desde-la-tablet-1" \\

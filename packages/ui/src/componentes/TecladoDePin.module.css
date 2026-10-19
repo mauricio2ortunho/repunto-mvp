@@ -1,0 +1,64 @@
+.teclado {
+  display: grid;
+  justify-items: center;
+  gap: var(--espacio-6);
+  width: 100%;
+  max-width: 360px;
+}
+
+.puntos {
+  display: flex;
+  gap: var(--espacio-4);
+}
+
+/* Vacio: un aro. Lleno: el aro relleno. Se distinguen por forma, no solo por color. */
+.punto {
+  width: 22px;
+  height: 22px;
+  border: var(--borde-grueso) solid var(--c-texto);
+  border-radius: 50%;
+}
+
+.punto[data-lleno] {
+  background: var(--c-texto);
+}
+
+.teclas {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--espacio-3);
+  width: 100%;
+}
+
+.tecla {
+  display: grid;
+  place-items: center;
+  height: var(--alto-control-grande);
+  border: var(--borde-fino) solid var(--c-borde-fuerte);
+  border-radius: var(--radio-2);
+  background: var(--c-superficie);
+  color: var(--c-texto);
+  font-size: var(--texto-9);
+  font-weight: var(--peso-fuerte);
+  font-variant-numeric: tabular-nums;
+}
+
+.tecla:active:not(:disabled) {
+  background: var(--c-accion-velo);
+  transform: translateY(1px);
+}
+
+.tecla:focus-visible {
+  outline: 3px solid var(--c-texto);
+  outline-offset: 3px;
+}
+
+.tecla:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tecla[data-borrar] {
+  border-color: transparent;
+  background: none;
+}

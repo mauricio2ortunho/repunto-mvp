@@ -7,6 +7,8 @@ import {
   esquemaRegistrosPendientes,
   esquemaSellarRespuesta,
   esquemaSellosRecientes,
+  esquemaUsuariosDeCaja,
+  type AbrirTurnoPeticion,
   type AnularRespuesta,
   type CanjearPeticion,
   type CanjearRespuesta,
@@ -18,6 +20,7 @@ import {
   type SellarPeticion,
   type SellarRespuesta,
   type SellosRecientes,
+  type UsuariosDeCaja,
 } from '@repunto/contratos';
 import { interpretar, pedir, pedirCrudo, type Fallo, type Respuesta } from './http';
 
@@ -106,6 +109,31 @@ export function anularSello(
 /** Quien es esta caja y si puede operar. Contesta 200 aunque no pueda. */
 export function estadoDeCaja(): Promise<Respuesta<EstadoDeCaja>> {
   return pedir({ metodo: 'GET', ruta: '/caja/estado' }, esquemaEstadoDeCaja);
+}
+
+/** Quienes pueden abrir turno en esta tablet. */
+export function usuariosDeCaja(): Promise<Respuesta<UsuariosDeCaja>> {
+  return pedir({ metodo: 'GET', ruta: '/caja/usuarios' }, esquemaUsuariosDeCaja);
+}
+
+/**
+ * Abrir turno con PIN. SIN clave de idempotencia, al reves que el resto de
+ * los POST: la api la guardaria con un hash del cuerpo, y el de un PIN de
+ * cuatro digitos se revierte. El doble toque lo cubre la api. Responde el
+ * estado de la caja ya con el turno.
+ */
+export function abrirTurno(
+  peticion: AbrirTurnoPeticion,
+): Promise<Respuesta<EstadoDeCaja>> {
+  return pedir(
+    { metodo: 'POST', ruta: '/caja/turnos', cuerpo: peticion },
+    esquemaEstadoDeCaja,
+  );
+}
+
+/** Cerrar el turno de esta tablet. Responde el estado, ya sin turno. */
+export function cerrarTurno(): Promise<Respuesta<EstadoDeCaja>> {
+  return pedir({ metodo: 'POST', ruta: '/caja/turno/cierre' }, esquemaEstadoDeCaja);
 }
 
 export function sellosRecientes(): Promise<Respuesta<SellosRecientes>> {

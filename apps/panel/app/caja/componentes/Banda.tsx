@@ -1,4 +1,5 @@
 import type { EstadoDeCaja } from '@repunto/contratos';
+import { Boton } from '@repunto/ui';
 import type { Conexion } from '../usar-registros';
 import css from './Banda.module.css';
 
@@ -16,9 +17,16 @@ const TEXTO_DE_CONEXION: Record<Conexion, string> = {
 export function Banda({
   datos,
   conexion,
+  cerrando,
+  puedeCerrar,
+  alCerrarTurno,
 }: {
   datos: EstadoDeCaja | null;
   conexion: Conexion;
+  cerrando: boolean;
+  /** Con una accion en curso no se cierra: el sello que viaja es de este turno. */
+  puedeCerrar: boolean;
+  alCerrarTurno: () => void;
 }) {
   return (
     <header className={css.banda} data-superficie="marca">
@@ -43,7 +51,17 @@ export function Banda({
       </div>
       <div className={css.derecha}>
         {datos?.turno != null && (
-          <span className={css.turno}>Turno de {datos.turno.usuario}</span>
+          <>
+            <span className={css.turno}>Turno de {datos.turno.usuario}</span>
+            {/* Un toque: cerrarlo por error solo cuesta volver a escribir el PIN. */}
+            <Boton
+              variante="texto"
+              onClick={alCerrarTurno}
+              disabled={cerrando || !puedeCerrar}
+            >
+              {cerrando ? 'Cerrando…' : 'Cerrar turno'}
+            </Boton>
+          </>
         )}
         <span className={css.conexion} data-estado={conexion} role="status">
           {TEXTO_DE_CONEXION[conexion]}

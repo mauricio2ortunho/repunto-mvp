@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { EstadoDeCaja } from '@repunto/contratos';
-import { estadoDeCaja } from '../../lib/api/caja';
+import { cerrarTurno as cerrarTurnoEnLaApi, estadoDeCaja } from '../../lib/api/caja';
 import { crearBloqueo, type Bloqueo } from './bloqueo';
 
 /** El turno lo abre o lo cierra otra persona: medio minuto de atraso alcanza. */
@@ -20,6 +20,7 @@ export function useEstadoDeCaja() {
   /** La API no reconoce el token: no hay estado que pedir. */
   const [sinCredencial, setSinCredencial] = useState<Bloqueo | null>(null);
   const [revisando, setRevisando] = useState(false);
+  const [cerrando, setCerrando] = useState(false);
   const pedirAhora = useRef<() => void>(() => undefined);
 
   useEffect(() => {
@@ -66,6 +67,15 @@ export function useEstadoDeCaja() {
 
   const revisar = useCallback(() => pedirAhora.current(), []);
 
+  /**
+   * Abrir y cerrar turno responden el estado entero: se usa ese, sin esperar
+   * a la proxima consulta.
+   */
+  const aplicar = useCallback((nuevo: EstadoDeCaja) => {
+    setDatos(nuevo);
+    setSinCredencial(null);
+  }, []);
+
   /** Por que la caja no puede operar, con su tono, o null si puede. */
   const impedimento = datos?.impedimento ?? null;
   const bloqueo: Bloqueo | null = useMemo(
@@ -73,5 +83,18 @@ export function useEstadoDeCaja() {
     [sinCredencial, impedimento],
   );
 
-  return { datos, bloqueo, revisando, revisar };
+  /**
+   * "Cerrar turno". Si no llega a contestar, se vuelve a preguntar el estado:
+   * la caja muestra lo que de verdad quedo, no lo que se pidio.
+   */
+  const cerrarTurno = useCallback(async (): Promise<boolean> => {
+    setCerrando(true);
+    const r = await cerrarTurnoEnLaApi();
+    setCerrando(false);
+    if (r.ok) aplicar(r.datos);
+    else pedirAhora.current();
+    return r.ok;
+  }, [aplicar]);
+
+  return { datos, bloqueo, revisando, revisar, aplicar, cerrarTurno, cerrando };
 }

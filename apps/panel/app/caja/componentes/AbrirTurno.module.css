@@ -1,0 +1,75 @@
+/* Neutra, como el resto de las tarjetas de la caja (Bloqueo.module.css). */
+.tarjeta {
+  display: grid;
+  justify-items: start;
+  gap: var(--espacio-6);
+  max-width: var(--ancho-contenido);
+  padding: var(--espacio-7);
+  border: var(--borde-fino) solid var(--c-borde);
+  border-radius: var(--radio-3);
+  background: var(--c-superficie);
+}
+
+.titulo {
+  margin: 0;
+  font-size: var(--texto-9);
+  font-weight: var(--peso-fuerte);
+  line-height: var(--interlineado-titulo);
+  text-wrap: balance;
+}
+
+.lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--espacio-3);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Un nombre es un boton entero: se toca en cualquier parte. */
+.persona {
+  display: grid;
+  gap: var(--espacio-1);
+  width: 100%;
+  min-height: var(--alto-control-grande);
+  padding: var(--espacio-4) var(--espacio-5);
+  border: var(--borde-grueso) solid var(--c-borde-fuerte);
+  border-radius: var(--radio-2);
+  background: var(--c-superficie);
+  color: var(--c-texto);
+  text-align: left;
+}
+
+.persona:active {
+  background: var(--c-accion-velo);
+  transform: translateY(1px);
+}
+
+.persona:focus-visible {
+  outline: 3px solid var(--c-texto);
+  outline-offset: 3px;
+}
+
+.nombre {
+  font-size: var(--texto-6);
+  font-weight: var(--peso-fuerte);
+}
+
+.rol {
+  color: var(--c-texto-suave);
+  font-size: var(--texto-2);
+}
+
+.estado {
+  min-height: 1lh;
+  margin: 0;
+  color: var(--c-texto-suave);
+  font-size: var(--texto-3);
+}
+
+.vacio {
+  margin: 0;
+  font-size: var(--texto-4);
+}
