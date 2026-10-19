@@ -3,6 +3,7 @@ import { createHmac } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 
 import { errorDeApi } from '../caja/errores-http';
+import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { claveDerivada } from './cifrado';
 
@@ -14,9 +15,13 @@ import { claveDerivada } from './cifrado';
  *
  * En la base y no en memoria porque la api corre serverless: cada invocacion
  * puede ser otro proceso, y un contador en una variable no cuenta lo que
- * parece contar (CLAUDE.md, seccion 2). La ventana es la hora fija del reloj
- * de la base; ver el modelo en schema.prisma.
+ * parece contar (CLAUDE.md, seccion 2). La ventana es un tramo fijo del reloj
+ * de la base —la hora, salvo que se pida otro largo—; ver el modelo en
+ * schema.prisma.
  */
+
+/** Minutos de la ventana por defecto: la hora del reloj. */
+const UNA_HORA = 60;
 
 /** El codigo que muestra el cliente: dos ventanas por pedido. */
 export const TOPE_DEL_CODIGO = 120;
@@ -63,22 +68,37 @@ export class TopeDePeticiones {
    * suma despues, si salio mal.
    */
   async verificar(clave: string, tope: number): Promise<void> {
-    const filas = await this.prisma.$queryRaw<{ cuenta: number }[]>`
-      SELECT cuenta FROM tope_peticion
-      WHERE clave = ${huella(clave)} AND ventana = date_trunc('hour', now())`;
-    if ((filas[0]?.cuenta ?? 0) >= tope) throw errorDeApi('TOPE_SUPERADO');
+    if ((await this.cuenta(clave)) >= tope) throw errorDeApi('TOPE_SUPERADO');
   }
 
-  /** Suma uno a la cuenta de esta hora y la devuelve. */
-  async sumar(clave: string): Promise<number> {
+  /** Cuantas veces se conto esa clave en el tramo en curso. */
+  async cuenta(clave: string, minutos: number = UNA_HORA): Promise<number> {
+    const filas = await this.prisma.$queryRaw<{ cuenta: number }[]>`
+      SELECT cuenta FROM tope_peticion
+      WHERE clave = ${huella(clave)} AND ventana = ${tramo(minutos)}`;
+    return filas[0]?.cuenta ?? 0;
+  }
+
+  /** Suma uno a la cuenta del tramo en curso y la devuelve. */
+  async sumar(clave: string, minutos: number = UNA_HORA): Promise<number> {
     const filas = await this.prisma.$queryRaw<{ cuenta: number }[]>`
       INSERT INTO tope_peticion (clave, ventana, cuenta)
-      VALUES (${huella(clave)}, date_trunc('hour', now()), 1)
+      VALUES (${huella(clave)}, ${tramo(minutos)}, 1)
       ON CONFLICT (clave, ventana)
         DO UPDATE SET cuenta = tope_peticion.cuenta + 1
       RETURNING cuenta`;
     return filas[0]?.cuenta ?? 0;
   }
+}
+
+/**
+ * El comienzo del tramo en curso, con el reloj de la base. Contado desde
+ * 1970: con una hora es lo mismo que `date_trunc('hour', ...)`, y con quince
+ * minutos cae en :00, :15, :30 y :45, igual que `finDelTramoDePin` del
+ * dominio.
+ */
+function tramo(minutos: number): Prisma.Sql {
+  return Prisma.sql`date_bin(make_interval(mins => ${minutos}::int), now(), to_timestamp(0))`;
 }
 
 /**

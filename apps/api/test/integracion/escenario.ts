@@ -3,6 +3,7 @@ import { randomInt, randomUUID } from 'node:crypto';
 import { codigoDeVentana, ventanaDe } from '@repunto/dominio';
 
 import { cifrarSemilla } from '../../src/seguridad/cifrado';
+import { hashDePin } from '../../src/seguridad/pin';
 import { hashDeToken, nuevoToken } from '../../src/seguridad/token';
 import { type Db, una } from './base';
 
@@ -131,6 +132,14 @@ export async function crearNegocio(
     programa,
     condicion,
   };
+}
+
+/** Le pone PIN a un usuario. Sin PIN, no aparece en la lista de la tablet. */
+export async function ponerPin(db: Db, usuario: string, pin: string): Promise<void> {
+  await db.query('UPDATE usuario_negocio SET pin_hash = $1 WHERE id = $2', [
+    await hashDePin(pin),
+    usuario,
+  ]);
 }
 
 export async function crearLocal(

@@ -268,6 +268,10 @@ funciones puras.
 - **Tope de códigos equivocados en caja:** 20 `CODIGO_INVALIDO` por tablet por
   hora del reloj; después, `TOPE_SUPERADO` hasta la hora siguiente. Por tablet
   y no por cliente: por cliente, cualquiera bloquearía el código de otro.
+- **Bloqueo por PIN:** 10 PIN equivocados de un mismo usuario en un tramo fijo
+  de 15 minutos (:00, :15, :30, :45) lo bloquean, en cualquier tablet, hasta
+  que termina el tramo; el mensaje dice a qué hora. El bloqueo se mira antes
+  que el PIN: bloqueado, ni el correcto entra.
 - **Tope de notificaciones del negocio:** 2 por semana por negocio.
 - **Retención de respaldos:** diario, 30 días.
 

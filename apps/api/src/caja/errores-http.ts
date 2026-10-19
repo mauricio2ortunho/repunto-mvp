@@ -111,3 +111,15 @@ function horaEnLaPaz(instante: Date): string {
     hour12: false,
   }).format(instante);
 }
+
+/**
+ * El codigo de error que lleva una respuesta de la api, si lleva uno. Para
+ * los topes que cuentan fracasos: se cuentan despues de que la transaccion se
+ * deshizo, mirando con que codigo fallo.
+ */
+export function codigoDelError(error: unknown): string | null {
+  if (!(error instanceof HttpException)) return null;
+  const cuerpo = error.getResponse();
+  if (typeof cuerpo !== 'object' || !('codigo' in cuerpo)) return null;
+  return typeof cuerpo.codigo === 'string' ? cuerpo.codigo : null;
+}

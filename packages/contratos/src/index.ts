@@ -41,6 +41,14 @@ export type {
 } from './caja';
 
 export {
+  FORMATO_DEL_PIN,
+  esquemaAbrirTurnoPeticion,
+  esquemaUsuarioDeCaja,
+  esquemaUsuariosDeCaja,
+} from './turno';
+export type { AbrirTurnoPeticion, UsuarioDeCaja, UsuariosDeCaja } from './turno';
+
+export {
   CONTRASTE_MINIMO,
   ICONOS_DE_SELLO,
   ICONO_DE_SELLO_POR_DEFECTO,

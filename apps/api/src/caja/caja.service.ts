@@ -1,4 +1,4 @@
-import { HttpException, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   type CanjearPeticion,
   type CanjearRespuesta,
@@ -21,7 +21,7 @@ import {
 
 import { PrismaService } from '../prisma/prisma.service';
 import { TOPE_DE_CODIGOS_EQUIVOCADOS, TopeDePeticiones } from '../seguridad/tope';
-import { errorDeApi, errorDeRechazo } from './errores-http';
+import { codigoDelError, errorDeApi, errorDeRechazo } from './errores-http';
 import { guardarRespuesta, reservarIdempotencia } from './idempotencia';
 import { type EstadoDeCaja, type Transaccion, leerEstado } from './lectura';
 
@@ -186,14 +186,6 @@ export class CajaService {
       return respuesta;
     });
   }
-}
-
-/** El codigo de error que lleva una respuesta de la api, si lleva uno. */
-function codigoDelError(error: unknown): string | null {
-  if (!(error instanceof HttpException)) return null;
-  const cuerpo = error.getResponse();
-  if (typeof cuerpo !== 'object' || !('codigo' in cuerpo)) return null;
-  return typeof cuerpo.codigo === 'string' ? cuerpo.codigo : null;
 }
 
 /**

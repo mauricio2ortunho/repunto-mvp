@@ -117,6 +117,20 @@ export class Api {
     return this.pedir('GET', '/caja/sellos/recientes', { token });
   }
 
+  /** El turno: la lista de nombres, abrir con PIN y cerrar. */
+  usuariosDeCaja(token?: string): Promise<Respuesta> {
+    return this.pedir('GET', '/caja/usuarios', { token });
+  }
+
+  /** Sin Idempotency-Key: abrir turno no la usa. */
+  abrirTurno(token: string | undefined, cuerpo: unknown): Promise<Respuesta> {
+    return this.pedir('POST', '/caja/turnos', { token, cuerpo });
+  }
+
+  cerrarTurno(token?: string): Promise<Respuesta> {
+    return this.pedir('POST', '/caja/turno/cierre', { token });
+  }
+
   private postear(ruta: string, llamada: Llamada): Promise<Respuesta> {
     return this.pedir('POST', ruta, {
       clave: randomUUID(),

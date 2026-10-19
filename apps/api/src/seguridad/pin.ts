@@ -1,5 +1,7 @@
 import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 
+import { FORMATO_DEL_PIN } from '@repunto/contratos';
+
 /**
  * El PIN de cuatro digitos del cajero, hasheado con scrypt y sal propia.
  *
@@ -25,10 +27,8 @@ const LARGO_HASH = 32;
 /** Los parametros por defecto de Node: ~50 ms por verificacion. */
 const PARAMETROS = { N: 16_384, r: 8, p: 1 } as const;
 
-export const FORMATO_DE_PIN = /^\d{4}$/;
-
 export async function hashDePin(pin: string): Promise<string> {
-  if (!FORMATO_DE_PIN.test(pin)) throw new Error('El PIN son cuatro digitos.');
+  if (!FORMATO_DEL_PIN.test(pin)) throw new Error('El PIN son cuatro digitos.');
   const sal = randomBytes(LARGO_SAL);
   const hash = await derivar(pin, sal);
   return ['scrypt', VERSION, sal.toString('base64'), hash.toString('base64')].join('$');
