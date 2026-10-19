@@ -41,6 +41,9 @@ export const CODIGOS_DE_ERROR_DE_CAJA = [
   'ANULACION_NO_PERMITIDA',
   'SELLO_YA_CANJEADO',
   'TARJETA_NO_ENCONTRADA',
+  'USUARIO_NO_HABILITADO',
+  'PIN_INCORRECTO',
+  'PIN_BLOQUEADO',
 ] as const;
 
 export type CodigoDeErrorDeCaja = (typeof CODIGOS_DE_ERROR_DE_CAJA)[number];
@@ -82,7 +85,7 @@ export type ErrorDeLaApi = z.infer<typeof esquemaError>;
  * horaria ni la busqueda del local.
  */
 export interface DetalleDelMensaje {
-  /** DEMASIADO_PRONTO: `14:30`, hora de La Paz. */
+  /** DEMASIADO_PRONTO y PIN_BLOQUEADO: `14:30`, hora de La Paz. */
   hora?: string;
   /** CANJE_EN_OTRO_LOCAL: el nombre del local donde se abrio la tarjeta. */
   local?: string;
@@ -124,6 +127,14 @@ export function mensajeParaElCajero(
       return 'El negocio está suspendido. Avisá al dueño.';
     case 'TURNO_CERRADO':
       return 'Abrí tu turno con tu PIN antes de sellar.';
+    case 'USUARIO_NO_HABILITADO':
+      return 'Esa persona no puede abrir turno en esta tablet. Avisá al dueño.';
+    case 'PIN_INCORRECTO':
+      return 'PIN incorrecto. Probá de nuevo.';
+    case 'PIN_BLOQUEADO':
+      return detalle.hora === undefined
+        ? 'Demasiados PIN equivocados. Esperá unos minutos o avisá al dueño.'
+        : `Demasiados PIN equivocados. Probá de nuevo a las ${detalle.hora}.`;
     case 'TELEFONO_INVALIDO':
       return 'Ese número no es válido. Revisalo con el cliente: si es boliviano, son ocho dígitos.';
     case 'REGISTRO_NO_ENCONTRADO':

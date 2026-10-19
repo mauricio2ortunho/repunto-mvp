@@ -72,6 +72,17 @@ export const CODIGOS_DE_ERROR = [
   /** No existe, o es de otro cliente. Los dos dan lo mismo: si se
    * distinguieran, probando ids se podria averiguar cuales existen. */
   'TARJETA_NO_ENCONTRADA',
+
+  // Turno.
+  /** No existe en este negocio, esta dado de baja, no tiene PIN o no esta
+   * asignado a este local. Uno solo para todo: la lista de la tablet ya
+   * muestra solo a quien puede abrir turno ahi. */
+  'USUARIO_NO_HABILITADO',
+  /** El PIN no coincide. */
+  'PIN_INCORRECTO',
+  /** Demasiados PIN equivocados en el tramo: hasta que termine, ni el
+   * correcto entra. */
+  'PIN_BLOQUEADO',
 ] as const;
 
 export type CodigoDeError = (typeof CODIGOS_DE_ERROR)[number];
@@ -86,6 +97,8 @@ export interface DetalleDeRechazo {
   puede_sellar_desde?: Date;
   /** CANJE_EN_OTRO_LOCAL: el local donde se abrio la tarjeta. */
   local_alta_id?: string;
+  /** PIN_BLOQUEADO: cuando se levanta el bloqueo. */
+  bloqueado_hasta?: Date;
 }
 
 export interface Rechazo {

@@ -45,6 +45,10 @@ const ESTADO_DE_CAJA: Record<CodigoDeError, number> = {
   SELLO_YA_CANJEADO: 409,
   // 404 y no 403: una tarjeta de otro cliente, para este, no existe.
   TARJETA_NO_ENCONTRADA: 404,
+  USUARIO_NO_HABILITADO: 403,
+  // 422 y no 401: en esta api, 401 es "la tablet no tiene credencial".
+  PIN_INCORRECTO: 422,
+  PIN_BLOQUEADO: 429,
 };
 
 const ESTADO_DE_API: Record<CodigoDeErrorDeApi, number> = {
@@ -79,6 +83,9 @@ export function errorDeRechazo(
 
   if (rechazo.detalle?.puede_sellar_desde !== undefined) {
     detalle.hora = horaEnLaPaz(rechazo.detalle.puede_sellar_desde);
+  }
+  if (rechazo.detalle?.bloqueado_hasta !== undefined) {
+    detalle.hora = horaEnLaPaz(rechazo.detalle.bloqueado_hasta);
   }
   // El dominio dice de que local habla; el nombre lo pone la lectura.
   if (

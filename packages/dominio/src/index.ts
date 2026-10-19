@@ -72,6 +72,14 @@ export {
 export type { EstadoParaElCliente, SituacionDeTarjeta } from './tarjeta-del-cliente';
 
 export { revisarCaja, revisarCajaParaSellar, revisarTablet } from './caja';
+
+export {
+  MINUTOS_DEL_TRAMO_DE_PIN,
+  PIN_EQUIVOCADOS_PARA_BLOQUEAR,
+  decidirApertura,
+  finDelTramoDePin,
+} from './turno';
+export type { DecisionDeApertura, EntradaDeApertura, UsuarioDeCaja } from './turno';
 export type { Caja, PromoConfigurada, RevisionDeCaja } from './caja';
 
 export { decidirSello, planDeSellado } from './sellado';
