@@ -131,6 +131,11 @@ export class Api {
     return this.pedir('POST', '/caja/turno/cierre', { token });
   }
 
+  /** La tablet nueva: sin token, solo el codigo. */
+  vincular(cuerpo: unknown): Promise<Respuesta> {
+    return this.pedir('POST', '/caja/vinculacion', { cuerpo });
+  }
+
   private postear(ruta: string, llamada: Llamada): Promise<Respuesta> {
     return this.pedir('POST', ruta, {
       clave: randomUUID(),

@@ -1,6 +1,11 @@
-import { randomInt, randomUUID } from 'node:crypto';
+import { randomBytes, randomInt, randomUUID } from 'node:crypto';
 
-import { codigoDeVentana, ventanaDe } from '@repunto/dominio';
+import {
+  LARGO_CODIGO_DE_VINCULACION,
+  codigoDeVentana,
+  codigoDeVinculacionDesde,
+  ventanaDe,
+} from '@repunto/dominio';
 
 import { cifrarSemilla } from '../../src/seguridad/cifrado';
 import { hashDePin } from '../../src/seguridad/pin';
@@ -233,6 +238,28 @@ export async function conTurnoDe(
 }
 
 /** Un admin de plataforma: no pertenece a ningun negocio. */
+/**
+ * Un codigo de vinculacion para un local, generado por el admin. `minutos`
+ * negativos lo crean ya vencido: nacio hace media hora.
+ */
+export async function crearCodigoDeVinculacion(
+  db: Db,
+  local: string,
+  { minutos = 15, admin }: { minutos?: number; admin?: string } = {},
+): Promise<{ id: string; codigo: string; admin: string }> {
+  const creador = admin ?? (await crearAdmin(db));
+  const codigo = codigoDeVinculacionDesde(randomBytes(LARGO_CODIGO_DE_VINCULACION));
+  const { id } = await una<{ id: string }>(
+    db,
+    `INSERT INTO vinculacion_pendiente (codigo, local_id, creado_por_admin_id, creado_el, expira_el)
+     VALUES ($1, $2, $3, now() - interval '30 minutes',
+             now() + make_interval(mins => $4::int))
+     RETURNING id`,
+    [codigo, local, creador, minutos],
+  );
+  return { id, codigo, admin: creador };
+}
+
 export async function crearAdmin(db: Db): Promise<string> {
   return insertar(
     db,

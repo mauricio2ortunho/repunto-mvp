@@ -272,6 +272,10 @@ funciones puras.
   de 15 minutos (:00, :15, :30, :45) lo bloquean, en cualquier tablet, hasta
   que termina el tramo; el mensaje dice a qué hora. El bloqueo se mira antes
   que el PIN: bloqueado, ni el correcto entra.
+- **Código de vinculación de una tablet:** 8 caracteres del mismo alfabeto sin
+  ambiguos, de un solo uso, vence a los 15 minutos. `POST /caja/vinculacion` es
+  público —la tablet todavía no tiene credencial— y tiene tope de 20 intentos
+  por IP por hora. Usado, vencido o inexistente responden igual.
 - **Tope de notificaciones del negocio:** 2 por semana por negocio.
 - **Retención de respaldos:** diario, 30 días.
 

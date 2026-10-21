@@ -48,6 +48,9 @@ export {
 } from './turno';
 export type { AbrirTurnoPeticion, UsuarioDeCaja, UsuariosDeCaja } from './turno';
 
+export { esquemaVincularPeticion, esquemaVincularRespuesta } from './vinculacion';
+export type { VincularPeticion, VincularRespuesta } from './vinculacion';
+
 export {
   CONTRASTE_MINIMO,
   ICONOS_DE_SELLO,
