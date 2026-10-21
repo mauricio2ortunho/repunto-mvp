@@ -145,7 +145,7 @@ model Local {
   activo     Boolean  @default(true)
   creado_el  DateTime @default(now()) @db.Timestamptz(3)
 
-  negocio      Negocio           @relation(fields: [negocio_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  negocio      Negocio             @relation(fields: [negocio_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
   registros    RegistroPendiente[]
   usuarios     UsuarioLocal[]
   dispositivos DispositivoCaja[]
@@ -216,26 +216,36 @@ model UsuarioLocal {
 
 /// La tablet del mostrador. La sesion vive en el equipo, no en la persona.
 model DispositivoCaja {
-  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   /// De aca sale el local del sello. Nunca viene en el request (INV-2).
-  local_id     String    @db.Uuid
+  local_id       String    @db.Uuid
   /// Caja 1, Barra.
-  nombre       String
+  nombre         String
   /// Sesion sin vencimiento hasta que se revoque.
-  token_hash   String    @unique
-  vinculado_el DateTime  @db.Timestamptz(3)
+  token_hash     String    @unique
+  vinculado_el   DateTime  @db.Timestamptz(3)
   /// Tablet perdida o robada: se revoca y deja de servir al instante.
-  revocado_el  DateTime? @db.Timestamptz(3)
-  creado_el    DateTime  @default(now()) @db.Timestamptz(3)
+  revocado_el    DateTime? @db.Timestamptz(3)
+  /// El codigo con que se vinculo, y por el, quien la vinculo. Unico: un
+  /// codigo vincula una sola tablet. FK compuesta con local_id: la tablet
+  /// queda en el local del codigo, no en otro (INV-2, CLAUDE.md seccion 14).
+  /// Nulo solo en las tablets de demo del seed, que no pasan por un codigo.
+  vinculacion_id String?   @unique @db.Uuid
+  creado_el      DateTime  @default(now()) @db.Timestamptz(3)
 
-  local      Local                 @relation(fields: [local_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  turnos     TurnoCaja[]
-  peticiones PeticionIdempotente[]
+  local       Local                 @relation(fields: [local_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  vinculacion VinculacionPendiente? @relation(fields: [vinculacion_id, local_id], references: [id, local_id], onDelete: Restrict, onUpdate: Restrict, map: "dispositivo_caja_vinculacion_mismo_local_fkey")
+  turnos      TurnoCaja[]
+  peticiones  PeticionIdempotente[]
 
   /// Destino de FK compuesta, no una restriccion de negocio. Existe para que
   /// turno_caja pueda exigir que su local sea el del dispositivo (CLAUDE.md,
   /// seccion 14). No borrar.
   @@unique([id, local_id], map: "dispositivo_caja_id_local_id_key")
+  /// Prisma lo exige para declarar 1:1 sobre una FK compuesta. La garantia
+  /// real es vinculacion_id @unique; este es equivalente porque local_id queda
+  /// fijado por la FK.
+  @@unique([vinculacion_id, local_id], map: "dispositivo_caja_vinculacion_id_local_id_key")
   @@index([local_id, revocado_el])
   @@map("dispositivo_caja")
 }
@@ -269,7 +279,13 @@ model VinculacionPendiente {
   /// (CHECK vinculacion_pendiente_un_solo_origen_chk).
   creador       UsuarioLocal?    @relation(fields: [creado_por_usuario_id, local_id], references: [usuario_id, local_id], onDelete: Restrict, onUpdate: Restrict, map: "vinculacion_pendiente_creador_asignado_al_local_fkey")
   creador_admin AdminPlataforma? @relation(fields: [creado_por_admin_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  /// La tablet que se vinculo con este codigo, cuando ya se uso.
+  dispositivo   DispositivoCaja?
 
+  /// Destino de FK compuesta, no una restriccion de negocio. Existe para que
+  /// dispositivo_caja pueda exigir que la tablet quede en el local del codigo
+  /// (CLAUDE.md, seccion 14). No borrar.
+  @@unique([id, local_id], map: "vinculacion_pendiente_id_local_id_key")
   @@index([local_id, creado_el])
   @@map("vinculacion_pendiente")
 }
@@ -291,11 +307,11 @@ model TurnoCaja {
   cerrado_el     DateTime? @db.Timestamptz(3)
   creado_el      DateTime  @default(now()) @db.Timestamptz(3)
 
-  dispositivo     DispositivoCaja @relation(fields: [dispositivo_id, local_id], references: [id, local_id], onDelete: Restrict, onUpdate: Restrict, map: "turno_caja_dispositivo_mismo_local_fkey")
-  asignacion      UsuarioLocal    @relation(fields: [usuario_id, local_id], references: [usuario_id, local_id], onDelete: Restrict, onUpdate: Restrict, map: "turno_caja_usuario_asignado_al_local_fkey")
+  dispositivo     DispositivoCaja     @relation(fields: [dispositivo_id, local_id], references: [id, local_id], onDelete: Restrict, onUpdate: Restrict, map: "turno_caja_dispositivo_mismo_local_fkey")
+  asignacion      UsuarioLocal        @relation(fields: [usuario_id, local_id], references: [usuario_id, local_id], onDelete: Restrict, onUpdate: Restrict, map: "turno_caja_usuario_asignado_al_local_fkey")
   registros       RegistroPendiente[]
-  sellos          Sello[]         @relation("sello_otorgado")
-  sellos_anulados Sello[]         @relation("sello_anulado")
+  sellos          Sello[]             @relation("sello_otorgado")
+  sellos_anulados Sello[]             @relation("sello_anulado")
   canjes          Canje[]
 
   /// Destino de FK compuesta, no una restriccion de negocio. Existe para que
@@ -404,18 +420,18 @@ model Cliente {
 
 /// Permite volver a entrar sin gastar un mensaje si es el telefono de siempre.
 model DispositivoCliente {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  cliente_id    String   @db.Uuid
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cliente_id    String       @db.Uuid
   /// Identificador persistente guardado en el equipo.
-  token_hash    String   @unique
+  token_hash    String       @unique
   /// Como nacio esta sesion. `presencial` es la que entrega la confirmacion
   /// del cajero al dar de alta a alguien nuevo; `codigo`, la que entrega la
   /// verificacion por WhatsApp o SMS. Existe para poder revocar las
   /// presenciales cuando el dueño real del telefono verifique por codigo.
   origen        OrigenSesion
   /// Si es un equipo nuevo, ahi si se pide verificacion.
-  ultimo_acceso DateTime @db.Timestamptz(3)
-  creado_el     DateTime @default(now()) @db.Timestamptz(3)
+  ultimo_acceso DateTime     @db.Timestamptz(3)
+  creado_el     DateTime     @default(now()) @db.Timestamptz(3)
 
   cliente Cliente @relation(fields: [cliente_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
 

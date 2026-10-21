@@ -49,6 +49,7 @@ const ESTADO_DE_CAJA: Record<CodigoDeError, number> = {
   // 422 y no 401: en esta api, 401 es "la tablet no tiene credencial".
   PIN_INCORRECTO: 422,
   PIN_BLOQUEADO: 429,
+  VINCULACION_INVALIDA: 422,
 };
 
 const ESTADO_DE_API: Record<CodigoDeErrorDeApi, number> = {

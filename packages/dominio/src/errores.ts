@@ -83,6 +83,12 @@ export const CODIGOS_DE_ERROR = [
   /** Demasiados PIN equivocados en el tramo: hasta que termine, ni el
    * correcto entra. */
   'PIN_BLOQUEADO',
+
+  // Vinculacion de la tablet.
+  /** El codigo no existe, ya se uso, vencio, o quien lo genero ya no esta
+   * activo. Uno solo para todo: distinguirlos le diria a quien prueba codigos
+   * cuales existen. */
+  'VINCULACION_INVALIDA',
 ] as const;
 
 export type CodigoDeError = (typeof CODIGOS_DE_ERROR)[number];

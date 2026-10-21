@@ -148,4 +148,43 @@ describe('Vinculacion de tablets', () => {
       [id],
     );
   });
+
+  test('INV-2 · rechaza una tablet vinculada a otro local que el del codigo', async ({
+    db,
+  }) => {
+    const a = await crearNegocio(db);
+    const admin = await crearAdmin(db);
+    const { id } = await una<{ id: string }>(db, `${GENERAR_COMO_ADMIN} RETURNING id`, [
+      unico('cod'),
+      a.local,
+      admin,
+    ]);
+    await esperarRechazo(
+      db,
+      'dispositivo_caja_vinculacion_mismo_local_fkey',
+      `INSERT INTO dispositivo_caja (local_id, nombre, token_hash, vinculado_el, vinculacion_id)
+       VALUES ($1, 'Caja 1', $2, now(), $3)`,
+      [a.otroLocal, unico('token'), id],
+    );
+  });
+
+  test('Seccion 5 · rechaza dos tablets vinculadas con el mismo codigo', async ({
+    db,
+  }) => {
+    const a = await crearNegocio(db);
+    const admin = await crearAdmin(db);
+    const { id } = await una<{ id: string }>(db, `${GENERAR_COMO_ADMIN} RETURNING id`, [
+      unico('cod'),
+      a.local,
+      admin,
+    ]);
+    const TABLET = `INSERT INTO dispositivo_caja (local_id, nombre, token_hash, vinculado_el, vinculacion_id)
+                    VALUES ($1, 'Caja 1', $2, now(), $3)`;
+    await esperarAceptacion(db, TABLET, [a.local, unico('token'), id]);
+    await esperarRechazo(db, 'dispositivo_caja_vinculacion_id_key', TABLET, [
+      a.local,
+      unico('token'),
+      id,
+    ]);
+  });
 });

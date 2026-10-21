@@ -80,6 +80,20 @@ export {
   finDelTramoDePin,
 } from './turno';
 export type { DecisionDeApertura, EntradaDeApertura, UsuarioDeCaja } from './turno';
+
+export {
+  LARGO_CODIGO_DE_VINCULACION,
+  MINUTOS_DE_VINCULACION,
+  codigoDeVinculacionDesde,
+  decidirVinculacion,
+  formatearCodigoDeVinculacion,
+  normalizarCodigoDeVinculacion,
+} from './vinculacion';
+export type {
+  DecisionDeVinculacion,
+  EntradaDeVinculacion,
+  VinculacionPendiente,
+} from './vinculacion';
 export type { Caja, PromoConfigurada, RevisionDeCaja } from './caja';
 
 export { decidirSello, planDeSellado } from './sellado';

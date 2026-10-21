@@ -44,6 +44,7 @@ export const CODIGOS_DE_ERROR_DE_CAJA = [
   'USUARIO_NO_HABILITADO',
   'PIN_INCORRECTO',
   'PIN_BLOQUEADO',
+  'VINCULACION_INVALIDA',
 ] as const;
 
 export type CodigoDeErrorDeCaja = (typeof CODIGOS_DE_ERROR_DE_CAJA)[number];
@@ -135,6 +136,8 @@ export function mensajeParaElCajero(
       return detalle.hora === undefined
         ? 'Demasiados PIN equivocados. Esperá unos minutos o avisá al dueño.'
         : `Demasiados PIN equivocados. Probá de nuevo a las ${detalle.hora}.`;
+    case 'VINCULACION_INVALIDA':
+      return 'Ese código no sirve: ya se usó, venció o está mal escrito. Pedí uno nuevo.';
     case 'TELEFONO_INVALIDO':
       return 'Ese número no es válido. Revisalo con el cliente: si es boliviano, son ocho dígitos.';
     case 'REGISTRO_NO_ENCONTRADO':
