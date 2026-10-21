@@ -117,7 +117,29 @@ Detalles que importan:
 - `NEXT_PUBLIC_API_URL` es la URL del proyecto de la API, sin barra final.
 - `NEXT_PUBLIC_TOKEN_TABLET` es el token de la tablet de demo,
   `demo-tablet-equipetrol`. Viaja en el JavaScript público del panel: con él,
-  cualquiera que abra la URL puede sellar en el negocio de demo. Solo staging.
+  cualquiera que abra la URL puede sellar en el negocio de demo. Solo staging,
+  y es optativo: una tablet que ya se vinculó usa su propio token y la
+  variable deja de importar. En producción no se carga.
+
+## 3b. Vincular las tablets de un local
+
+Cada tablet tiene su propia sesión. Se instala así, una vez por tablet:
+
+```bash
+# Desde tu máquina, con DATABASE_URL apuntando a la base del entorno
+pnpm tablets vincular <qr_del_local> --admin <tu_telefono_de_admin>
+```
+
+El script imprime un código de ocho caracteres que vence a los 15 minutos. En
+la tablet, abrir el panel en `/vincular`, escribirlo, y la tablet queda
+vinculada a ese local y pidiendo turno. `pnpm tablets listar` muestra las
+tablets y quién vinculó cada una; `pnpm tablets revocar <id>` da de baja una
+perdida, que deja de servir en el pedido siguiente.
+
+El teléfono tiene que ser de un `admin_plataforma` activo. El seed crea uno de
+demo, `+59170000000`; para un entorno real, el admin se da de alta a mano una
+sola vez.
+
 - `NODE_ENV` no se carga: Vercel ya la pone en `production`.
 
 ## 4. Verificar

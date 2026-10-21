@@ -16,7 +16,8 @@ export type Accion =
   | 'descartar'
   | 'anular'
   | 'abrir_turno'
-  | 'cerrar_turno';
+  | 'cerrar_turno'
+  | 'vincular';
 
 const QUE_PASO: Record<CausaIncierta, string> = {
   sin_conexion: 'No hay conexión con el servidor.',
@@ -37,6 +38,8 @@ const QUE_HACER: Record<Accion, string> = {
   abrir_turno:
     'Escribí el PIN de nuevo: si el turno ya se había abierto, no se abre dos.',
   cerrar_turno: 'Tocá Cerrar turno de nuevo.',
+  vincular:
+    'Tocá Vincular de nuevo. Si dice que el código no sirve, ya se había usado: pedí uno nuevo.',
 };
 
 export function mensajeIncierto(causa: CausaIncierta, accion: Accion): string {

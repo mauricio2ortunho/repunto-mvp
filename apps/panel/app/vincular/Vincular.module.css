@@ -1,0 +1,61 @@
+.pantalla {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: var(--espacio-6) var(--espacio-4);
+  background: var(--c-fondo);
+}
+
+/* Neutra, como el resto de las tarjetas de la caja. */
+.tarjeta {
+  display: grid;
+  justify-items: start;
+  gap: var(--espacio-5);
+  width: 100%;
+  max-width: 560px;
+  padding: var(--espacio-7);
+  border: var(--borde-fino) solid var(--c-borde);
+  border-radius: var(--radio-3);
+  background: var(--c-superficie);
+}
+
+.titulo {
+  margin: 0;
+  font-size: var(--texto-9);
+  font-weight: var(--peso-fuerte);
+  line-height: var(--interlineado-titulo);
+}
+
+.texto {
+  margin: 0;
+  color: var(--c-texto-suave);
+  font-size: var(--texto-3);
+}
+
+.etiqueta {
+  color: var(--c-texto-suave);
+  font-size: var(--texto-3);
+  font-weight: var(--peso-medio);
+}
+
+/* El mismo campo grande que el del codigo de la caja (CampoDeCodigo). */
+.campo {
+  width: 100%;
+  height: var(--alto-control-grande);
+  padding: 0 var(--espacio-5);
+  border: var(--borde-grueso) solid var(--c-borde-fuerte);
+  border-radius: var(--radio-2);
+  background: var(--c-superficie);
+  color: var(--c-texto);
+  font-family: var(--f-codigo);
+  font-size: var(--texto-9);
+  font-weight: var(--peso-medio);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.campo:focus {
+  outline: none;
+  border-color: var(--c-accion);
+  box-shadow: 0 0 0 var(--ancho-anillo-foco) var(--c-accion-velo);
+}

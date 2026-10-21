@@ -8,6 +8,7 @@ import {
   esquemaSellarRespuesta,
   esquemaSellosRecientes,
   esquemaUsuariosDeCaja,
+  esquemaVincularRespuesta,
   type AbrirTurnoPeticion,
   type AnularRespuesta,
   type CanjearPeticion,
@@ -21,6 +22,8 @@ import {
   type SellarRespuesta,
   type SellosRecientes,
   type UsuariosDeCaja,
+  type VincularPeticion,
+  type VincularRespuesta,
 } from '@repunto/contratos';
 import { interpretar, pedir, pedirCrudo, type Fallo, type Respuesta } from './http';
 
@@ -128,6 +131,19 @@ export function abrirTurno(
   return pedir(
     { metodo: 'POST', ruta: '/caja/turnos', cuerpo: peticion },
     esquemaEstadoDeCaja,
+  );
+}
+
+/**
+ * Vincular esta tablet: el codigo de un solo uso por su token. Sin clave de
+ * idempotencia: el codigo mismo es de un solo uso. Quien llama guarda el token.
+ */
+export function vincular(
+  peticion: VincularPeticion,
+): Promise<Respuesta<VincularRespuesta>> {
+  return pedir(
+    { metodo: 'POST', ruta: '/caja/vinculacion', cuerpo: peticion },
+    esquemaVincularRespuesta,
   );
 }
 

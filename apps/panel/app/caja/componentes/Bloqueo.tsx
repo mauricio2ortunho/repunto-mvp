@@ -1,5 +1,6 @@
+import { useRouter } from 'next/navigation';
 import { Boton } from '@repunto/ui';
-import type { Bloqueo as DatosDelBloqueo } from '../bloqueo';
+import { sePuedeVincular, type Bloqueo as DatosDelBloqueo } from '../bloqueo';
 import css from './Bloqueo.module.css';
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
  * `mensajeParaElCajero`: dice que hacer. Lo que cambia es el tono (bloqueo.ts).
  */
 export function Bloqueo({ bloqueo, revisando, alRevisar }: Props) {
+  const router = useRouter();
   const revisar = (
     <Boton tamano="grande" onClick={alRevisar} disabled={revisando}>
       {revisando ? 'Revisando…' : 'Volver a revisar'}
@@ -40,6 +42,11 @@ export function Bloqueo({ bloqueo, revisando, alRevisar }: Props) {
       <h2 id="titulo-bloqueo" className={css.alarmaMensaje}>
         {bloqueo.mensaje}
       </h2>
+      {sePuedeVincular(bloqueo.codigo) && (
+        <Boton tamano="grande" onClick={() => router.push('/vincular')}>
+          Vincular esta tablet
+        </Boton>
+      )}
       {revisar}
     </section>
   );

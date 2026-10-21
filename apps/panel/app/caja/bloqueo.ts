@@ -31,6 +31,19 @@ const SE_RESUELVEN_EN_EL_MOSTRADOR: ReadonlySet<CodigoDeError> = new Set([
   'TURNO_CERRADO',
 ]);
 
+/**
+ * Lo que se arregla vinculando la tablet de nuevo: no esta vinculada, o la
+ * dieron de baja. En esos casos la alarma ofrece ir a /vincular.
+ */
+const SE_RESUELVEN_VINCULANDO: ReadonlySet<CodigoDeError> = new Set([
+  'TOKEN_INVALIDO',
+  'DISPOSITIVO_REVOCADO',
+]);
+
+export function sePuedeVincular(codigo: CodigoDeError): boolean {
+  return SE_RESUELVEN_VINCULANDO.has(codigo);
+}
+
 export function tonoDeBloqueo(codigo: CodigoDeError): TonoDeBloqueo {
   return SE_RESUELVEN_EN_EL_MOSTRADOR.has(codigo) ? 'instruccion' : 'alarma';
 }

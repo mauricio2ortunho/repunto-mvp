@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mensajeParaElCajero } from '@repunto/contratos';
 import type { CodigoDeError } from '../../lib/api/http';
-import { tonoDeBloqueo } from './bloqueo';
+import { sePuedeVincular, tonoDeBloqueo } from './bloqueo';
 
 /** Lo que puede llegar como impedimento, mas la tablet sin vincular (un 401). */
 const POSIBLES: CodigoDeError[] = [
@@ -12,6 +12,21 @@ const POSIBLES: CodigoDeError[] = [
   'PROMO_NO_CONFIGURADA',
   'TOKEN_INVALIDO',
 ];
+
+describe('cuando la alarma ofrece vincular la tablet', () => {
+  it('sin vincular o dada de baja, se arregla vinculando', () => {
+    expect(sePuedeVincular('TOKEN_INVALIDO')).toBe(true);
+    expect(sePuedeVincular('DISPOSITIVO_REVOCADO')).toBe(true);
+  });
+
+  it('lo demas no: vincular otra vez no arregla un negocio suspendido', () => {
+    for (const codigo of POSIBLES.filter(
+      (c) => c !== 'TOKEN_INVALIDO' && c !== 'DISPOSITIVO_REVOCADO',
+    )) {
+      expect(sePuedeVincular(codigo), codigo).toBe(false);
+    }
+  });
+});
 
 describe('el tono de una caja bloqueada', () => {
   it('abrir turno es una instruccion, no una alarma', () => {
