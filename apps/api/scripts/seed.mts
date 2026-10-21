@@ -53,12 +53,16 @@ const ID = {
   sesionJuan: '11111111-1111-4111-8111-00000000000e',
   sesionAna: '11111111-1111-4111-8111-00000000000f',
   tarjetaJuan: '11111111-1111-4111-8111-000000000010',
+  admin: '11111111-1111-4111-8111-000000000014',
   sellosDeJuan: [
     '11111111-1111-4111-8111-000000000011',
     '11111111-1111-4111-8111-000000000012',
     '11111111-1111-4111-8111-000000000013',
   ],
 } as const;
+
+/** El admin de plataforma de demo: con su telefono se generan codigos de vinculacion. */
+const TELEFONO_ADMIN = '+59170000000';
 
 /** PIN de demo, publicos como los tokens: para abrir turno en la tablet. */
 const PIN = { cajera: '1234', supervisor: '5678' } as const;
@@ -122,6 +126,12 @@ async function sembrar(): Promise<void> {
         [id, ID.negocio, nombre, direccion, qr],
       );
     }
+
+    await db.query(
+      `INSERT INTO admin_plataforma (id, telefono, nombre)
+       VALUES ($1, $2, 'Admin de demo') ON CONFLICT (id) DO NOTHING`,
+      [ID.admin, TELEFONO_ADMIN],
+    );
 
     // El dueño entra por telefono; la cajera y el supervisor, por PIN sobre la
     // tablet.
@@ -301,7 +311,10 @@ function resumen(): void {
          -H "Content-Type: application/json" \\
          -d '{"codigo":"${CODIGO_PUBLICO.juan}-123456"}'
 
-    3. Darse de alta escaneando el QR:
+    3. Vincular otra tablet: genera un codigo para escribir en /vincular.
+       pnpm tablets vincular ${QR.equipetrol} --admin ${TELEFONO_ADMIN}
+
+    4. Darse de alta escaneando el QR:
        curl -X POST ${base}/registros -H "Content-Type: application/json" \\
          -d '{"qr_slug":"${QR.equipetrol}","telefono":"70123456","nombre":"Pedro"}'
 

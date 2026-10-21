@@ -19,7 +19,8 @@
     "db:migrate": "prisma migrate dev && prisma generate",
     "db:deploy": "prisma migrate deploy",
     "db:generate": "prisma generate",
-    "db:seed": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON apps/api/scripts/seed.mts"
+    "db:seed": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON apps/api/scripts/seed.mts",
+    "tablets": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON apps/api/scripts/tablets.mts"
   },
   "devDependencies": {
     "@eslint/js": "^9.37.0",
