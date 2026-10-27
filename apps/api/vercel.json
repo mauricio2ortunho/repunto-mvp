@@ -3,6 +3,12 @@
   "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
   "buildCommand": "cd ../.. && pnpm exec prisma generate && pnpm exec turbo run build --filter=@repunto/dominio --filter=@repunto/contratos",
   "regions": ["gru1"],
+  "crons": [
+    {
+      "path": "/tareas/nocturna",
+      "schedule": "15 4 * * *"
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",

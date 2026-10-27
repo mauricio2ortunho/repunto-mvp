@@ -43,7 +43,7 @@ Si una tarea pide algo de esa lista, detenerse y preguntar antes de escribir có
 | Base de datos manejada | Supabase (Postgres 16) |
 | Hosting API | Vercel, como funcion serverless |
 | Hosting frontends | Vercel |
-| Trabajos programados | Sin resolver: Vercel no corre procesos largos |
+| Trabajos programados | Vercel Cron, una vez por día, contra un endpoint de la API con secreto |
 | Imágenes (logo, portada) | Cloudflare R2, URLs en la base |
 | Errores | Sentry, en las tres apps |
 | Mensajería | WhatsApp Cloud API, SMS como respaldo |
@@ -283,16 +283,24 @@ funciones puras.
 
 ## 7. Trabajos programados
 
-Corren en Railway, en `apps/api`, con candado para que no se solapen. Cada uno es
-idempotente: correr dos veces no cambia el resultado.
+Los dispara Vercel Cron (`apps/api/vercel.json`, `crons`) contra un endpoint
+de `apps/api/src/tareas/`, protegido por `CRON_SECRET`: sin esa variable el
+endpoint rechaza siempre. Llevan un candado en la base
+(`pg_try_advisory_xact_lock`), no en memoria, para que dos corridas no se
+solapen. Cada uno es idempotente: correr dos veces no cambia el resultado.
 
-| Tarea | Frecuencia |
-|---|---|
-| Vencer tarjetas cuyo `vence_el` ya pasó | Diaria, 00:15 hora La Paz |
-| Avisar al cliente con sellos en curso y pocos días restantes | Diaria |
-| Purgar `codigo_usado` con más de 24 horas | Cada hora |
-| Recalcular clientes enfriados por negocio | Diaria |
-| Alerta de local sin sellos en 7 días | Diaria |
+El plan Hobby de Vercel permite un cron por día y sin minuto exacto (corre
+dentro de la hora pedida), así que todo lo que hoy corre va junto en
+`GET /tareas/nocturna`. Con 15 negocios alcanza: purgar una vez por día deja
+como mucho un día de filas de más.
+
+| Tarea | Frecuencia | Estado |
+|---|---|---|
+| Vencer tarjetas cuyo `vence_el` ya pasó | Diaria, 00:15 hora La Paz | Corre |
+| Purgar `codigo_usado`, `peticion_idempotente` y `tope_peticion` con más de 24 horas | Diaria, con la anterior | Corre |
+| Avisar al cliente con sellos en curso y pocos días restantes | Diaria | Espera a WhatsApp |
+| Recalcular clientes enfriados por negocio | Diaria | Espera al panel del dueño |
+| Alerta de local sin sellos en 7 días | Diaria | Espera al panel del dueño |
 
 ---
 
@@ -558,7 +566,9 @@ queda deshabilitado.
 historial colgando se puede borrar. Pero una fila hoja (`sello`, `canje`) no
 tiene hijos y la base permite su `DELETE`. Cerrarlo requiere revocar `DELETE` al
 rol de aplicación en Postgres; pendiente para cuando exista ese rol.
-`codigo_usado` es la única tabla que se purga físicamente, por diseño (sección 7).
+`codigo_usado`, `peticion_idempotente` y `tope_peticion` son las únicas tablas
+que se purgan físicamente, por diseño (sección 7): no son historial, son
+candados de corta vida.
 
 ### Límite conocido: un teléfono, un negocio
 
@@ -630,13 +640,12 @@ es lo que falta terminar, y está acá para que no se pierda.
   sale?" antes de confirmar. Cambia la pantalla del cajero, así que es decisión
   de producto.
 
-- **Los trabajos programados de la sección 7.** Ninguno corre, y ahora además
-  no hay dónde: Vercel no sostiene procesos largos. El diseño que queda es
-  Vercel Cron pegándole a un endpoint protegido por un secreto, con el candado
-  en la base en lugar de en memoria. El más urgente sigue siendo vencer
-  tarjetas: mientras no exista, una tarjeta vencida solo se cierra cuando el
-  cliente vuelve a sellar. A la purga de `codigo_usado` se le suman las de
-  `peticion_idempotente` y `tope_peticion`, con el mismo criterio de 24 horas. Los
+- **Tres de los trabajos programados de la sección 7.** Vencer tarjetas y
+  purgar ya corren cada noche; faltan el aviso al cliente, que necesita
+  WhatsApp, y los enfriados y la alerta de local sin sellos, que no tienen
+  dónde mostrarse hasta que exista el panel del dueño. Cuando lleguen, son
+  otra entrada en `crons` detrás del mismo guard. Si alguno necesita correr
+  más de una vez por día, hace falta el plan Pro de Vercel. Los
   `registro_pendiente` no se purgan: uno que nadie confirmó es la señal de que
   en ese local no están ofreciendo la tarjeta (especificación, sección 11).
 - **El log estructurado de la sección 8.** Todavía no hay `request_id` ni las

@@ -86,11 +86,11 @@ Importar `mauricio2ortunho/repunto-mvp` tres veces, cambiando solo la carpeta
 raíz. Cada `vercel.json` ya trae el comando de build correcto, que instala
 desde la raíz del monorepo y compila los paquetes compartidos antes de la app.
 
-| Proyecto          | Root Directory | Framework | Variables                                                                      |
-| ----------------- | -------------- | --------- | ------------------------------------------------------------------------------ |
-| `repunto-api`     | `apps/api`     | Other     | `DATABASE_URL`, `CLAVE_CIFRADO_SEMILLAS`, `ORIGENES_PERMITIDOS`, `APP_VERSION` |
-| `repunto-cliente` | `apps/cliente` | Next.js   | `NEXT_PUBLIC_API_URL`                                                          |
-| `repunto-panel`   | `apps/panel`   | Next.js   | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_TOKEN_TABLET`                              |
+| Proyecto          | Root Directory | Framework | Variables                                                                                     |
+| ----------------- | -------------- | --------- | --------------------------------------------------------------------------------------------- |
+| `repunto-api`     | `apps/api`     | Other     | `DATABASE_URL`, `CLAVE_CIFRADO_SEMILLAS`, `ORIGENES_PERMITIDOS`, `APP_VERSION`, `CRON_SECRET` |
+| `repunto-cliente` | `apps/cliente` | Next.js   | `NEXT_PUBLIC_API_URL`                                                                         |
+| `repunto-panel`   | `apps/panel`   | Next.js   | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_TOKEN_TABLET`                                             |
 
 Detalles que importan:
 
@@ -142,6 +142,30 @@ sola vez.
 
 - `NODE_ENV` no se carga: Vercel ya la pone en `production`.
 
+## 3c. La tarea nocturna
+
+Vercel Cron llama a `GET /tareas/nocturna` una vez por día, a las 04:15 UTC
+(00:15 en La Paz). Está declarado en `apps/api/vercel.json` (`crons`): no se
+configura en el panel. Vence las tarjetas cuyo `vence_el` ya pasó y purga
+`codigo_usado`, `peticion_idempotente` y `tope_peticion` de más de 24 horas.
+De paso toca la base todos los días, y con eso Supabase deja de pausar el
+proyecto por inactividad.
+
+- **`CRON_SECRET` es obligatoria.** Vercel la manda sola como
+  `Authorization: Bearer <CRON_SECRET>` cuando existe en el proyecto. Sin
+  ella, o con menos de 32 caracteres, el endpoint responde 503 siempre: nunca
+  queda abierto. Generala con
+  `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`
+  y redesplegá después de cargarla.
+- **En el plan Hobby el horario no es exacto:** corre en algún momento entre
+  las 04:00 y las 04:59 UTC. No importa: solo vence lo que ya venció.
+- **Correrla dos veces no cambia nada**, y dos a la vez tampoco: un candado en
+  la base hace que la segunda responda `{"estado":"en-curso"}` sin tocar nada.
+
+Para verla correr sin esperar a la noche, en Vercel: proyecto de la API →
+**Settings → Cron Jobs → Run**. El resultado queda en los logs de esa
+invocación, una línea JSON con cuántas tarjetas venció y cuánto purgó.
+
 ## 4. Verificar
 
 ```bash
@@ -161,9 +185,10 @@ el teléfono pide su código a `/mi/codigo` y la tablet lo tipea en
 - **Los topes de peticiones no cuentan bien.** Viven en memoria del proceso y
   en serverless cada invocación puede ser otro proceso. Es la deuda de
   `CLAUDE.md` sección 15, y en Vercel pasa de "impreciso" a "casi inútil".
-- **No hay trabajos programados.** Vercel no corre procesos largos; los cron de
-  la sección 7 necesitan otro diseño (Vercel Cron pegándole a un endpoint
-  protegido, o un proceso aparte).
+- **De los trabajos programados, corre solo la tarea nocturna** (sección 3c).
+  Los de aviso al cliente, enfriados y local sin sellos esperan a WhatsApp y
+  al panel del dueño; cuando lleguen, son otra entrada en `crons` y otro
+  endpoint detrás del mismo guard.
 - **Arranque frío.** La primera petición de una instancia arranca Nest entero.
   Para el cajero son unos cientos de milisegundos de más, cada tanto.
 - **Los frontends son andamiaje.** Dos páginas que confirman que el contrato
