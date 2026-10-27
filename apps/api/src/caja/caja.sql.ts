@@ -21,6 +21,23 @@ import { Prisma } from '../generated/prisma/client';
 
 export type Transaccion = Prisma.TransactionClient;
 
+/**
+ * La ultima actividad del turno de alias `alias`: su apertura, o su ultimo
+ * sello o canje. Se deriva, no se guarda: no hay columna que alguien tenga
+ * que acordarse de tocar en cada operacion. GREATEST ignora los nulos de un
+ * turno sin nada. La usan la caja y la tarea nocturna, que cierra los
+ * agotados.
+ */
+export function ultimaActividadDelTurno(alias: 't' | 'x'): Prisma.Sql {
+  // Prisma.raw solo con estos literales: nunca con algo que venga de afuera.
+  const t = Prisma.raw(alias);
+  return Prisma.sql`GREATEST(
+    ${t}.abierto_el,
+    (SELECT max(s.creado_el) FROM sello s WHERE s.turno_id = ${t}.id),
+    (SELECT max(c.creado_el) FROM canje c WHERE c.turno_id = ${t}.id)
+  )`;
+}
+
 /** CTE `disp`, `loc`, `neg`, `turno` y `asig`. Va despues de un `WITH`. */
 export function cteDeCaja(tokenHash: string): Prisma.Sql {
   return Prisma.sql`
@@ -40,7 +57,8 @@ export function cteDeCaja(tokenHash: string): Prisma.Sql {
       -- El rol sale de aca, del usuario que abrio el turno, y nunca del
       -- request: es lo que decide quien puede anular que.
       SELECT t.id, t.dispositivo_id, t.usuario_id, t.local_id, t.cerrado_el, u.rol,
-             u.activo AS usuario_activo
+             u.activo AS usuario_activo,
+             ${ultimaActividadDelTurno('t')} AS ultima_actividad
       FROM turno_caja t
       JOIN disp ON t.dispositivo_id = disp.id
       JOIN usuario_negocio u ON u.id = t.usuario_id
@@ -78,6 +96,7 @@ export interface FilaDeCaja {
     local_id: string;
     rol: Rol;
     usuario_activo: boolean;
+    ultima_actividad: string;
     cerrado_el: string | null;
   } | null;
   asignacion: { usuario_id: string; local_id: string; activo: boolean } | null;
@@ -123,7 +142,11 @@ export function mapearCaja(fila: FilaDeCaja | undefined): CajaLeida | null {
     turno:
       fila.turno === null
         ? null
-        : { ...fila.turno, cerrado_el: comoFechaONula(fila.turno.cerrado_el) },
+        : {
+            ...fila.turno,
+            ultima_actividad: comoFecha(fila.turno.ultima_actividad),
+            cerrado_el: comoFechaONula(fila.turno.cerrado_el),
+          },
     asignacion: fila.asignacion,
   };
 }

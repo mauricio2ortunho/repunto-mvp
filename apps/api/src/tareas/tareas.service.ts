@@ -1,5 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { MINUTOS_DE_INACTIVIDAD_DEL_TURNO } from '@repunto/dominio';
 
+import { ultimaActividadDelTurno } from '../caja/caja.sql';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -23,6 +25,7 @@ export type ResultadoDeLaNoche =
   | {
       estado: 'hecho';
       vencidas: number;
+      turnos_cerrados: number;
       purgadas: {
         codigo_usado: number;
         peticion_idempotente: number;
@@ -33,7 +36,8 @@ export type ResultadoDeLaNoche =
 
 /**
  * Los trabajos programados de CLAUDE.md, seccion 7, que hoy corren una vez por
- * noche: vencer tarjetas y purgar lo que ya no protege nada.
+ * noche: vencer tarjetas, cerrar los turnos que quedaron abiertos y purgar
+ * lo que ya no protege nada.
  *
  * Correr dos veces no cambia el resultado: cada sentencia toca solo lo que
  * todavia cumple su condicion. Por eso un reintento de Vercel, o una corrida a
@@ -60,6 +64,18 @@ export class TareasService {
           UPDATE tarjeta SET estado = 'vencida'
           WHERE estado = 'activa' AND vence_el < now()`;
 
+        // Para la caja, un turno agotado ya esta cerrado (turnoAgotado, del
+        // dominio); esto lo deja asi en la base, con la hora en que se agoto,
+        // para los turnos que nadie reemplazo abriendo otro en esa tablet.
+        const fin = Prisma.sql`a.ultima + make_interval(mins => ${MINUTOS_DE_INACTIVIDAD_DEL_TURNO}::int)`;
+        const turnosCerrados = await tx.$executeRaw`
+          UPDATE turno_caja t SET cerrado_el = ${fin}
+          FROM (
+            SELECT x.id, ${ultimaActividadDelTurno('x')} AS ultima
+            FROM turno_caja x WHERE x.cerrado_el IS NULL
+          ) a
+          WHERE t.id = a.id AND t.cerrado_el IS NULL AND ${fin} <= now()`;
+
         const corte = Prisma.sql`now() - make_interval(hours => ${HORAS_DE_RETENCION}::int)`;
         const codigoUsado = await tx.$executeRaw`
           DELETE FROM codigo_usado WHERE creado_el < ${corte}`;
@@ -73,6 +89,7 @@ export class TareasService {
         return {
           estado: 'hecho',
           vencidas,
+          turnos_cerrados: turnosCerrados,
           purgadas: {
             codigo_usado: codigoUsado,
             peticion_idempotente: peticionIdempotente,

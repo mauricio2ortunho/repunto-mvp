@@ -1,4 +1,4 @@
-import { revisarTablet } from './caja';
+import { finPorInactividad, revisarTablet, turnoAgotado } from './caja';
 import { type Rechazo, rechazo } from './errores';
 import type { Asignacion, Dispositivo, Local, Negocio, Rol, Turno } from './tipos';
 
@@ -66,8 +66,11 @@ export type DecisionDeApertura =
         dispositivo_id: string;
         usuario_id: string;
         local_id: string;
-        /** El turno de otro usuario que se cierra: cambio de cajero. */
-        cerrar_turno_id: string | null;
+        /**
+         * El turno que estaba abierto y se cierra: el de otro usuario, por
+         * cambio de cajero, o uno agotado por inactividad, de quien sea.
+         */
+        cerrar_turno: { id: string; cerrado_el: Date } | null;
       };
     };
 
@@ -109,7 +112,11 @@ export function decidirApertura(e: EntradaDeApertura): DecisionDeApertura {
   if (!e.pinCorrecto) return rechazo('PIN_INCORRECTO');
 
   const abierto = e.turnoAbierto;
-  if (abierto !== null && abierto.usuario_id === usuario.id) {
+  const agotado = abierto !== null && turnoAgotado(abierto, e.ahora);
+  // Un turno agotado no se recupera, ni siquiera por quien lo abrio: se
+  // cierra y empieza otro, para que la actividad de hoy no cuelgue del turno
+  // de la mañana.
+  if (abierto !== null && !agotado && abierto.usuario_id === usuario.id) {
     return { tipo: 'ya_abierto', turno_id: abierto.id };
   }
 
@@ -119,7 +126,14 @@ export function decidirApertura(e: EntradaDeApertura): DecisionDeApertura {
       dispositivo_id: e.dispositivo.id,
       usuario_id: usuario.id,
       local_id: e.local.id,
-      cerrar_turno_id: abierto?.id ?? null,
+      cerrar_turno:
+        abierto === null
+          ? null
+          : {
+              id: abierto.id,
+              // El agotado se cerro cuando se agoto, no ahora.
+              cerrado_el: agotado ? finPorInactividad(abierto) : e.ahora,
+            },
     },
   };
 }

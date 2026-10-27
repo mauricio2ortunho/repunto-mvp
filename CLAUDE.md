@@ -272,6 +272,14 @@ funciones puras.
   de 15 minutos (:00, :15, :30, :45) lo bloquean, en cualquier tablet, hasta
   que termina el tramo; el mensaje dice a qué hora. El bloqueo se mira antes
   que el PIN: bloqueado, ni el correcto entra.
+- **Cierre del turno por inactividad:** 60 minutos sin sellar ni canjear
+  (`MINUTOS_DE_INACTIVIDAD_DEL_TURNO`). La última actividad es la apertura o
+  el último sello o canje del turno, derivada de esas filas y no guardada;
+  las consultas no cuentan, porque el panel pregunta sola. Pasada la hora, la
+  caja responde `TURNO_CERRADO` aunque la base todavía lo tenga abierto. En la
+  base se cierra cuando alguien abre turno en esa tablet —también quien lo
+  tenía: un turno agotado no se recupera— o en la tarea nocturna, y siempre
+  con `cerrado_el` = última actividad + 60, el momento real.
 - **Código de vinculación de una tablet:** 8 caracteres del mismo alfabeto sin
   ambiguos, de un solo uso, vence a los 15 minutos. `POST /caja/vinculacion` es
   público —la tablet todavía no tiene credencial— y tiene tope de 20 intentos

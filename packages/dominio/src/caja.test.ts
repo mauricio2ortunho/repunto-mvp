@@ -2,9 +2,13 @@ import { describe, expect, it } from 'vitest';
 
 import {
   type Caja,
+  MINUTOS_DE_INACTIVIDAD_DEL_TURNO,
   type PromoConfigurada,
+  finPorInactividad,
+  revisarCaja,
   revisarCajaParaSellar,
   revisarTablet,
+  turnoAgotado,
 } from './caja';
 import {
   AHORA,
@@ -25,6 +29,7 @@ import {
  */
 
 const CAJA: Caja = {
+  ahora: AHORA,
   negocio: NEGOCIO,
   local: LOCAL,
   dispositivo: DISPOSITIVO,
@@ -77,6 +82,45 @@ describe('revisarCajaParaSellar', () => {
         { condicionVigente: false, programaVigente: false },
       ),
     ).toBe('TURNO_CERRADO');
+  });
+});
+
+describe('el turno se agota a la hora sin actividad', () => {
+  const MINUTO = 60_000;
+  const conActividadHace = (minutos: number) => ({
+    ...TURNO,
+    ultima_actividad: new Date(AHORA.getTime() - minutos * MINUTO),
+  });
+
+  it('son 60 minutos', () => {
+    expect(MINUTOS_DE_INACTIVIDAD_DEL_TURNO).toBe(60);
+  });
+
+  it('se agota justo a los 60 minutos de la ultima actividad, no antes', () => {
+    const turno = conActividadHace(0);
+    expect(finPorInactividad(turno)).toEqual(new Date(AHORA.getTime() + 60 * MINUTO));
+    expect(turnoAgotado(turno, new Date(AHORA.getTime() + 60 * MINUTO - 1))).toBe(false);
+    expect(turnoAgotado(turno, new Date(AHORA.getTime() + 60 * MINUTO))).toBe(true);
+  });
+
+  it('con actividad hace 59 minutos, la caja opera', () => {
+    expect(revisarCaja({ ...CAJA, turno: conActividadHace(59) }).valido).toBe(true);
+  });
+
+  it('con la ultima actividad hace 60 minutos, es TURNO_CERRADO', () => {
+    const revision = revisarCaja({ ...CAJA, turno: conActividadHace(60) });
+    expect(revision.valido ? 'puede operar' : revision.codigo).toBe('TURNO_CERRADO');
+  });
+
+  it('una tablet revocada sigue ganando sobre el turno agotado', () => {
+    const revision = revisarCaja({
+      ...CAJA,
+      dispositivo: { ...DISPOSITIVO, revocado_el: AHORA },
+      turno: conActividadHace(120),
+    });
+    expect(revision.valido ? 'puede operar' : revision.codigo).toBe(
+      'DISPOSITIVO_REVOCADO',
+    );
   });
 });
 

@@ -48,7 +48,7 @@ describe('decidirApertura · el camino feliz', () => {
         dispositivo_id: DISPOSITIVO.id,
         usuario_id: MARTA.id,
         local_id: LOCAL.id,
-        cerrar_turno_id: null,
+        cerrar_turno: null,
       },
     });
   });
@@ -56,9 +56,11 @@ describe('decidirApertura · el camino feliz', () => {
   it('si la tablet tenia el turno de otro, lo cierra: es el cambio de cajero', () => {
     const deOtro = { ...TURNO, id: 'turno-de-diego', usuario_id: 'diego' };
     const decision = decidirApertura({ ...ENTRADA, turnoAbierto: deOtro });
-    expect(decision.tipo === 'abrir' && decision.efecto.cerrar_turno_id).toBe(
-      'turno-de-diego',
-    );
+    // Cambio de cajero en un turno vivo: se cierra ahora.
+    expect(decision.tipo === 'abrir' && decision.efecto.cerrar_turno).toEqual({
+      id: 'turno-de-diego',
+      cerrado_el: AHORA,
+    });
   });
 
   it('si el turno abierto ya era suyo, lo devuelve: el doble toque no abre otro', () => {
@@ -66,6 +68,42 @@ describe('decidirApertura · el camino feliz', () => {
       tipo: 'ya_abierto',
       turno_id: TURNO.id,
     });
+  });
+});
+
+describe('decidirApertura · el turno agotado por inactividad', () => {
+  const agotadoDe = (usuario_id: string) => ({
+    ...TURNO,
+    id: 'turno-de-la-mañana',
+    usuario_id,
+    ultima_actividad: new Date(AHORA.getTime() - 90 * 60_000),
+  });
+
+  it('del mismo usuario no se recupera: se cierra y se abre otro', () => {
+    const decision = decidirApertura({ ...ENTRADA, turnoAbierto: agotadoDe(MARTA.id) });
+    expect(decision.tipo).toBe('abrir');
+  });
+
+  it('se cierra con la hora en que se agoto, no con la de ahora', () => {
+    const decision = decidirApertura({ ...ENTRADA, turnoAbierto: agotadoDe(MARTA.id) });
+    expect(decision.tipo === 'abrir' && decision.efecto.cerrar_turno).toEqual({
+      id: 'turno-de-la-mañana',
+      // Ultima actividad hace 90 minutos, mas los 60: hace media hora.
+      cerrado_el: new Date(AHORA.getTime() - 30 * 60_000),
+    });
+  });
+
+  it('de otro usuario, igual: se cierra a la hora en que se agoto', () => {
+    const decision = decidirApertura({ ...ENTRADA, turnoAbierto: agotadoDe('diego') });
+    expect(decision.tipo === 'abrir' && decision.efecto.cerrar_turno?.cerrado_el).toEqual(
+      new Date(AHORA.getTime() - 30 * 60_000),
+    );
+  });
+
+  it('el PIN equivocado no cierra nada: el rechazo va antes', () => {
+    expect(codigoDe({ turnoAbierto: agotadoDe(MARTA.id), pinCorrecto: false })).toBe(
+      'PIN_INCORRECTO',
+    );
   });
 });
 

@@ -551,6 +551,9 @@ model Canje {
   @@unique([tarjeta_id, negocio_id], map: "canje_tarjeta_id_negocio_id_key")
   @@index([local_id, creado_el])
   @@index([negocio_id, creado_el])
+  /// La ultima actividad del turno, para cerrarlo por inactividad, mira sus
+  /// canjes en cada pedido de la caja.
+  @@index([turno_id])
   @@map("canje")
 }
 

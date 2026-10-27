@@ -153,10 +153,16 @@ export class TurnoService {
       if (decision.tipo === 'ya_abierto') return;
 
       const { efecto } = decision;
-      if (efecto.cerrar_turno_id !== null) {
+      if (efecto.cerrar_turno !== null) {
+        // GREATEST con la apertura: el ahora de la caja es el now() de esta
+        // transaccion, que es cuando EMPEZO. Si espero el candado de la
+        // tablet mientras otra apertura abria el turno que ahora cierra, ese
+        // turno pudo abrirse un instante despues, y cerrarlo antes de
+        // abrirlo lo rechaza turno_caja_cierre_posterior_chk.
         await tx.$executeRaw`
-          UPDATE turno_caja SET cerrado_el = now()
-          WHERE id = ${efecto.cerrar_turno_id}::uuid AND cerrado_el IS NULL`;
+          UPDATE turno_caja
+          SET cerrado_el = GREATEST(${efecto.cerrar_turno.cerrado_el}, abierto_el)
+          WHERE id = ${efecto.cerrar_turno.id}::uuid AND cerrado_el IS NULL`;
       }
       await tx.$executeRaw`
         INSERT INTO turno_caja (dispositivo_id, usuario_id, local_id, abierto_el)

@@ -71,7 +71,14 @@ export {
 } from './tarjeta-del-cliente';
 export type { EstadoParaElCliente, SituacionDeTarjeta } from './tarjeta-del-cliente';
 
-export { revisarCaja, revisarCajaParaSellar, revisarTablet } from './caja';
+export {
+  MINUTOS_DE_INACTIVIDAD_DEL_TURNO,
+  finPorInactividad,
+  revisarCaja,
+  revisarCajaParaSellar,
+  revisarTablet,
+  turnoAgotado,
+} from './caja';
 
 export {
   MINUTOS_DEL_TRAMO_DE_PIN,

@@ -6,6 +6,8 @@ import type { Asignacion, Dispositivo, Local, Negocio, Turno } from './tipos';
  * turno se esta operando. Es el paso 1 de la seccion 5 de la especificacion.
  */
 export interface Caja {
+  /** El reloj, para saber si el turno se agoto por inactividad. */
+  ahora: Date;
   negocio: Negocio;
   local: Local;
   dispositivo: Dispositivo;
@@ -13,6 +15,32 @@ export interface Caja {
   turno: Turno | null;
   /** La asignacion del usuario del turno a ese local, o null si no la tiene. */
   asignacion: Asignacion | null;
+}
+
+/**
+ * Minutos sin sellar ni canjear despues de los cuales el turno se cierra
+ * solo. Lo que cuenta es la actividad del turno, no las consultas: el panel
+ * pregunta por el estado cada pocos segundos aunque nadie lo toque.
+ */
+export const MINUTOS_DE_INACTIVIDAD_DEL_TURNO = 60;
+
+/**
+ * El instante en que el turno se agota si nadie hace nada. Es tambien el
+ * `cerrado_el` que se le pone al cerrarlo: el momento real, no el momento en
+ * que alguien se dio cuenta.
+ */
+export function finPorInactividad(turno: Pick<Turno, 'ultima_actividad'>): Date {
+  return new Date(
+    turno.ultima_actividad.getTime() + MINUTOS_DE_INACTIVIDAD_DEL_TURNO * 60_000,
+  );
+}
+
+/** Si el turno ya paso su hora sin actividad. Justo en el limite, ya paso. */
+export function turnoAgotado(
+  turno: Pick<Turno, 'ultima_actividad'>,
+  ahora: Date,
+): boolean {
+  return ahora.getTime() >= finPorInactividad(turno).getTime();
 }
 
 /**
@@ -31,7 +59,7 @@ export type RevisionDeCaja =
  * dueño acaba de revocarla y quiere verlo.
  */
 export function revisarCaja(caja: Caja): RevisionDeCaja {
-  const { negocio, local, dispositivo, turno, asignacion } = caja;
+  const { ahora, negocio, local, dispositivo, turno, asignacion } = caja;
 
   const no = (codigo: CodigoDeError): RevisionDeCaja => ({ valido: false, codigo });
 
@@ -45,6 +73,10 @@ export function revisarCaja(caja: Caja): RevisionDeCaja {
   if (turno.dispositivo_id !== dispositivo.id) return no('LOCAL_NO_AUTORIZADO');
   if (turno.local_id !== local.id) return no('LOCAL_NO_AUTORIZADO');
   if (turno.cerrado_el !== null) return no('TURNO_CERRADO');
+  // Una hora sin sellar ni canjear: quien lo abrio puede haberse ido. Que se
+  // cierre en la base es otra cosa, y llega despues; para la caja ya esta
+  // cerrado.
+  if (turnoAgotado(turno, ahora)) return no('TURNO_CERRADO');
   // Dado de baja con el turno abierto: para la caja, ese turno ya no existe.
   // Lo que hay que hacer es que otra persona abra el suyo.
   if (!turno.usuario_activo) return no('TURNO_CERRADO');

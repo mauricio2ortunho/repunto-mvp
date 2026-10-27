@@ -52,6 +52,8 @@ export const TURNO: Turno = {
   local_id: LOCAL.id,
   rol: 'cajero',
   usuario_activo: true,
+  // Abierto hace un rato y con actividad reciente: lejos de agotarse.
+  ultima_actividad: new Date(AHORA.getTime() - 10 * 60_000),
   cerrado_el: null,
 };
 

@@ -7,7 +7,13 @@ import {
   type NegocioDePrueba,
   asignar,
   cerrarTurno,
+  codigoDe,
+  crearCanje,
+  crearCliente,
+  crearClienteEnCaja,
   crearNegocio,
+  crearSello,
+  crearTarjeta,
   crearUsuario,
   ponerPin,
 } from '../escenario';
@@ -405,5 +411,109 @@ describe('POST /caja/turno/cierre', () => {
 
     expect(respuesta.cuerpo['codigo']).toBe('DISPOSITIVO_REVOCADO');
     expect(await turnosAbiertos(db, negocio.dispositivo)).toBe(1);
+  });
+});
+
+describe('El turno se cierra solo a la hora sin actividad', () => {
+  /** Corre la apertura del turno de la tablet `minutos` hacia atras. */
+  async function abiertoHace(db: Db, turno: string, minutos: number): Promise<void> {
+    await db.query(
+      `UPDATE turno_caja SET abierto_el = now() - make_interval(mins => $2::int)
+       WHERE id = $1`,
+      [turno, minutos],
+    );
+  }
+
+  test('una hora sin sellar ni canjear: la caja pide turno de nuevo', async ({
+    api,
+    db,
+  }) => {
+    const negocio = await crearNegocio(db);
+    await abiertoHace(db, negocio.turno, 61);
+    const cliente = await crearClienteEnCaja(db);
+
+    expect((await api.estadoDeCaja(negocio.token)).cuerpo['impedimento']).toBe(
+      'TURNO_CERRADO',
+    );
+    const sello = await api.sellar({
+      token: negocio.token,
+      cuerpo: { codigo: codigoDe(cliente) },
+    });
+    expect(sello.estado).toBe(409);
+    expect(sello.cuerpo['codigo']).toBe('TURNO_CERRADO');
+    expect(await contar(db, 'sello')).toBe(0);
+  });
+
+  test('a los 59 minutos todavia opera', async ({ api, db }) => {
+    const negocio = await crearNegocio(db);
+    await abiertoHace(db, negocio.turno, 59);
+
+    expect((await api.estadoDeCaja(negocio.token)).cuerpo['impedimento']).toBeNull();
+  });
+
+  test('un sello hace media hora lo mantiene abierto, aunque se abrio hace tres', async ({
+    api,
+    db,
+  }) => {
+    const negocio = await crearNegocio(db);
+    await abiertoHace(db, negocio.turno, 180);
+    const tarjeta = await crearTarjeta(db, await crearCliente(db), negocio);
+    const sello = await crearSello(db, tarjeta, negocio);
+    await db.query(
+      `UPDATE sello SET creado_el = now() - interval '30 minutes' WHERE id = $1`,
+      [sello],
+    );
+
+    expect((await api.estadoDeCaja(negocio.token)).cuerpo['impedimento']).toBeNull();
+  });
+
+  test('un canje tambien cuenta como actividad', async ({ api, db }) => {
+    const negocio = await crearNegocio(db);
+    await abiertoHace(db, negocio.turno, 180);
+    const tarjeta = await crearTarjeta(db, await crearCliente(db), negocio);
+    const canje = await crearCanje(db, tarjeta, negocio);
+    await db.query(
+      `UPDATE canje SET creado_el = now() - interval '30 minutes' WHERE id = $1`,
+      [canje],
+    );
+
+    expect((await api.estadoDeCaja(negocio.token)).cuerpo['impedimento']).toBeNull();
+  });
+
+  test('el mismo cajero vuelve: turno nuevo, y el viejo cerrado a la hora en que se agoto', async ({
+    api,
+    db,
+  }) => {
+    const negocio = await crearNegocio(db);
+    await ponerPin(db, negocio.cajero, PIN_CAJERO);
+    await abiertoHace(db, negocio.turno, 180);
+    const tarjeta = await crearTarjeta(db, await crearCliente(db), negocio);
+    const sello = await crearSello(db, tarjeta, negocio);
+    await db.query(
+      `UPDATE sello SET creado_el = now() - interval '90 minutes' WHERE id = $1`,
+      [sello],
+    );
+
+    const respuesta = await api.abrirTurno(negocio.token, {
+      usuario_id: negocio.cajero,
+      pin: PIN_CAJERO,
+    });
+
+    expect(respuesta.estado).toBe(200);
+    expect(respuesta.cuerpo['impedimento']).toBeNull();
+    const viejo = await una<{ exacto: boolean }>(
+      db,
+      `SELECT t.cerrado_el = s.creado_el + interval '60 minutes' AS exacto
+       FROM turno_caja t, sello s WHERE t.id = $1 AND s.id = $2`,
+      [negocio.turno, sello],
+    );
+    expect(viejo.exacto).toBe(true);
+    const nuevo = await una<{ id: string; usuario_id: string }>(
+      db,
+      'SELECT id, usuario_id FROM turno_caja WHERE dispositivo_id = $1 AND cerrado_el IS NULL',
+      [negocio.dispositivo],
+    );
+    expect(nuevo.id).not.toBe(negocio.turno);
+    expect(nuevo.usuario_id).toBe(negocio.cajero);
   });
 });

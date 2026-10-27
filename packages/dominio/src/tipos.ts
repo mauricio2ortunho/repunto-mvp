@@ -45,6 +45,11 @@ export interface Turno {
    * y, aunque haya dejado su turno abierto, no opera mas.
    */
   usuario_activo: boolean;
+  /**
+   * La apertura, o el ultimo sello o canje del turno si es posterior. Derivada
+   * de esas filas, no guardada: de aca sale el cierre por inactividad.
+   */
+  ultima_actividad: Date;
   cerrado_el: Date | null;
 }
 

@@ -95,6 +95,7 @@ describe('Tarea nocturna · vencer tarjetas', () => {
     expect((await api.tareaNocturna(SECRETO)).cuerpo).toEqual({
       estado: 'hecho',
       vencidas: 0,
+      turnos_cerrados: 0,
       purgadas: { codigo_usado: 0, peticion_idempotente: 0, tope_peticion: 0 },
     });
     expect(await contar(db, 'tarjeta', "estado = 'vencida'")).toBe(1);
@@ -129,6 +130,37 @@ describe('Tarea nocturna · vencer tarjetas', () => {
   });
 });
 
+describe('Tarea nocturna · cerrar turnos agotados', () => {
+  test('cierra el que paso la hora sin actividad, con la hora en que se agoto', async ({
+    api,
+    db,
+  }) => {
+    const negocio = await crearNegocio(db);
+    // El de la tablet principal, abierto hace tres horas y sin nada desde
+    // entonces; el de la otra tablet, recien abierto.
+    await db.query(
+      `UPDATE turno_caja SET abierto_el = now() - interval '3 hours' WHERE id = $1`,
+      [negocio.turno],
+    );
+
+    const respuesta = await api.tareaNocturna(SECRETO);
+
+    expect(respuesta.cuerpo).toMatchObject({ turnos_cerrados: 1 });
+    const turnos = await db.query<{ id: string; exacto: boolean | null }>(
+      `SELECT id, cerrado_el = abierto_el + interval '60 minutes' AS exacto
+       FROM turno_caja`,
+    );
+    expect(Object.fromEntries(turnos.rows.map((t) => [t.id, t.exacto]))).toEqual({
+      [negocio.turno]: true,
+      [negocio.turnoOtroLocal]: null,
+    });
+    // Y la segunda corrida no lo vuelve a tocar.
+    expect((await api.tareaNocturna(SECRETO)).cuerpo).toMatchObject({
+      turnos_cerrados: 0,
+    });
+  });
+});
+
 describe('Tarea nocturna · purgar', () => {
   test('borra lo de mas de 24 horas y deja lo reciente', async ({ api, db }) => {
     const negocio = await crearNegocio(db);
@@ -158,6 +190,7 @@ describe('Tarea nocturna · purgar', () => {
     expect(respuesta.cuerpo).toEqual({
       estado: 'hecho',
       vencidas: 0,
+      turnos_cerrados: 0,
       purgadas: { codigo_usado: 1, peticion_idempotente: 1, tope_peticion: 1 },
     });
     expect(await contar(db, 'codigo_usado', 'ventana = 1023')).toBe(1);
