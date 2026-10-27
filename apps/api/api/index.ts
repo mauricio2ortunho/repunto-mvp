@@ -23,8 +23,9 @@ import { opcionesDeCors } from '../src/seguridad/cors';
  *    guarda en memoria —los topes de peticiones— deja de contar bien. Esta
  *    anotado en CLAUDE.md, seccion 15.
  *
- * El servidor de siempre sigue siendo `src/main.ts`: un proceso largo, que es
- * lo que hace falta para los trabajos programados.
+ * El servidor de siempre sigue siendo `src/main.ts`, el de desarrollo. Los
+ * trabajos programados no lo necesitan: los dispara Vercel Cron contra
+ * `/tareas/nocturna`, que pasa por aca como cualquier otra ruta.
  */
 
 type Manejador = (peticion: IncomingMessage, respuesta: ServerResponse) => void;

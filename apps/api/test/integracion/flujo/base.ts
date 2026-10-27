@@ -136,6 +136,11 @@ export class Api {
     return this.pedir('POST', '/caja/vinculacion', { cuerpo });
   }
 
+  /** Lo que dispara Vercel Cron: el secreto va como Bearer. */
+  tareaNocturna(secreto?: string): Promise<Respuesta> {
+    return this.pedir('GET', '/tareas/nocturna', { token: secreto });
+  }
+
   private postear(ruta: string, llamada: Llamada): Promise<Respuesta> {
     return this.pedir('POST', ruta, {
       clave: randomUUID(),

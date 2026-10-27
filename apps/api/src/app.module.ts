@@ -6,6 +6,7 @@ import { ClienteModule } from './cliente/cliente.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SaludModule } from './salud/salud.module';
 import { SeguridadModule } from './seguridad/seguridad.module';
+import { TareasModule } from './tareas/tareas.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { SeguridadModule } from './seguridad/seguridad.module';
     CajaModule,
     ClienteModule,
     AltaModule,
+    TareasModule,
   ],
 })
 export class AppModule {}
