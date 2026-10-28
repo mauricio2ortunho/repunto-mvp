@@ -286,6 +286,7 @@ funciones puras.
   por IP por hora. Usado, vencido o inexistente responden igual.
 - **Tope de notificaciones del negocio:** 2 por semana por negocio.
 - **Retención de respaldos:** diario, 30 días.
+- **Retención de la bitácora de la caja:** 90 días (`DIAS_DE_BITACORA`).
 
 ---
 
@@ -305,7 +306,7 @@ como mucho un día de filas de más.
 | Tarea | Frecuencia | Estado |
 |---|---|---|
 | Vencer tarjetas cuyo `vence_el` ya pasó | Diaria, 00:15 hora La Paz | Corre |
-| Purgar `codigo_usado`, `peticion_idempotente` y `tope_peticion` con más de 24 horas | Diaria, con la anterior | Corre |
+| Purgar `codigo_usado`, `peticion_idempotente` y `tope_peticion` con más de 24 horas, e `intento_caja` con más de 90 días | Diaria, con la anterior | Corre |
 | Avisar al cliente con sellos en curso y pocos días restantes | Diaria | Espera a WhatsApp |
 | Recalcular clientes enfriados por negocio | Diaria | Espera al panel del dueño |
 | Alerta de local sin sellos en 7 días | Diaria | Espera al panel del dueño |
@@ -321,6 +322,22 @@ negociables:
 2. **Log estructurado** en JSON con `request_id`, y en el flujo de sellado también
    `cliente_id`, `local_id`, `turno_id`. Debe poder responder "qué pasó con el
    sello de Juan el martes" sin adivinar.
+
+   Son dos piezas, porque Vercel Hobby guarda los logs **una hora**:
+   - **La línea de cada pedido** (`apps/api/src/observabilidad/`): un
+     `request_id` que la API genera y devuelve en `X-Request-Id`, y al
+     terminar una línea JSON con método, ruta sin query, estado, código de
+     rechazo, milisegundos y los ids que el pedido fue anotando
+     (`anotar`, sobre `AsyncLocalStorage`). Sirve para mirar en el momento.
+   - **La bitácora de la caja** (`intento_caja`): una fila por cada sello,
+     canje, anulación, confirmación y descarte que se intentó, **también los
+     rechazados**, con el mismo `request_id`, tablet, local, turno, cliente,
+     tarjeta, sello o registro. Se escribe fuera de la transacción, como los
+     topes, y si falla no tumba el pedido. Es la que responde lo del martes,
+     con SQL. Se guarda 90 días.
+
+   Los campos anotables están nombrados uno por uno en `CamposDelPedido`: un
+   campo nuevo es una decisión, no un `Record` donde cae cualquier cosa.
 3. **Chequeo de salud por local:** última vez que cada dispositivo de caja selló.
    Un local en cero es un local donde el sistema se abandonó.
 
@@ -574,9 +591,10 @@ queda deshabilitado.
 historial colgando se puede borrar. Pero una fila hoja (`sello`, `canje`) no
 tiene hijos y la base permite su `DELETE`. Cerrarlo requiere revocar `DELETE` al
 rol de aplicación en Postgres; pendiente para cuando exista ese rol.
-`codigo_usado`, `peticion_idempotente` y `tope_peticion` son las únicas tablas
-que se purgan físicamente, por diseño (sección 7): no son historial, son
-candados de corta vida.
+`codigo_usado`, `peticion_idempotente` y `tope_peticion` se purgan
+físicamente, por diseño (sección 7): no son historial, son candados de corta
+vida. `intento_caja` también, a los 90 días: es una bitácora, no historial, y
+por eso tampoco tiene FK.
 
 ### Límite conocido: un teléfono, un negocio
 
@@ -656,6 +674,8 @@ es lo que falta terminar, y está acá para que no se pierda.
   más de una vez por día, hace falta el plan Pro de Vercel. Los
   `registro_pendiente` no se purgan: uno que nadie confirmó es la señal de que
   en ese local no están ofreciendo la tarjeta (especificación, sección 11).
-- **El log estructurado de la sección 8.** Todavía no hay `request_id` ni las
-  líneas JSON con `cliente_id`, `local_id` y `turno_id` del flujo de sellado.
-  Hoy, "qué pasó con el sello de Juan el martes" se responde con SQL.
+- **El log de cada pedido dura una hora** (Vercel Hobby). Lo durable es la
+  bitácora de la caja; el resto de los endpoints —el cliente, el alta pública,
+  abrir turno— solo deja su línea. Guardarlas más exige un log drain, que es
+  del plan Pro. La bitácora tampoco ve lo que se frena antes de leer la
+  tablet: un token que no existe o el tope de códigos equivocados.

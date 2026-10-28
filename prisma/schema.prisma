@@ -72,6 +72,17 @@ enum EstadoTarjeta {
   @@map("estado_tarjeta")
 }
 
+/// Lo que se intento en caja y queda en la bitacora (intento_caja).
+enum AccionDeCaja {
+  sello
+  canje
+  anulacion
+  confirmacion
+  descarte
+
+  @@map("accion_de_caja")
+}
+
 // ---------------------------------------------------------------------------
 // Plataforma
 // ---------------------------------------------------------------------------
@@ -645,6 +656,38 @@ model PeticionIdempotente {
   @@id([dispositivo_id, endpoint, clave])
   @@index([creado_el])
   @@map("peticion_idempotente")
+}
+
+/// La bitacora de la caja: una fila por cada sello, canje, anulacion,
+/// confirmacion o descarte que se intento, tambien los rechazados. Es lo que
+/// responde "que paso con el sello de Juan el martes" (CLAUDE.md, seccion 8):
+/// los logs de Vercel duran una hora, y un rechazo no deja ninguna otra fila.
+///
+/// Sin FK a proposito: es una bitacora, no historial. Se escribe despues de
+/// resolver el pedido, fuera de su transaccion, y no puede fallar porque una
+/// relacion no cierre; los ids salen de lecturas de la base, no del request.
+/// La tarea nocturna la purga a los 90 dias.
+model IntentoCaja {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// El mismo de la linea de log y de la cabecera X-Request-Id.
+  request_id     String       @db.Uuid
+  accion         AccionDeCaja
+  /// `ok`, o el codigo con que se rechazo: CODIGO_INVALIDO, DEMASIADO_PRONTO...
+  resultado      String
+  dispositivo_id String       @db.Uuid
+  local_id       String       @db.Uuid
+  /// Nulo si la tablet no tenia turno abierto.
+  turno_id       String?      @db.Uuid
+  cliente_id     String?      @db.Uuid
+  tarjeta_id     String?      @db.Uuid
+  sello_id       String?      @db.Uuid
+  registro_id    String?      @db.Uuid
+  creado_el      DateTime     @default(now()) @db.Timestamptz(3)
+
+  @@index([cliente_id, creado_el])
+  @@index([local_id, creado_el])
+  @@index([creado_el])
+  @@map("intento_caja")
 }
 
 /// Los topes de peticiones: cuantas veces se pidio algo en una hora.

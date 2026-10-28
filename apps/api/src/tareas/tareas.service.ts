@@ -3,6 +3,7 @@ import { MINUTOS_DE_INACTIVIDAD_DEL_TURNO } from '@repunto/dominio';
 
 import { ultimaActividadDelTurno } from '../caja/caja.sql';
 import { Prisma } from '../generated/prisma/client';
+import { DIAS_DE_BITACORA } from '../observabilidad/bitacora';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
@@ -30,6 +31,7 @@ export type ResultadoDeLaNoche =
         codigo_usado: number;
         peticion_idempotente: number;
         tope_peticion: number;
+        intento_caja: number;
       };
     }
   | { estado: 'en-curso' };
@@ -85,6 +87,10 @@ export class TareasService {
         // de la hora y se sigue sumando hasta que la ventana termina.
         const topePeticion = await tx.$executeRaw`
           DELETE FROM tope_peticion WHERE ventana < ${corte}`;
+        // La bitacora es lo unico que se guarda mas: es para mirar hacia atras.
+        const intentoCaja = await tx.$executeRaw`
+          DELETE FROM intento_caja
+          WHERE creado_el < now() - make_interval(days => ${DIAS_DE_BITACORA}::int)`;
 
         return {
           estado: 'hecho',
@@ -94,6 +100,7 @@ export class TareasService {
             codigo_usado: codigoUsado,
             peticion_idempotente: peticionIdempotente,
             tope_peticion: topePeticion,
+            intento_caja: intentoCaja,
           },
         };
       },

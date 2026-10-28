@@ -26,6 +26,8 @@ import { type Transaccion, cteDeCaja } from '../caja/caja.sql';
 import { errorDeApi, errorDeRechazo } from '../caja/errores-http';
 import { exigirTablet } from '../caja/tablet';
 import { guardarRespuesta, reservarIdempotencia } from '../caja/idempotencia';
+import { BitacoraDeCaja } from '../observabilidad/bitacora';
+import { anotar, anotarCaja } from '../observabilidad/contexto';
 import { PrismaService } from '../prisma/prisma.service';
 import { cifrarSemilla } from '../seguridad/cifrado';
 import { generarSemilla } from '../seguridad/semilla';
@@ -37,7 +39,7 @@ import {
 } from '../seguridad/tope';
 import { ticketDeRegistro } from '../seguridad/ticket';
 import { hashDeToken, nuevoToken } from '../seguridad/token';
-import { leerEstadoParaAlta } from './lectura';
+import { type EstadoDeAlta, leerEstadoParaAlta } from './lectura';
 
 /**
  * El alta del cliente en el mostrador (especificacion funcional, seccion 3).
@@ -83,6 +85,7 @@ export class AltaService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(TopeDePeticiones) private readonly tope: TopeDePeticiones,
+    @Inject(BitacoraDeCaja) private readonly bitacora: BitacoraDeCaja,
   ) {}
 
   /**
@@ -252,9 +255,21 @@ export class AltaService {
     registroId: string,
     sellar: boolean,
   ): Promise<ConfirmarRespuesta> {
+    return this.bitacora.registrar('confirmacion', () =>
+      this.confirmarEnTransaccion(tokenHash, clave, registroId, sellar),
+    );
+  }
+
+  private async confirmarEnTransaccion(
+    tokenHash: string,
+    clave: string,
+    registroId: string,
+    sellar: boolean,
+  ): Promise<ConfirmarRespuesta> {
     return this.prisma.$transaction(async (tx) => {
       const estado = await leerEstadoParaAlta(tx, tokenHash, registroId);
       if (estado === null) throw errorDeApi('TOKEN_INVALIDO');
+      anotarAlta(estado);
 
       const peticion = {
         dispositivo_id: estado.dispositivo.id,
@@ -285,6 +300,7 @@ export class AltaService {
       const respuesta = esquemaConfirmarRespuesta.parse(
         await ejecutarAlta(tx, decision.efecto),
       );
+      anotar({ sello_id: respuesta.sello_id ?? undefined });
       await guardarRespuesta(tx, peticion, respuesta);
       return respuesta;
     });
@@ -296,9 +312,20 @@ export class AltaService {
     clave: string,
     registroId: string,
   ): Promise<{ estado: 'descartado' }> {
+    return this.bitacora.registrar('descarte', () =>
+      this.descartarEnTransaccion(tokenHash, clave, registroId),
+    );
+  }
+
+  private async descartarEnTransaccion(
+    tokenHash: string,
+    clave: string,
+    registroId: string,
+  ): Promise<{ estado: 'descartado' }> {
     return this.prisma.$transaction(async (tx) => {
       const estado = await leerEstadoParaAlta(tx, tokenHash, registroId);
       if (estado === null) throw errorDeApi('TOKEN_INVALIDO');
+      anotarAlta(estado);
 
       const peticion = {
         dispositivo_id: estado.dispositivo.id,
@@ -332,6 +359,17 @@ export class AltaService {
       return respuesta;
     });
   }
+}
+
+/**
+ * Para el log y la bitacora. El registro, solo si es de este local; el cliente,
+ * si el telefono ya tenia cuenta. Una cuenta nueva se encuentra despues por
+ * el registro, que la guarda al confirmarse.
+ */
+function anotarAlta(estado: EstadoDeAlta): void {
+  anotarCaja(estado);
+  if (estado.registro === null || estado.registro.local_id !== estado.local.id) return;
+  anotar({ registro_id: estado.registro.id, cliente_id: estado.clienteExistente?.id });
 }
 
 /**

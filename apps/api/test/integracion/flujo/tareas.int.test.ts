@@ -96,7 +96,12 @@ describe('Tarea nocturna · vencer tarjetas', () => {
       estado: 'hecho',
       vencidas: 0,
       turnos_cerrados: 0,
-      purgadas: { codigo_usado: 0, peticion_idempotente: 0, tope_peticion: 0 },
+      purgadas: {
+        codigo_usado: 0,
+        peticion_idempotente: 0,
+        tope_peticion: 0,
+        intento_caja: 0,
+      },
     });
     expect(await contar(db, 'tarjeta', "estado = 'vencida'")).toBe(1);
   });
@@ -184,6 +189,16 @@ describe('Tarea nocturna · purgar', () => {
         [`tope-de-hace-${horas}-horas`, horas],
       );
     }
+    // La bitacora se guarda 90 dias, no 24 horas.
+    for (const dias of [91, 89]) {
+      await db.query(
+        `INSERT INTO intento_caja
+           (request_id, accion, resultado, dispositivo_id, local_id, creado_el)
+         VALUES (gen_random_uuid(), 'sello', $3, $1, $2,
+                 now() - make_interval(days => $4::int))`,
+        [negocio.dispositivo, negocio.local, `HACE_${dias}_DIAS`, dias],
+      );
+    }
 
     const respuesta = await api.tareaNocturna(SECRETO);
 
@@ -191,11 +206,18 @@ describe('Tarea nocturna · purgar', () => {
       estado: 'hecho',
       vencidas: 0,
       turnos_cerrados: 0,
-      purgadas: { codigo_usado: 1, peticion_idempotente: 1, tope_peticion: 1 },
+      purgadas: {
+        codigo_usado: 1,
+        peticion_idempotente: 1,
+        tope_peticion: 1,
+        intento_caja: 1,
+      },
     });
     expect(await contar(db, 'codigo_usado', 'ventana = 1023')).toBe(1);
     expect(await contar(db, 'peticion_idempotente', "clave like '%-23-%'")).toBe(1);
     expect(await contar(db, 'tope_peticion', "clave like '%-23-%'")).toBe(1);
+    expect(await contar(db, 'intento_caja', "resultado = 'HACE_89_DIAS'")).toBe(1);
+    expect(await contar(db, 'intento_caja')).toBe(1);
     expect(await contar(db, 'codigo_usado')).toBe(1);
     expect(await contar(db, 'peticion_idempotente')).toBe(1);
     expect(await contar(db, 'tope_peticion')).toBe(1);

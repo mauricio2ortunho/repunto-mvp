@@ -49,6 +49,9 @@ export const test = testDeVitest.extend<{ pool: Pool; db: Db }>({
 export function configurarEntorno(): void {
   process.env['DATABASE_URL'] = inject('urlBaseTest');
   process.env['CLAVE_CIFRADO_SEMILLAS'] = inject('claveCifrado');
+  // Una linea por pedido taparia la salida de los tests. El test del log la
+  // prende para si.
+  process.env['LOG_DE_PEDIDOS'] = 'no';
 }
 
 export async function exigirBaseVacia(db: Db): Promise<void> {

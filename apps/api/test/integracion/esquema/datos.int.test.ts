@@ -335,6 +335,17 @@ describe('Cordura y unicidad operativa', () => {
     );
   });
 
+  test('Seccion 8 · rechaza un intento de caja sin resultado', async ({ db }) => {
+    const a = await crearNegocio(db);
+    await esperarRechazo(
+      db,
+      'intento_caja_resultado_razonable_chk',
+      `INSERT INTO intento_caja (request_id, accion, resultado, dispositivo_id, local_id)
+       VALUES (gen_random_uuid(), 'sello', '', $1, $2)`,
+      [a.dispositivo, a.local],
+    );
+  });
+
   test('Seccion 5 · rechaza dos equipos de cliente con el mismo token', async ({
     db,
   }) => {

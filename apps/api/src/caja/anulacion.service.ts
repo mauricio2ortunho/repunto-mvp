@@ -7,6 +7,8 @@ import {
 } from '@repunto/contratos';
 import { decidirAnulacion, rechazo } from '@repunto/dominio';
 
+import { BitacoraDeCaja } from '../observabilidad/bitacora';
+import { anotar, anotarCaja } from '../observabilidad/contexto';
 import { PrismaService } from '../prisma/prisma.service';
 import { cteDeCaja } from './caja.sql';
 import { errorDeApi, errorDeRechazo } from './errores-http';
@@ -37,9 +39,22 @@ interface FilaDeSelloReciente {
 
 @Injectable()
 export class AnulacionService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(BitacoraDeCaja) private readonly bitacora: BitacoraDeCaja,
+  ) {}
 
   async anular(
+    tokenHash: string,
+    clave: string,
+    selloId: string,
+  ): Promise<AnularRespuesta> {
+    return this.bitacora.registrar('anulacion', () =>
+      this.anularEnTransaccion(tokenHash, clave, selloId),
+    );
+  }
+
+  private async anularEnTransaccion(
     tokenHash: string,
     clave: string,
     selloId: string,
@@ -47,6 +62,16 @@ export class AnulacionService {
     return this.prisma.$transaction(async (tx) => {
       const estado = await leerEstadoParaAnulacion(tx, tokenHash, selloId);
       if (estado === null) throw errorDeApi('TOKEN_INVALIDO');
+      anotarCaja(estado);
+      // El sello solo si es de este local: uno de otra sucursal no existe
+      // para esta caja —el dominio lo rechaza—, y tampoco en su bitacora.
+      if (estado.sello !== null && estado.sello.local_id === estado.local.id) {
+        anotar({
+          sello_id: estado.sello.id,
+          tarjeta_id: estado.tarjeta?.tarjeta.id,
+          cliente_id: estado.tarjeta?.tarjeta.cliente_id,
+        });
+      }
 
       const peticion = {
         dispositivo_id: estado.dispositivo.id,

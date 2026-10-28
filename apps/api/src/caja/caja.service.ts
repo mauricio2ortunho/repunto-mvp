@@ -19,6 +19,8 @@ import {
   verificarCodigo,
 } from '@repunto/dominio';
 
+import { BitacoraDeCaja } from '../observabilidad/bitacora';
+import { anotar, anotarCaja } from '../observabilidad/contexto';
 import { PrismaService } from '../prisma/prisma.service';
 import { TOPE_DE_CODIGOS_EQUIVOCADOS, TopeDePeticiones } from '../seguridad/tope';
 import { codigoDelError, errorDeApi, errorDeRechazo } from './errores-http';
@@ -49,6 +51,7 @@ export class CajaService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(TopeDePeticiones) private readonly tope: TopeDePeticiones,
+    @Inject(BitacoraDeCaja) private readonly bitacora: BitacoraDeCaja,
   ) {}
 
   async sellar(
@@ -56,8 +59,10 @@ export class CajaService {
     clave: string,
     cuerpo: SellarPeticion,
   ): Promise<SellarRespuesta> {
-    return this.conTopeDeEquivocados(tokenHash, () =>
-      this.sellarEnTransaccion(tokenHash, clave, cuerpo),
+    return this.bitacora.registrar('sello', () =>
+      this.conTopeDeEquivocados(tokenHash, () =>
+        this.sellarEnTransaccion(tokenHash, clave, cuerpo),
+      ),
     );
   }
 
@@ -66,8 +71,10 @@ export class CajaService {
     clave: string,
     cuerpo: CanjearPeticion,
   ): Promise<CanjearRespuesta> {
-    return this.conTopeDeEquivocados(tokenHash, () =>
-      this.canjearEnTransaccion(tokenHash, clave, cuerpo),
+    return this.bitacora.registrar('canje', () =>
+      this.conTopeDeEquivocados(tokenHash, () =>
+        this.canjearEnTransaccion(tokenHash, clave, cuerpo),
+      ),
     );
   }
 
@@ -102,6 +109,7 @@ export class CajaService {
     return this.prisma.$transaction(async (tx) => {
       const estado = await leerEstado(tx, tokenHash, prefijoDe(cuerpo.codigo));
       if (estado === null) throw errorDeApi('TOKEN_INVALIDO');
+      anotarEstado(estado);
 
       const peticion = {
         dispositivo_id: estado.dispositivo.id,
@@ -134,6 +142,7 @@ export class CajaService {
       if (decision.tipo === 'rechazado') throw errorDeRechazo(decision, estado);
 
       const sello_id = await ejecutarSello(tx, decision.efecto);
+      anotar({ sello_id });
       const respuesta = esquemaSellarRespuesta.parse({
         ...decision.efecto.aviso,
         sello_id,
@@ -151,6 +160,7 @@ export class CajaService {
     return this.prisma.$transaction(async (tx) => {
       const estado = await leerEstado(tx, tokenHash, prefijoDe(cuerpo.codigo));
       if (estado === null) throw errorDeApi('TOKEN_INVALIDO');
+      anotarEstado(estado);
 
       const peticion = {
         dispositivo_id: estado.dispositivo.id,
@@ -186,6 +196,16 @@ export class CajaService {
       return respuesta;
     });
   }
+}
+
+/**
+ * Para el log y la bitacora: de que tablet, a que cliente y sobre que
+ * tarjeta. La tarjeta es la que estaba en curso; si el sello abre una nueva,
+ * el sello_id lleva a ella.
+ */
+function anotarEstado(estado: EstadoDeCaja): void {
+  anotarCaja(estado);
+  anotar({ cliente_id: estado.cliente?.id, tarjeta_id: estado.enCurso?.tarjeta.id });
 }
 
 /**

@@ -106,7 +106,9 @@ export function opcionesDeCors(permitidos = origenesPermitidos()): OpcionesDeCor
     },
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Authorization', 'Content-Type', 'Idempotency-Key', 'If-None-Match'],
-    exposedHeaders: ['ETag'],
+    // X-Request-Id: el panel lo puede mostrar en un error, y con el se
+    // encuentra el pedido en el log y en la bitacora.
+    exposedHeaders: ['ETag', 'X-Request-Id'],
     credentials: false,
     maxAge: SEGUNDOS_DE_CACHE,
   };

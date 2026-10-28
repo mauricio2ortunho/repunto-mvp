@@ -78,6 +78,10 @@ describe('opcionesDeCors', () => {
     expect(opcionesDeCors(PERMITIDOS).exposedHeaders).toContain('ETag');
   });
 
+  it('expone X-Request-Id, para que el panel pueda mostrarlo en un error', () => {
+    expect(opcionesDeCors(PERMITIDOS).exposedHeaders).toContain('X-Request-Id');
+  });
+
   it('no manda credenciales: la caja se autentica con token, no con cookies', () => {
     expect(opcionesDeCors(PERMITIDOS).credentials).toBe(false);
   });

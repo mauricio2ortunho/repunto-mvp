@@ -152,16 +152,17 @@ confirma de cuerpo presente (especificación funcional, sección 3).
 
 ## Cordura de valores
 
-| Restricción                                    | Tabla                  | Tipo  | Definición                         | Invariante | Qué impide                                                                                              |
-| ---------------------------------------------- | ---------------------- | ----- | ---------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------- |
-| `programa_sellos_requeridos_positivo_chk`      | `programa`             | CHECK | `sellos_requeridos > 0`            | Cordura    | Una tarjeta de cero casilleros.                                                                         |
-| `programa_horas_entre_sellos_no_negativo_chk`  | `programa`             | CHECK | `horas_entre_sellos >= 0`          | Cordura    | Un intervalo mínimo negativo.                                                                           |
-| `programa_vigencia_meses_positiva_chk`         | `programa`             | CHECK | nula, o `vigencia_meses > 0`       | Cordura    | Una vigencia de cero meses. Nula sí: la tarjeta no vence.                                               |
-| `sello_monto_no_negativo_chk`                  | `sello`                | CHECK | nulo, o `monto >= 0`               | Cordura    | Un monto de compra negativo.                                                                            |
-| `condicion_sello_monto_minimo_no_negativo_chk` | `condicion_sello`      | CHECK | nulo, o `monto_minimo >= 0`        | Cordura    | Un monto mínimo negativo.                                                                               |
-| `codigo_usado_ventana_no_negativa_chk`         | `codigo_usado`         | CHECK | `ventana >= 0`                     | INV-9      | Una ventana de código anterior a 1970.                                                                  |
-| `peticion_idempotente_clave_razonable_chk`     | `peticion_idempotente` | CHECK | `char_length(clave)` entre 8 y 200 | Sección 9  | Una clave de idempotencia de un caracter, que le devolvería a un cajero la respuesta del sello de otro. |
-| `tope_peticion_cuenta_positiva_chk`            | `tope_peticion`        | CHECK | `cuenta > 0`                       | Sección 6  | Una cuenta de tope en cero o negativa, que dejaría pasar más pedidos de los que dice el tope.           |
+| Restricción                                    | Tabla                  | Tipo  | Definición                            | Invariante | Qué impide                                                                                              |
+| ---------------------------------------------- | ---------------------- | ----- | ------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------- |
+| `programa_sellos_requeridos_positivo_chk`      | `programa`             | CHECK | `sellos_requeridos > 0`               | Cordura    | Una tarjeta de cero casilleros.                                                                         |
+| `programa_horas_entre_sellos_no_negativo_chk`  | `programa`             | CHECK | `horas_entre_sellos >= 0`             | Cordura    | Un intervalo mínimo negativo.                                                                           |
+| `programa_vigencia_meses_positiva_chk`         | `programa`             | CHECK | nula, o `vigencia_meses > 0`          | Cordura    | Una vigencia de cero meses. Nula sí: la tarjeta no vence.                                               |
+| `sello_monto_no_negativo_chk`                  | `sello`                | CHECK | nulo, o `monto >= 0`                  | Cordura    | Un monto de compra negativo.                                                                            |
+| `condicion_sello_monto_minimo_no_negativo_chk` | `condicion_sello`      | CHECK | nulo, o `monto_minimo >= 0`           | Cordura    | Un monto mínimo negativo.                                                                               |
+| `codigo_usado_ventana_no_negativa_chk`         | `codigo_usado`         | CHECK | `ventana >= 0`                        | INV-9      | Una ventana de código anterior a 1970.                                                                  |
+| `peticion_idempotente_clave_razonable_chk`     | `peticion_idempotente` | CHECK | `char_length(clave)` entre 8 y 200    | Sección 9  | Una clave de idempotencia de un caracter, que le devolvería a un cajero la respuesta del sello de otro. |
+| `tope_peticion_cuenta_positiva_chk`            | `tope_peticion`        | CHECK | `cuenta > 0`                          | Sección 6  | Una cuenta de tope en cero o negativa, que dejaría pasar más pedidos de los que dice el tope.           |
+| `intento_caja_resultado_razonable_chk`         | `intento_caja`         | CHECK | `char_length(resultado)` entre 2 y 40 | Sección 8  | Un intento de caja sin resultado, o con un texto libre en lugar de `ok` o un código de error.           |
 
 ## Estructura
 
@@ -206,6 +207,7 @@ borrar: sin ellas, esas FK no se pueden crear.
 | `peticion_idempotente_pkey`  | `peticion_idempotente`  | PK   | `(dispositivo_id, endpoint, clave)` | Sección 9  | Dos respuestas guardadas para el mismo reintento. La clave es por tablet y por endpoint: la misma clave en otro endpoint es otra petición. |
 | `registro_pendiente_pkey`    | `registro_pendiente`    | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
 | `tope_peticion_pkey`         | `tope_peticion`         | PK   | `(clave, ventana)`                  | Sección 6  | Dos cuentas para lo mismo en la misma hora: cada instancia de la api sumaría en la suya y el tope dejaría de contar.                       |
+| `intento_caja_pkey`          | `intento_caja`          | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
 
 ### FK simples
 
