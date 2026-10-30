@@ -9,12 +9,17 @@ export const urlDeLaApi = (
 ).replace(/\/+$/, '');
 
 /**
- * Token compartido para desarrollo y staging. Solo siembra el almacenamiento
- * de la tablet cuando esta vacio (ver `credencial.ts`); el cliente HTTP nunca
- * lo lee directo.
+ * Token de la tablet de demo, SOLO para `next dev`. Siembra el almacenamiento
+ * de la tablet cuando esta vacio (ver `credencial.ts`), para no tener que
+ * vincular el navegador de desarrollo cada vez que se limpia.
  *
- * En produccion no va: cada tablet tiene su propio token, obtenido al
- * vincularla. Con uno compartido, todas las cajas de un local quedan bajo el
- * mismo turno y la auditoria de quien sello que se rompe.
+ * En cualquier build —staging y produccion— se ignora aunque la variable
+ * este cargada: lo que empieza con NEXT_PUBLIC_ viaja en el JavaScript que
+ * baja cualquiera, y con el se podia sellar. Cada tablet obtiene el suyo en
+ * /vincular. Con uno compartido, ademas, todas las cajas quedan bajo el mismo
+ * turno y la auditoria de quien sello que se rompe.
  */
-export const tokenDeEntorno: string | null = process.env.NEXT_PUBLIC_TOKEN_TABLET || null;
+export const tokenDeEntorno: string | null =
+  process.env.NODE_ENV === 'development'
+    ? process.env.NEXT_PUBLIC_TOKEN_TABLET || null
+    : null;
