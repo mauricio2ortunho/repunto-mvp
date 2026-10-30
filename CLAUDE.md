@@ -339,7 +339,9 @@ negociables:
    Los campos anotables están nombrados uno por uno en `CamposDelPedido`: un
    campo nuevo es una decisión, no un `Record` donde cae cualquier cosa.
 3. **Chequeo de salud por local:** última vez que cada dispositivo de caja selló.
-   Un local en cero es un local donde el sistema se abandonó.
+   Un local en cero es un local donde el sistema se abandonó. Hasta que exista
+   el panel del admin, es `pnpm tablets salud`, que suma el último intento y
+   el último rechazo de la bitácora.
 
 Nunca registrar en el log el código rotativo, la semilla TOTP ni el PIN.
 
