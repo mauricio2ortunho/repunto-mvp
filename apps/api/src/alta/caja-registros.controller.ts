@@ -9,7 +9,6 @@ import {
   Param,
   Post,
   Req,
-  Res,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -23,7 +22,6 @@ import { GuardDeDispositivo, type PeticionDeCaja } from '../caja/dispositivo.gua
 import { errorDeApi } from '../caja/errores-http';
 import { claveDeIdempotencia, idEnLaRuta } from '../caja/peticion';
 import { AltaService } from './alta.service';
-import { etiquetaDe } from './etag';
 
 /** Lo que el cajero hace con la lista de registros pendientes de su local. */
 @Controller('caja/registros')
@@ -32,25 +30,19 @@ export class CajaRegistrosController {
   constructor(@Inject(AltaService) private readonly alta: AltaService) {}
 
   /**
-   * La lista, con ETag: el panel la pide cada pocos segundos y, mientras no
-   * cambie, se lleva un 304 de cien bytes. Asi aparece "al instante" sin que
-   * el cajero refresque y sin sostener una conexion abierta por tablet.
+   * La lista entera, cada vez. El panel la pide cada pocos segundos: asi
+   * aparece "al instante" sin que el cajero refresque y sin sostener una
+   * conexion abierta por tablet.
+   *
+   * Sin respuesta condicional a proposito: Vercel le saca a los 304 el
+   * permiso de CORS, el navegador los descarta como un corte de red y el
+   * panel mostraba "Sin conexion" con la api andando. Son a lo sumo veinte
+   * registros, y la consulta a la base se hacia igual.
    */
   @Get()
-  @Header('Cache-Control', 'no-cache')
-  async listar(
-    @Req() peticion: PeticionDeCaja,
-    @Res({ passthrough: true }) respuesta: RespuestaHttp,
-  ): Promise<RegistrosPendientes | undefined> {
-    const pendientes = await this.alta.pendientes(peticion.tokenHash);
-    const etiqueta = etiquetaDe(pendientes);
-    respuesta.setHeader('ETag', etiqueta);
-
-    if (peticion.headers['if-none-match'] === etiqueta) {
-      respuesta.status(HttpStatus.NOT_MODIFIED);
-      return undefined;
-    }
-    return pendientes;
+  @Header('Cache-Control', 'no-store')
+  listar(@Req() peticion: PeticionDeCaja): Promise<RegistrosPendientes> {
+    return this.alta.pendientes(peticion.tokenHash);
   }
 
   @Post(':id/confirmar')
@@ -83,10 +75,4 @@ export class CajaRegistrosController {
       idEnLaRuta(id),
     );
   }
-}
-
-/** Lo minimo de la respuesta de Express que hace falta para el ETag. */
-interface RespuestaHttp {
-  setHeader(nombre: string, valor: string): void;
-  status(codigo: number): void;
 }

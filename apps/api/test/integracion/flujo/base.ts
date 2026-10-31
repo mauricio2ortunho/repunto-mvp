@@ -36,8 +36,6 @@ export interface Llamada {
   /** Idempotency-Key. Por defecto, una distinta en cada llamada. */
   clave?: string;
   cuerpo?: unknown;
-  /** If-None-Match, para los endpoints con ETag. */
-  etiqueta?: string;
 }
 
 export class Api {
@@ -87,8 +85,8 @@ export class Api {
   }
 
   /** El alta: lo que hace el cajero. */
-  registros(token?: string, etiqueta?: string): Promise<Respuesta> {
-    return this.pedir('GET', '/caja/registros', { token, etiqueta });
+  registros(token?: string): Promise<Respuesta> {
+    return this.pedir('GET', '/caja/registros', { token });
   }
 
   confirmar(
@@ -158,7 +156,6 @@ export class Api {
       cabeceras['authorization'] = `Bearer ${llamada.token}`;
     }
     if (llamada.clave !== undefined) cabeceras['idempotency-key'] = llamada.clave;
-    if (llamada.etiqueta !== undefined) cabeceras['if-none-match'] = llamada.etiqueta;
     if (llamada.cuerpo !== undefined) cabeceras['content-type'] = 'application/json';
 
     const respuesta = await fetch(`${this.url}${ruta}`, {

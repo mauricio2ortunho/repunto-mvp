@@ -4,6 +4,7 @@ import type { AddressInfo } from 'node:net';
 import { describe, expect } from 'vitest';
 
 import handler from '../../../api/index';
+import { crearNegocio } from '../escenario';
 import { test } from './base';
 
 /**
@@ -59,10 +60,9 @@ describe('CORS', () => {
     ).toLowerCase();
     expect(permitidas).toContain('authorization');
     expect(permitidas).toContain('idempotency-key');
-    expect(permitidas).toContain('if-none-match');
   });
 
-  test('el preflight se cachea: con If-None-Match cada 3 segundos, importa', async ({
+  test('el preflight se cachea: con Authorization cada 3 segundos, importa', async ({
     db,
   }) => {
     expect(db).toBeDefined();
@@ -73,7 +73,7 @@ describe('CORS', () => {
         headers: {
           origin: PANEL,
           'access-control-request-method': 'GET',
-          'access-control-request-headers': 'authorization,if-none-match',
+          'access-control-request-headers': 'authorization',
         },
       });
       return Number(respuesta.headers.get('access-control-max-age') ?? '0');
@@ -82,7 +82,7 @@ describe('CORS', () => {
     expect(maxAge).toBeGreaterThanOrEqual(3600);
   });
 
-  test('expone ETag, que si no el panel no puede leerlo', async ({ db }) => {
+  test('expone X-Request-Id, que si no el panel no puede leerlo', async ({ db }) => {
     expect(db).toBeDefined();
 
     const expuestas = await conLaApi(async (url) => {
@@ -92,7 +92,31 @@ describe('CORS', () => {
       return (respuesta.headers.get('access-control-expose-headers') ?? '').toLowerCase();
     });
 
-    expect(expuestas).toContain('etag');
+    expect(expuestas).toContain('x-request-id');
+  });
+
+  test('la lista de registros sin cambios llega entera y con el permiso', async ({
+    db,
+  }) => {
+    const negocio = await crearNegocio(db);
+
+    const respuestas = await conLaApi(async (url) => {
+      // Como la pide el panel: sin If-None-Match.
+      const pedir = () =>
+        fetch(`${url}/caja/registros`, {
+          headers: { origin: PANEL, authorization: `Bearer ${negocio.token}` },
+        });
+      return [await pedir(), await pedir()];
+    });
+
+    // Un 304 pasa por Vercel sin el permiso: el navegador lo descarta como un
+    // corte de red y el panel muestra "Sin conexion" con la api andando.
+    for (const respuesta of respuestas) {
+      expect(respuesta.status).toBe(200);
+      expect(respuesta.headers.get('access-control-allow-origin')).toBe(PANEL);
+      expect(respuesta.headers.get('cache-control')).toBe('no-store');
+      expect(await respuesta.json()).toEqual({ registros: [] });
+    }
   });
 
   test('un origen que no esta en la lista no recibe permiso', async ({ db }) => {

@@ -70,12 +70,8 @@ describe('opcionesDeCors', () => {
   it('nombra las cabeceras que el navegador no deja pasar solas', () => {
     const opciones = opcionesDeCors(PERMITIDOS);
     expect(opciones.allowedHeaders).toEqual(
-      expect.arrayContaining(['Authorization', 'Idempotency-Key', 'If-None-Match']),
+      expect.arrayContaining(['Authorization', 'Idempotency-Key']),
     );
-  });
-
-  it('expone ETag, que si no el panel no lo puede leer', () => {
-    expect(opcionesDeCors(PERMITIDOS).exposedHeaders).toContain('ETag');
   });
 
   it('expone X-Request-Id, para que el panel pueda mostrarlo en un error', () => {
@@ -86,7 +82,7 @@ describe('opcionesDeCors', () => {
     expect(opcionesDeCors(PERMITIDOS).credentials).toBe(false);
   });
 
-  it('cachea el preflight: con If-None-Match cada tres segundos, importa', () => {
+  it('cachea el preflight: con Authorization cada tres segundos, importa', () => {
     expect(opcionesDeCors(PERMITIDOS).maxAge).toBeGreaterThanOrEqual(3600);
   });
 

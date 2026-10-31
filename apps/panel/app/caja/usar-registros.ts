@@ -14,9 +14,9 @@ const INTERVALO_TRAS_TOPE_MS = 10_000;
 const CORTES_PARA_AVISAR = 2;
 
 /**
- * Los registros pendientes del local, consultados cada 3 segundos con
- * If-None-Match. Mientras la lista no cambie, la API contesta 304 y no viaja
- * nada.
+ * Los registros pendientes del local, consultados cada 3 segundos. La API
+ * manda la lista entera cada vez (ver `registrosPendientes`); si es igual a
+ * la anterior, no se toca el estado y la caja no se vuelve a dibujar.
  *
  * Con la pestana oculta no se consulta; al volver, se consulta en el acto.
  */
@@ -29,7 +29,8 @@ export function useRegistrosPendientes() {
 
   useEffect(() => {
     const controlador = new AbortController();
-    let etag: string | null = null;
+    /** La ultima lista recibida, serializada: para saber si cambio. */
+    let ultima: string | null = null;
     let temporizador: ReturnType<typeof setTimeout> | undefined;
     let enCurso = false;
     let cortes = 0;
@@ -43,7 +44,7 @@ export function useRegistrosPendientes() {
       if (enCurso || controlador.signal.aborted) return;
       if (document.visibilityState === 'hidden') return;
       enCurso = true;
-      const r = await registrosPendientes(etag, controlador.signal);
+      const r = await registrosPendientes(controlador.signal);
       enCurso = false;
       if (controlador.signal.aborted || (!r.ok && r.tipo === 'cancelado')) return;
 
@@ -51,8 +52,9 @@ export function useRegistrosPendientes() {
         cortes = 0;
         setConexion('en_linea');
         setProblema(null);
-        if (r.tipo === 'nuevos') {
-          etag = r.etag;
+        const serializada = JSON.stringify(r.datos.registros);
+        if (serializada !== ultima) {
+          ultima = serializada;
           const ids = new Set(r.datos.registros.map((x) => x.id));
           setLista(r.datos.registros);
           // Lo que se oculto a mano y la API ya no manda, deja de importar.

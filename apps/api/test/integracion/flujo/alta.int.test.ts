@@ -181,16 +181,18 @@ describe('POST /registros · el cliente se anota desde su teléfono', () => {
     expect(await contar(db, 'registro_pendiente')).toBe(20);
   });
 
-  test('la lista trae ETag y el panel que no cambió recibe 304', async ({ api, db }) => {
+  test('la lista que no cambió llega entera otra vez, nunca un 304', async ({
+    api,
+    db,
+  }) => {
     const negocio = await crearNegocio(db);
     await registrarse(api, await qrDe(db, negocio), '70124521');
 
     const primera = await api.registros(negocio.token);
-    const etiqueta = primera.cabeceras['etag'] ?? '';
-    const segunda = await api.registros(negocio.token, etiqueta);
+    const segunda = await api.registros(negocio.token);
 
-    expect(etiqueta).not.toBe('');
-    expect(segunda.estado).toBe(304);
+    expect(segunda.estado).toBe(200);
+    expect(segunda.cuerpo).toEqual(primera.cuerpo);
   });
 
   test('sin token de tablet no se puede mirar la lista', async ({ api, db }) => {

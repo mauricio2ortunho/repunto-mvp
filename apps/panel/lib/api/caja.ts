@@ -157,48 +157,27 @@ export function sellosRecientes(): Promise<Respuesta<SellosRecientes>> {
 }
 
 export type ConsultaDeRegistros =
-  | { ok: true; tipo: 'sin_cambios' }
-  /** `etag` es null si la API no lo manda o el navegador no deja leerlo. */
-  | { ok: true; tipo: 'nuevos'; datos: RegistrosPendientes; etag: string | null }
-  | Fallo
-  | { ok: false; tipo: 'cancelado' };
-
-let avisoDeEtagDado = false;
+  { ok: true; datos: RegistrosPendientes } | Fallo | { ok: false; tipo: 'cancelado' };
 
 /**
- * `GET /caja/registros` condicional. Mientras la lista no cambie, la API
- * contesta 304 sin cuerpo.
+ * `GET /caja/registros`, la lista entera cada vez.
  *
- * Si el ETag no se puede leer, todo sigue andando, pero cada consulta baja la
- * lista entera. Pasa cuando la API lo manda sin `Access-Control-Expose-Headers:
- * ETag`: el navegador lo esconde y no hay error que lo delate.
+ * Nunca condicional: Vercel le saca a los 304 el permiso de CORS, el
+ * navegador los descarta como un corte de red y la banda mostraba "Sin
+ * conexion" con la API andando. No agregar `If-None-Match`.
  */
 export async function registrosPendientes(
-  etag: string | null,
   senal?: AbortSignal,
 ): Promise<ConsultaDeRegistros> {
   const crudo = await pedirCrudo({
     metodo: 'GET',
     ruta: '/caja/registros',
-    ...(etag !== null && { cabeceras: { 'If-None-Match': etag } }),
     ...(senal !== undefined && { senal }),
   });
   if (crudo === 'cancelado') return { ok: false, tipo: 'cancelado' };
   if (crudo === 'sin_conexion' || crudo === 'tiempo') {
     return { ok: false, tipo: 'incierto', causa: crudo };
   }
-  if (crudo.estado === 304) return { ok: true, tipo: 'sin_cambios' };
-
   const r = interpretar(crudo, esquemaRegistrosPendientes);
-  if (!r.ok) return r;
-
-  const nuevoEtag = r.cabeceras.get('ETag');
-  if (nuevoEtag === null && !avisoDeEtagDado) {
-    avisoDeEtagDado = true;
-    console.warn(
-      '[repunto] GET /caja/registros llego sin ETag visible. Si la API lo manda, falta ' +
-        '`Access-Control-Expose-Headers: ETag`: sin eso el panel baja la lista entera cada 3 segundos.',
-    );
-  }
-  return { ok: true, tipo: 'nuevos', datos: r.datos, etag: nuevoEtag };
+  return r.ok ? { ok: true, datos: r.datos } : r;
 }

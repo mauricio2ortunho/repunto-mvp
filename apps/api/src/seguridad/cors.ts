@@ -9,13 +9,17 @@
  *
  * Tres cosas que no son obvias y que sin ellas el panel no anda:
  *
- *  - `Authorization`, `Idempotency-Key` e `If-None-Match` no estan en la lista
- *    blanca del navegador. Hay que nombrarlas o el preflight las rechaza.
- *  - `ETag` no se puede LEER desde JavaScript salvo que se exponga. Sin eso, el
- *    panel manda `If-None-Match` vacio para siempre y nunca recibe un 304: no
- *    se rompe nada visible, solo deja de funcionar el ahorro.
+ *  - `Authorization` e `Idempotency-Key` no estan en la lista blanca del
+ *    navegador. Hay que nombrarlas o el preflight las rechaza.
+ *  - Una cabecera de la respuesta no se puede LEER desde JavaScript salvo que
+ *    se exponga: `X-Request-Id`, hoy.
  *  - El preflight se cachea. Como cada consulta de la lista de registros lleva
- *    `If-None-Match`, sin cache el panel haria dos viajes cada tres segundos.
+ *    `Authorization`, sin cache el panel haria dos viajes cada tres segundos.
+ *
+ * Y una que no depende de este archivo: Vercel le saca el permiso a los 304.
+ * Un 304 llega al navegador sin `Access-Control-Allow-Origin` y se descarta
+ * como un corte de red. Por eso los frontends nunca piden en forma
+ * condicional: no mandan `If-None-Match` y usan `cache: 'no-store'`.
  */
 
 /** Un dia. El navegador recorta este numero a su maximo, y esta bien. */
@@ -105,10 +109,10 @@ export function opcionesDeCors(permitidos = origenesPermitidos()): OpcionesDeCor
       responder(null, origenPermitido(origen, permitidos));
     },
     methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Authorization', 'Content-Type', 'Idempotency-Key', 'If-None-Match'],
+    allowedHeaders: ['Authorization', 'Content-Type', 'Idempotency-Key'],
     // X-Request-Id: el panel lo puede mostrar en un error, y con el se
     // encuentra el pedido en el log y en la bitacora.
-    exposedHeaders: ['ETag', 'X-Request-Id'],
+    exposedHeaders: ['X-Request-Id'],
     credentials: false,
     maxAge: SEGUNDOS_DE_CACHE,
   };

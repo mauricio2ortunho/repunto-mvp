@@ -95,8 +95,8 @@ export async function pedirCrudo(
       method: pedido.metodo,
       headers: cabeceras,
       ...(pedido.cuerpo !== undefined && { body: JSON.stringify(pedido.cuerpo) }),
-      // Con If-None-Match puesto a mano, el navegador no usa su cache y deja
-      // ver el 304. Igual se aclara, para que nadie lo "optimice".
+      // Sin cache del navegador: revalidaria con If-None-Match, y un 304 que
+      // pasa por Vercel llega sin el permiso de CORS (ver registrosPendientes).
       cache: 'no-store',
       signal: controlador.signal,
     });

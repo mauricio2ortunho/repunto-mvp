@@ -397,15 +397,24 @@ se calcula por contraste y se elige blanco o negro. Nunca se deja elegir.
 
 **CORS.** Los frontends viven en otro origen que la API, así que el navegador
 bloquea las llamadas salvo que la API lo permita explícitamente. Tres cosas que
-hay que mantener si se agrega una cabecera: `Authorization`, `Idempotency-Key`
-e `If-None-Match` no están en la lista blanca del navegador y hay que
-nombrarlas; `ETag` no se puede leer desde JavaScript salvo que se exponga, y
-sin eso el panel nunca recibe un 304; y el preflight se cachea un día, porque
-la lista de registros se consulta cada tres segundos con `If-None-Match`.
+hay que mantener si se agrega una cabecera: `Authorization` e
+`Idempotency-Key` no están en la lista blanca del navegador y hay que
+nombrarlas; una cabecera de la respuesta, como `X-Request-Id`, no se puede
+leer desde JavaScript salvo que se exponga; y el preflight se cachea un día,
+porque la lista de registros se consulta cada tres segundos con
+`Authorization`.
+
+**Ningún pedido condicional.** Vercel le saca a los 304 el permiso de CORS: el
+navegador los descarta como un corte de red. Así el panel mostró "Sin conexión"
+con la API andando, porque la lista de registros iba con `If-None-Match` y
+ETag. Hoy viaja entera cada vez, y los frontends piden con `cache: 'no-store'`.
+No volver a agregar `If-None-Match` para ahorrar bytes.
 
 Lo peligroso de CORS es que **ningún test de la suite lo ve**: todos usan
 `fetch` desde Node, que lo ignora por completo. Por eso hay un test de
 preflight contra el handler que se despliega, y no contra una copia de prueba.
+Ni siquiera ese ve lo que hace Vercel en el camino: lo del 304 apareció recién
+en un navegador, contra staging.
 
 **Secretos.** `CLAVE_CIFRADO_SEMILLAS` son 32 bytes en base64 y cifra las
 semillas TOTP de los clientes en reposo (AES-256-GCM). Es distinta en cada
