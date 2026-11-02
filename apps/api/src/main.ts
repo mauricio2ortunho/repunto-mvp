@@ -6,6 +6,7 @@ import { NestFactory } from '@nestjs/core';
 import { ZONA_HORARIA } from '@repunto/dominio';
 
 import { AppModule } from './app.module';
+import { iniciarSentry } from './observabilidad/sentry';
 import { opcionesDeCors } from './seguridad/cors';
 
 const PUERTO_POR_DEFECTO = 3001;
@@ -14,6 +15,8 @@ async function bootstrap(): Promise<void> {
   // En local las variables viven en .env; en Railway ya vienen del entorno y
   // el archivo no existe. Las del entorno mandan: loadEnvFile no las pisa.
   if (existsSync('.env')) process.loadEnvFile('.env');
+  // Sin SENTRY_DSN en el .env, que es lo normal en local, no hace nada.
+  iniciarSentry();
 
   const app = await NestFactory.create(AppModule);
   // Los frontends viven en otro origen: sin esto el navegador bloquea todo.

@@ -5,6 +5,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from '../src/app.module';
+import { iniciarSentry } from '../src/observabilidad/sentry';
 import { opcionesDeCors } from '../src/seguridad/cors';
 
 /**
@@ -33,6 +34,8 @@ type Manejador = (peticion: IncomingMessage, respuesta: ServerResponse) => void;
 let arranque: Promise<Manejador> | undefined;
 
 async function arrancar(): Promise<Manejador> {
+  // Antes que Nest, para que un error del arranque tambien llegue.
+  iniciarSentry();
   const app = await NestFactory.create(AppModule, { logger: ['error', 'warn'] });
   // La misma configuracion que el servidor de siempre: si se configurara en un
   // solo lado, el despliegue tendria un CORS distinto al de desarrollo.

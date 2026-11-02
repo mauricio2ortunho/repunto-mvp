@@ -86,11 +86,11 @@ Importar `mauricio2ortunho/repunto-mvp` tres veces, cambiando solo la carpeta
 raíz. Cada `vercel.json` ya trae el comando de build correcto, que instala
 desde la raíz del monorepo y compila los paquetes compartidos antes de la app.
 
-| Proyecto          | Root Directory | Framework | Variables                                                                                     |
-| ----------------- | -------------- | --------- | --------------------------------------------------------------------------------------------- |
-| `repunto-api`     | `apps/api`     | Other     | `DATABASE_URL`, `CLAVE_CIFRADO_SEMILLAS`, `ORIGENES_PERMITIDOS`, `APP_VERSION`, `CRON_SECRET` |
-| `repunto-cliente` | `apps/cliente` | Next.js   | `NEXT_PUBLIC_API_URL`                                                                         |
-| `repunto-panel`   | `apps/panel`   | Next.js   | `NEXT_PUBLIC_API_URL`                                                                         |
+| Proyecto          | Root Directory | Framework | Variables                                                                                                                         |
+| ----------------- | -------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `repunto-api`     | `apps/api`     | Other     | `DATABASE_URL`, `CLAVE_CIFRADO_SEMILLAS`, `ORIGENES_PERMITIDOS`, `APP_VERSION`, `CRON_SECRET`, `SENTRY_DSN`, `SENTRY_ENVIRONMENT` |
+| `repunto-cliente` | `apps/cliente` | Next.js   | `NEXT_PUBLIC_API_URL`                                                                                                             |
+| `repunto-panel`   | `apps/panel`   | Next.js   | `NEXT_PUBLIC_API_URL`                                                                                                             |
 
 Detalles que importan:
 
@@ -115,6 +115,10 @@ Detalles que importan:
   hay que tocarla en el panel de Vercel. Cada salto entre región de función y región de base son
   decenas de milisegundos por consulta, y el sellado hace varias.
 - `NEXT_PUBLIC_API_URL` es la URL del proyecto de la API, sin barra final.
+- **`SENTRY_DSN`** es el DSN del proyecto `repunto-api` en Sentry (Settings →
+  Client Keys). No es un secreto. Sin ella la API anda igual, pero sin
+  avisar de sus errores. **`SENTRY_ENVIRONMENT`** dice de qué entorno es cada
+  error: `staging` o `produccion`.
 - **No hay token de tablet en el entorno.** Cada tablet obtiene el suyo en
   `/vincular` (sección 3b). Si en el proyecto del panel quedó cargada
   `NEXT_PUBLIC_TOKEN_TABLET` de antes, el build la ignora —solo `next dev` la

@@ -4,6 +4,7 @@ import type { AccionDeCaja } from '../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
 import { resultadoDelError } from './codigo.interceptor';
 import { contextoActual } from './contexto';
+import { reportar } from './sentry';
 
 /** Lo que la tarea nocturna conserva de la bitacora. */
 export const DIAS_DE_BITACORA = 90;
@@ -18,7 +19,7 @@ export const DIAS_DE_BITACORA = 90;
  * anotando a medida que leia.
  *
  * Que la bitacora falle no puede tumbar el pedido: el sello ya se otorgo, o
- * el rechazo ya se decidio. Se avisa en el log y se sigue.
+ * el rechazo ya se decidio. Se avisa en el log y a Sentry, y se sigue.
  */
 @Injectable()
 export class BitacoraDeCaja {
@@ -66,6 +67,7 @@ export class BitacoraDeCaja {
           error: error instanceof Error ? error.message : String(error),
         }),
       );
+      await reportar(error);
     }
   }
 }

@@ -17,6 +17,7 @@
     "@prisma/client": "^7.10.0",
     "@repunto/contratos": "workspace:*",
     "@repunto/dominio": "workspace:*",
+    "@sentry/node": "11.10.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },
