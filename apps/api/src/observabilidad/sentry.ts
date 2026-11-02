@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/node';
 import type { ErrorEvent, NodeOptions } from '@sentry/node';
+import { tacharDatos } from '@repunto/contratos';
 
 import { contextoActual } from './contexto';
 
@@ -127,18 +128,4 @@ export function limpiarEvento(evento: ErrorEvent): ErrorEvent {
     if (excepcion.value !== undefined) excepcion.value = tacharDatos(excepcion.value);
   }
   return evento;
-}
-
-/**
- * Tacha el codigo del cliente (`K7Q4M-418329`, con o sin guion) y toda tira
- * de seis o mas digitos suelta, con o sin `+`: telefonos, el TOTP solo.
- * Respeta los UUID, cuyos tramos van pegados a guiones y letras: son los ids
- * que sirven para buscar.
- */
-export function tacharDatos(texto: string): string {
-  // Primero los numeros: un telefono de once digitos tambien tiene la forma
-  // de un codigo sin guion, y quedaria con el + suelto.
-  return texto
-    .replace(/(?<![\w-])\+?\d{6,}(?![\w-])/g, '[numero]')
-    .replace(/\b[A-Za-z0-9]{5}[-\s]?\d{6}\b/g, '[codigo]');
 }

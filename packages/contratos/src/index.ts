@@ -95,3 +95,5 @@ export type {
   RegistroRespuesta,
   TarjetaDelCliente,
 } from './cliente';
+
+export { tacharDatos } from './privacidad';

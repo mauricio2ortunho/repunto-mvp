@@ -90,7 +90,7 @@ desde la raíz del monorepo y compila los paquetes compartidos antes de la app.
 | ----------------- | -------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | `repunto-api`     | `apps/api`     | Other     | `DATABASE_URL`, `CLAVE_CIFRADO_SEMILLAS`, `ORIGENES_PERMITIDOS`, `APP_VERSION`, `CRON_SECRET`, `SENTRY_DSN`, `SENTRY_ENVIRONMENT` |
 | `repunto-cliente` | `apps/cliente` | Next.js   | `NEXT_PUBLIC_API_URL`                                                                                                             |
-| `repunto-panel`   | `apps/panel`   | Next.js   | `NEXT_PUBLIC_API_URL`                                                                                                             |
+| `repunto-panel`   | `apps/panel`   | Next.js   | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_ENVIRONMENT`                                                 |
 
 Detalles que importan:
 
@@ -119,6 +119,10 @@ Detalles que importan:
   Client Keys). No es un secreto. Sin ella la API anda igual, pero sin
   avisar de sus errores. **`SENTRY_ENVIRONMENT`** dice de qué entorno es cada
   error: `staging` o `produccion`.
+- **En los frontends son `NEXT_PUBLIC_SENTRY_DSN` y
+  `NEXT_PUBLIC_SENTRY_ENVIRONMENT`**, cada una con el DSN de su propio
+  proyecto en Sentry. Se leen al compilar, así que cambiarlas exige
+  redesplegar.
 - **No hay token de tablet en el entorno.** Cada tablet obtiene el suyo en
   `/vincular` (sección 3b). Si en el proyecto del panel quedó cargada
   `NEXT_PUBLIC_TOKEN_TABLET` de antes, el build la ignora —solo `next dev` la

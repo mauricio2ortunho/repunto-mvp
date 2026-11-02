@@ -1,6 +1,7 @@
 import { esquemaError, mensajeParaElCajero, type ErrorDeLaApi } from '@repunto/contratos';
 import { urlDeLaApi } from '../configuracion';
 import { credencialDeLaTablet } from '../credencial';
+import { avisarContratoRoto } from '../sentry';
 
 /**
  * Transporte del panel contra la API: credencial, idempotencia, tiempo maximo
@@ -133,6 +134,7 @@ export function interpretar<T>(crudo: Crudo, esquema: Esquema<T>): Respuesta<T> 
     const valido = esquema.safeParse(cuerpo);
     if (valido.success) return { ok: true, datos: valido.data, cabeceras };
     console.error('[repunto] La respuesta no cumple el contrato.', valido.error);
+    avisarContratoRoto(valido.error);
     return { ok: false, tipo: 'incierto', causa: 'respuesta_ilegible' };
   }
 
