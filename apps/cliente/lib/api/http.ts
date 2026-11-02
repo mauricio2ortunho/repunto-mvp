@@ -5,6 +5,7 @@ import {
 } from '@repunto/contratos';
 
 import { urlDeLaApi } from '../configuracion';
+import { avisarContratoRoto } from '../sentry';
 
 /**
  * Transporte de la app contra la api. Toda respuesta termina en uno de tres
@@ -103,15 +104,18 @@ export async function pedir<T>(
       cuerpo = texto === '' ? undefined : JSON.parse(texto);
     } catch (error) {
       if (porTiempo) return incierto('tiempo');
-      if (error instanceof SyntaxError) return incierto('respuesta_ilegible');
+      if (error instanceof SyntaxError) {
+        avisarContratoRoto(error);
+        return incierto('respuesta_ilegible');
+      }
       return incierto('sin_conexion');
     }
 
     if (respuesta.ok) {
       const valido = pedido.esquema.safeParse(cuerpo);
-      return valido.success
-        ? { ok: true, datos: valido.data }
-        : incierto('respuesta_ilegible');
+      if (valido.success) return { ok: true, datos: valido.data };
+      avisarContratoRoto(valido.error);
+      return incierto('respuesta_ilegible');
     }
     if (respuesta.status >= 500) return incierto('servidor');
 

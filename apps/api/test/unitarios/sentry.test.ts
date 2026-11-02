@@ -6,41 +6,10 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { conContexto } from '../../src/observabilidad/contexto';
 import { esInesperado } from '../../src/observabilidad/errores.filter';
 import {
-  limpiarEvento,
   opcionesDeSentry,
   reportar,
   vigilarTarea,
 } from '../../src/observabilidad/sentry';
-
-describe('limpiarEvento', () => {
-  it('del pedido deja solo el metodo y la ruta, sin query', () => {
-    const evento = limpiarEvento({
-      type: undefined,
-      request: {
-        method: 'POST',
-        url: 'https://api/caja/sellos?x=1',
-        headers: { authorization: 'Bearer secreto', 'idempotency-key': 'clave' },
-        data: { codigo: 'K7Q4M-418329' },
-        query_string: 'x=1',
-        cookies: { a: 'b' },
-        env: { REMOTE_ADDR: '1.2.3.4' },
-      },
-      user: { ip_address: '1.2.3.4' },
-    });
-
-    expect(evento.request).toEqual({ method: 'POST', url: 'https://api/caja/sellos' });
-    expect(evento.user).toBeUndefined();
-  });
-
-  it('tacha los mensajes de las excepciones', () => {
-    const evento = limpiarEvento({
-      type: undefined,
-      exception: { values: [{ type: 'Error', value: 'duplicado +59170124521' }] },
-    });
-
-    expect(evento.exception?.values?.[0]?.value).toBe('duplicado [numero]');
-  });
-});
 
 describe('esInesperado', () => {
   it('un rechazo con su codigo es la api haciendo su trabajo', () => {

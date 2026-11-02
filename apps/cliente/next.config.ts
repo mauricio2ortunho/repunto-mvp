@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { withSentryConfig } from '@sentry/nextjs/config';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -7,4 +8,31 @@ const nextConfig: NextConfig = {
   transpilePackages: ['@repunto/ui'],
 };
 
-export default nextConfig;
+/**
+ * Sentry en el build (lib/sentry.ts es el del navegador). Lo que importa aca
+ * es lo que NO entra: sin esto el bundle crece con medicion de rendimiento y
+ * grabacion de sesion que no se usan, y es lo que baja el telefono del
+ * cliente, muchas veces con datos moviles.
+ *
+ * La app no hace nada del lado del servidor —las paginas son estaticas y
+ * hablan con la api desde el navegador—, asi que no se instrumenta.
+ */
+export default withSentryConfig(nextConfig, {
+  org: 'joel-04',
+  project: 'repunto-cliente',
+  silent: true,
+  telemetry: false,
+  sourcemaps: { disable: true },
+  bundleSizeOptimizations: {
+    excludeDebugStatements: true,
+    excludeTracing: true,
+    excludeReplayIframe: true,
+    excludeReplayShadowDom: true,
+    excludeReplayWorker: true,
+  },
+  webpack: {
+    autoInstrumentServerFunctions: false,
+    autoInstrumentMiddleware: false,
+    autoInstrumentAppDirectory: false,
+  },
+});

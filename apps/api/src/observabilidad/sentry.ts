@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/node';
-import type { ErrorEvent, NodeOptions } from '@sentry/node';
-import { tacharDatos } from '@repunto/contratos';
+import type { NodeOptions } from '@sentry/node';
+import { limpiarEvento } from '@repunto/contratos';
 
 import { contextoActual } from './contexto';
 
@@ -107,25 +107,4 @@ export async function vigilarTarea<T>(
   } finally {
     await Sentry.flush(ESPERA_DEL_ENVIO_MS);
   }
-}
-
-/**
- * Lo ultimo antes de salir del proceso. Saca lo que Sentry junta solo del
- * pedido y tacha numeros largos en los mensajes: un error de Postgres puede
- * citar la fila que choco, telefono incluido.
- */
-export function limpiarEvento(evento: ErrorEvent): ErrorEvent {
-  if (evento.request !== undefined) {
-    const { method, url } = evento.request;
-    evento.request = {
-      ...(method !== undefined && { method }),
-      ...(url !== undefined && { url: url.split('?')[0] }),
-    };
-  }
-  delete evento.user;
-  if (evento.message !== undefined) evento.message = tacharDatos(evento.message);
-  for (const excepcion of evento.exception?.values ?? []) {
-    if (excepcion.value !== undefined) excepcion.value = tacharDatos(excepcion.value);
-  }
-  return evento;
 }

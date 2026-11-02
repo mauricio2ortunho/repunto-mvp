@@ -96,4 +96,10 @@ export type {
   TarjetaDelCliente,
 } from './cliente';
 
-export { tacharDatos } from './privacidad';
+export {
+  limpiarEvento,
+  limpiarMiga,
+  problemasDelEsquema,
+  tacharDatos,
+} from './privacidad';
+export type { EventoDeError, MigaDeError } from './privacidad';

@@ -1,6 +1,5 @@
-import { tacharDatos } from '@repunto/contratos';
+import { limpiarEvento, limpiarMiga, problemasDelEsquema } from '@repunto/contratos';
 import * as Sentry from '@sentry/nextjs';
-import type { Breadcrumb, ErrorEvent } from '@sentry/nextjs';
 
 /**
  * Sentry en el panel (CLAUDE.md, seccion 8): los errores que se dan en el
@@ -53,40 +52,4 @@ export function avisarContratoRoto(error: unknown): void {
     level: 'error',
     extra: { problemas: problemasDelEsquema(error) },
   });
-}
-
-export function problemasDelEsquema(error: unknown): string[] {
-  if (typeof error !== 'object' || error === null || !('issues' in error)) return [];
-  const { issues } = error;
-  if (!Array.isArray(issues)) return [];
-  return issues.map((problema: unknown) => {
-    if (typeof problema !== 'object' || problema === null) return '?';
-    const camino =
-      'path' in problema && Array.isArray(problema.path) ? problema.path : [];
-    const codigo = 'code' in problema ? String(problema.code) : '?';
-    return `${camino.join('.') || '(raiz)'}: ${codigo}`;
-  });
-}
-
-export function limpiarEvento(evento: ErrorEvent): ErrorEvent {
-  if (evento.request !== undefined) {
-    const { url } = evento.request;
-    evento.request = url === undefined ? {} : { url: url.split('?')[0] };
-  }
-  delete evento.user;
-  if (evento.message !== undefined) evento.message = tacharDatos(evento.message);
-  for (const excepcion of evento.exception?.values ?? []) {
-    if (excepcion.value !== undefined) excepcion.value = tacharDatos(excepcion.value);
-  }
-  return evento;
-}
-
-/** Cada miga es un mensaje de la consola o un pedido: sin query y tachado. */
-export function limpiarMiga(miga: Breadcrumb): Breadcrumb {
-  if (miga.message !== undefined) miga.message = tacharDatos(miga.message);
-  const url: unknown = miga.data?.['url'];
-  if (typeof url === 'string' && miga.data !== undefined) {
-    miga.data['url'] = url.split('?')[0];
-  }
-  return miga;
 }

@@ -89,7 +89,7 @@ desde la raíz del monorepo y compila los paquetes compartidos antes de la app.
 | Proyecto          | Root Directory | Framework | Variables                                                                                                                         |
 | ----------------- | -------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | `repunto-api`     | `apps/api`     | Other     | `DATABASE_URL`, `CLAVE_CIFRADO_SEMILLAS`, `ORIGENES_PERMITIDOS`, `APP_VERSION`, `CRON_SECRET`, `SENTRY_DSN`, `SENTRY_ENVIRONMENT` |
-| `repunto-cliente` | `apps/cliente` | Next.js   | `NEXT_PUBLIC_API_URL`                                                                                                             |
+| `repunto-cliente` | `apps/cliente` | Next.js   | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_ENVIRONMENT`                                                 |
 | `repunto-panel`   | `apps/panel`   | Next.js   | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_ENVIRONMENT`                                                 |
 
 Detalles que importan:
