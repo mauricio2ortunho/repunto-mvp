@@ -318,7 +318,24 @@ como mucho un día de filas de más.
 El objetivo del proyecto es que nada se rompa en silencio. Tres cosas, no
 negociables:
 
-1. **Sentry** en api, cliente y panel, con alerta a WhatsApp o correo.
+1. **Sentry** en api, cliente y panel, con alerta por correo (org `joel-04`,
+   un proyecto por app). Solo arranca con su DSN en el entorno: en local y
+   en los tests no manda nada.
+   - **Va lo inesperado**: en la api, lo que termina en 5xx o no es una
+     respuesta armada (`FiltroDeErrores`), y la bitácora que no pudo
+     escribir; en los frontends, el error sin manejar, la pantalla que
+     revienta (`global-error.tsx`) y la respuesta 2xx que no cumple el
+     contrato. Un rechazo con código no es un error: es la bitácora.
+   - **No va nada del pedido**: ni cuerpo, ni cabeceras, ni query, ni IP, ni
+     clics o tecleo en el navegador, y los mensajes van con teléfonos y
+     códigos tachados. La regla está una sola vez, en
+     `packages/contratos/src/privacidad.ts`, para las tres apps. Sí van el
+     `request_id` y los ids del pedido, para cruzarlo con la bitácora.
+   - **La tarea nocturna avisa al empezar y al terminar** (`vigilarTarea`):
+     si una noche no corre, Sentry manda el correo.
+   - **Nada de medir rendimiento ni grabar sesiones.** En serverless suma
+     tiempo a cada pedido, y en los frontends `withSentryConfig` saca ese
+     código del bundle: Sentry cuesta 49 kB por página y no 100.
 2. **Log estructurado** en JSON con `request_id`, y en el flujo de sellado también
    `cliente_id`, `local_id`, `turno_id`. Debe poder responder "qué pasó con el
    sello de Juan el martes" sin adivinar.
