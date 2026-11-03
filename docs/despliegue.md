@@ -89,8 +89,8 @@ desde la raíz del monorepo y compila los paquetes compartidos antes de la app.
 | Proyecto          | Root Directory | Framework | Variables                                                                                                                         |
 | ----------------- | -------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | `repunto-api`     | `apps/api`     | Other     | `DATABASE_URL`, `CLAVE_CIFRADO_SEMILLAS`, `ORIGENES_PERMITIDOS`, `APP_VERSION`, `CRON_SECRET`, `SENTRY_DSN`, `SENTRY_ENVIRONMENT` |
-| `repunto-cliente` | `apps/cliente` | Next.js   | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_ENVIRONMENT`                                                 |
-| `repunto-panel`   | `apps/panel`   | Next.js   | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_ENVIRONMENT`                                                 |
+| `repunto-cliente` | `apps/cliente` | Next.js   | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_ENVIRONMENT`, `SENTRY_AUTH_TOKEN`                            |
+| `repunto-panel`   | `apps/panel`   | Next.js   | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_ENVIRONMENT`, `SENTRY_AUTH_TOKEN`                            |
 
 Detalles que importan:
 
@@ -123,6 +123,14 @@ Detalles que importan:
   `NEXT_PUBLIC_SENTRY_ENVIRONMENT`**, cada una con el DSN de su propio
   proyecto en Sentry. Se leen al compilar, así que cambiarlas exige
   redesplegar.
+- **`SENTRY_AUTH_TOKEN` es un secreto**, y va marcada como Sensitive. Es un
+  token de organización de Sentry (Settings → Developer Settings →
+  Organization Tokens), que solo puede crear versiones y subir source maps.
+  Con ella, cada build sube los mapas del código a Sentry y los borra antes
+  de publicar: los errores muestran archivo y línea reales, y nadie de afuera
+  descarga el código fuente. Sin ella el build anda igual y los errores
+  llegan con el código compilado. El mismo token sirve para los dos
+  frontends.
 - **No hay token de tablet en el entorno.** Cada tablet obtiene el suyo en
   `/vincular` (sección 3b). Si en el proyecto del panel quedó cargada
   `NEXT_PUBLIC_TOKEN_TABLET` de antes, el build la ignora —solo `next dev` la

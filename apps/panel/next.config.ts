@@ -15,13 +15,18 @@ const nextConfig: NextConfig = {
  *
  * El panel no hace nada del lado del servidor —las paginas son estaticas y
  * hablan con la api desde el navegador—, asi que no se instrumenta.
+ *
+ * Los source maps se suben a Sentry al compilar, para que un error diga
+ * archivo y linea del codigo y no `491-e96395.js:61:6336`, y se borran antes
+ * de publicar: nadie de afuera los descarga. Suben solo si existe
+ * `SENTRY_AUTH_TOKEN` (en Vercel); sin el, el build sigue igual y no sube nada.
  */
 export default withSentryConfig(nextConfig, {
   org: 'joel-04',
   project: 'repunto-panel',
   silent: true,
   telemetry: false,
-  sourcemaps: { disable: true },
+  sourcemaps: { deleteSourcemapsAfterUpload: true },
   bundleSizeOptimizations: {
     excludeDebugStatements: true,
     excludeTracing: true,
