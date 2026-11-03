@@ -131,6 +131,12 @@ Detalles que importan:
   descarga el código fuente. Sin ella el build anda igual y los errores
   llegan con el código compilado. El mismo token sirve para los dos
   frontends.
+- **Turborepo filtra las variables del build.** Vercel compila con
+  `turbo run build`, en modo estricto: al build solo llegan las
+  `NEXT_PUBLIC_*` y las que `turbo.json` declara. `SENTRY_AUTH_TOKEN` está
+  en `passThroughEnv`; sin eso Vercel la tenía cargada y el build no la veía,
+  sin ningún error. Toda variable nueva que lea el build y no empiece con
+  `NEXT_PUBLIC_` va ahí.
 - **No hay token de tablet en el entorno.** Cada tablet obtiene el suyo en
   `/vincular` (sección 3b). Si en el proyecto del panel quedó cargada
   `NEXT_PUBLIC_TOKEN_TABLET` de antes, el build la ignora —solo `next dev` la
