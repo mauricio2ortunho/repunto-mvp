@@ -251,6 +251,20 @@ aparte.
 
 Las tarjetas y el progreso deben verse sin conexión. El código no.
 
+**App del cliente, "Dónde juntar sellos".** El directorio de los negocios
+adheridos, agrupados por rubro: logo, nombre, la promo vigente ("10 sellos →
+un café gratis") y nombre y dirección de cada local abierto. Aparecen solo los
+negocios activos, con programa vigente y al menos un local abierto: nunca se
+manda a alguien a un local donde la caja le respondería que la promo no está
+configurada. Donde el cliente ya tiene tarjeta, lo dice. Se llega desde el
+inicio, tenga o no tarjetas, y se ve sin conexión.
+
+Es para mirar, no para anotarse: no tiene botón de alta, y la api nunca
+publica el QR de un local. El alta exige estar frente al mostrador; si se
+pudiera elegir el local desde la lista, cualquiera se anotaría desde su casa
+con el teléfono de otro (CLAUDE.md, sección 15). La condición del sello no se
+muestra: cambia cuando el dueño quiere, y se ve en el detalle de la tarjeta.
+
 **Panel de caja, lista de registros.** Nombre y los últimos cuatro dígitos del
 teléfono, en grande. Con tres personas registrándose a la vez, el cajero
 pregunta "¿terminado en 4521?" antes de confirmar; sin eso confirma la fila
