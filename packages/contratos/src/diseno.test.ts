@@ -6,14 +6,17 @@ import {
   ICONO_DE_SELLO_POR_DEFECTO,
   PLANTILLAS_DE_TARJETA,
   PLANTILLA_DE_TARJETA_POR_DEFECTO,
+  RUBROS_DE_NEGOCIO,
   TEXTO_SOBRE_CLARO,
   TEXTO_SOBRE_OSCURO,
+  TITULOS_DE_RUBRO,
   colorDeTextoSobre,
   contrasteEntre,
   esColorHex,
   esIconoDeSello,
   iconoDeSelloDe,
   plantillaDeTarjetaDe,
+  tituloDeRubro,
 } from './diseno';
 
 describe('contrasteEntre', () => {
@@ -117,5 +120,19 @@ describe('los valores de diseño', () => {
   it('no hay valores repetidos', () => {
     expect(new Set(ICONOS_DE_SELLO).size).toBe(ICONOS_DE_SELLO.length);
     expect(new Set(PLANTILLAS_DE_TARJETA).size).toBe(PLANTILLAS_DE_TARJETA.length);
+  });
+});
+
+describe('los rubros', () => {
+  it('cada rubro tiene su nombre en pantalla', () => {
+    expect(Object.keys(TITULOS_DE_RUBRO).sort()).toEqual([...RUBROS_DE_NEGOCIO].sort());
+  });
+
+  it('un rubro conocido se nombra con su titulo', () => {
+    expect(tituloDeRubro('estetica')).toBe('Estética y uñas');
+  });
+
+  it('uno que la app no conoce cae en "Otros"', () => {
+    expect(tituloDeRubro('veterinaria')).toBe('Otros');
   });
 });

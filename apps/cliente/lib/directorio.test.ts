@@ -1,7 +1,7 @@
 import type { NegocioDelDirectorio } from '@repunto/contratos';
 import { describe, expect, it } from 'vitest';
 
-import { agruparPorRubro, promoDe, tituloDeRubro } from './directorio';
+import { agruparPorRubro, promoDe } from './directorio';
 
 function negocio(id: string, categoria: string): NegocioDelDirectorio {
   return {
@@ -20,15 +20,23 @@ function negocio(id: string, categoria: string): NegocioDelDirectorio {
 }
 
 describe('agruparPorRubro', () => {
-  it('agrupa por categoria respetando el orden de la api', () => {
+  it('agrupa por rubro, en el orden de la lista, y respeta el orden de los negocios', () => {
+    // Asi llegan de la api: por categoria en orden alfabetico, 'otro' antes
+    // que 'panaderia'.
     const rubros = agruparPorRubro(
-      [negocio('a', 'cafe'), negocio('b', 'cafe'), negocio('c', 'panaderia')],
+      [
+        negocio('a', 'cafe'),
+        negocio('b', 'cafe'),
+        negocio('x', 'otro'),
+        negocio('c', 'panaderia'),
+      ],
       new Set(),
     );
 
     expect(rubros.map((r) => [r.titulo, r.negocios.map((n) => n.negocio.id)])).toEqual([
       ['Cafeterías', ['a', 'b']],
-      ['Panaderías', ['c']],
+      ['Panaderías y pastelerías', ['c']],
+      ['Otros', ['x']],
     ]);
   });
 
@@ -44,11 +52,16 @@ describe('agruparPorRubro', () => {
   it('sin negocios, ningun rubro', () => {
     expect(agruparPorRubro([], new Set())).toEqual([]);
   });
-});
 
-describe('tituloDeRubro', () => {
-  it('un rubro desconocido se muestra con su nombre, sin romperse', () => {
-    expect(tituloDeRubro('veterinaria')).toBe('Veterinaria');
+  it('un rubro que la app no conoce va a "Otros", junto con los de "otro"', () => {
+    const rubros = agruparPorRubro(
+      [negocio('a', 'otro'), negocio('b', 'veterinaria')],
+      new Set(),
+    );
+
+    expect(rubros.map((r) => [r.titulo, r.negocios.map((n) => n.negocio.id)])).toEqual([
+      ['Otros', ['a', 'b']],
+    ]);
   });
 });
 

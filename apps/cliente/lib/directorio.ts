@@ -1,4 +1,9 @@
-import type { NegocioDelDirectorio } from '@repunto/contratos';
+import {
+  type NegocioDelDirectorio,
+  RUBROS_DE_NEGOCIO,
+  esRubroDeNegocio,
+  tituloDeRubro,
+} from '@repunto/contratos';
 
 /**
  * Como se arma la pantalla "Dónde juntar sellos" a partir de `GET /negocios`.
@@ -19,28 +24,10 @@ export interface RubroDelDirectorio {
 }
 
 /**
- * PROVISIONAL: `negocio.categoria` es texto libre hasta que el panel de
- * administracion fije la lista. Un rubro que no esta aca se muestra con su
- * propio nombre, en mayuscula, en lugar de romperse.
- */
-const TITULOS: Readonly<Record<string, string>> = {
-  cafe: 'Cafeterías',
-  panaderia: 'Panaderías',
-  heladeria: 'Heladerías',
-  restaurante: 'Restaurantes',
-  peluqueria: 'Peluquerías',
-  barberia: 'Barberías',
-};
-
-export function tituloDeRubro(categoria: string): string {
-  const conocido = TITULOS[categoria];
-  if (conocido !== undefined) return conocido;
-  return categoria.charAt(0).toLocaleUpperCase('es') + categoria.slice(1);
-}
-
-/**
- * Agrupa respetando el orden en que llegan, que ya viene por categoria y
- * nombre. `conTarjeta` son los ids de los negocios de las tarjetas del
+ * Agrupa por rubro, con los rubros en el orden de `RUBROS_DE_NEGOCIO` —asi
+ * "Otros" queda al final— y los negocios de cada uno en el orden en que
+ * llegan, que ya viene por nombre. Un rubro que la app no conoce cae en
+ * "otro". `conTarjeta` son los ids de los negocios de las tarjetas del
  * cliente; sin sesion, vacio.
  */
 export function agruparPorRubro(
@@ -49,18 +36,17 @@ export function agruparPorRubro(
 ): RubroDelDirectorio[] {
   const rubros: RubroDelDirectorio[] = [];
   for (const negocio of negocios) {
-    let rubro = rubros.find((r) => r.categoria === negocio.categoria);
+    const categoria = esRubroDeNegocio(negocio.categoria) ? negocio.categoria : 'otro';
+    let rubro = rubros.find((r) => r.categoria === categoria);
     if (rubro === undefined) {
-      rubro = {
-        categoria: negocio.categoria,
-        titulo: tituloDeRubro(negocio.categoria),
-        negocios: [],
-      };
+      rubro = { categoria, titulo: tituloDeRubro(categoria), negocios: [] };
       rubros.push(rubro);
     }
     rubro.negocios.push({ negocio, tieneTarjeta: conTarjeta.has(negocio.id) });
   }
-  return rubros;
+  const posicion = (categoria: string) =>
+    (RUBROS_DE_NEGOCIO as readonly string[]).indexOf(categoria);
+  return rubros.sort((a, b) => posicion(a.categoria) - posicion(b.categoria));
 }
 
 /** "10 sellos → Un café gratis". */

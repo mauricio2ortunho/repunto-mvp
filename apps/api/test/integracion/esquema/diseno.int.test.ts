@@ -1,6 +1,10 @@
 import { describe, expect } from 'vitest';
 
-import { ICONOS_DE_SELLO, PLANTILLAS_DE_TARJETA } from '@repunto/contratos';
+import {
+  ICONOS_DE_SELLO,
+  PLANTILLAS_DE_TARJETA,
+  RUBROS_DE_NEGOCIO,
+} from '@repunto/contratos';
 
 import { type Db, esperarRechazo, test } from '../base';
 
@@ -40,6 +44,21 @@ describe('los valores de diseño de contratos y los de la base', () => {
     const enLaBase = await valoresDelCheck(db, 'negocio_plantilla_tarjeta_chk');
 
     expect([...enLaBase].sort()).toEqual([...PLANTILLAS_DE_TARJETA].sort());
+  });
+
+  test('`categoria`: la lista de rubros es la misma que el CHECK', async ({ db }) => {
+    const enLaBase = await valoresDelCheck(db, 'negocio_categoria_chk');
+
+    expect([...enLaBase].sort()).toEqual([...RUBROS_DE_NEGOCIO].sort());
+  });
+
+  test('un rubro que no esta en la lista lo rechaza la base', async ({ db }) => {
+    await esperarRechazo(
+      db,
+      'negocio_categoria_chk',
+      `INSERT INTO negocio (nombre, categoria, color_principal, plantilla_tarjeta, icono_sello)
+       VALUES ('Prueba', 'Cafeteria', '#1A2B3C', 'clasica', 'cafe')`,
+    );
   });
 
   test('un icono que no esta en la lista lo rechaza la base', async ({ db }) => {

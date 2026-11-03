@@ -57,17 +57,26 @@ export {
   ICONO_DE_SELLO_POR_DEFECTO,
   PLANTILLAS_DE_TARJETA,
   PLANTILLA_DE_TARJETA_POR_DEFECTO,
+  RUBROS_DE_NEGOCIO,
   TEXTO_SOBRE_CLARO,
   TEXTO_SOBRE_OSCURO,
+  TITULOS_DE_RUBRO,
   colorDeTextoSobre,
   contrasteEntre,
   esColorHex,
   esIconoDeSello,
   esPlantillaDeTarjeta,
+  esRubroDeNegocio,
   iconoDeSelloDe,
   plantillaDeTarjetaDe,
+  tituloDeRubro,
 } from './diseno';
-export type { ColorDeTexto, IconoDeSello, PlantillaDeTarjeta } from './diseno';
+export type {
+  ColorDeTexto,
+  IconoDeSello,
+  PlantillaDeTarjeta,
+  RubroDeNegocio,
+} from './diseno';
 
 export {
   CODIGOS_DE_ERROR_DEL_CLIENTE,

@@ -54,6 +54,55 @@ export function esPlantillaDeTarjeta(valor: string): valor is PlantillaDeTarjeta
   return (PLANTILLAS_DE_TARJETA as readonly string[]).includes(valor);
 }
 
+/**
+ * El rubro del negocio (`negocio.categoria`): agrupa el directorio de la app
+ * y es el desplegable del alta. La base lo restringe con
+ * `negocio_categoria_chk`, y el mismo test que cuida los iconos compara las
+ * dos listas. "otro" existe para no tener que inventar un rubro a la fuerza.
+ */
+export const RUBROS_DE_NEGOCIO = [
+  'cafe',
+  'panaderia',
+  'heladeria',
+  'restaurante',
+  'comida_rapida',
+  'peluqueria',
+  'barberia',
+  'estetica',
+  'lavanderia',
+  'mascotas',
+  'otro',
+] as const;
+
+export type RubroDeNegocio = (typeof RUBROS_DE_NEGOCIO)[number];
+
+/** Como se nombra cada rubro en pantalla, el mismo en el panel y en la app. */
+export const TITULOS_DE_RUBRO: Readonly<Record<RubroDeNegocio, string>> = {
+  cafe: 'Cafeterías',
+  panaderia: 'Panaderías y pastelerías',
+  heladeria: 'Heladerías',
+  restaurante: 'Restaurantes',
+  comida_rapida: 'Comida rápida',
+  peluqueria: 'Peluquerías',
+  barberia: 'Barberías',
+  estetica: 'Estética y uñas',
+  lavanderia: 'Lavanderías',
+  mascotas: 'Mascotas',
+  otro: 'Otros',
+};
+
+export function esRubroDeNegocio(valor: string): valor is RubroDeNegocio {
+  return (RUBROS_DE_NEGOCIO as readonly string[]).includes(valor);
+}
+
+/**
+ * El nombre en pantalla de un rubro. Como con los iconos, uno que esta app
+ * todavia no conoce no la rompe: cae en "Otros".
+ */
+export function tituloDeRubro(valor: string): string {
+  return TITULOS_DE_RUBRO[esRubroDeNegocio(valor) ? valor : 'otro'];
+}
+
 /** El icono que corresponde dibujar, conocido o no. */
 export function iconoDeSelloDe(valor: string): IconoDeSello {
   return esIconoDeSello(valor) ? valor : ICONO_DE_SELLO_POR_DEFECTO;
