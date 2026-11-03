@@ -26,6 +26,7 @@ import { type Db, type Respuesta, test } from './base';
 interface Tarjeta {
   id: string;
   negocio: {
+    id: string;
     nombre: string;
     color_principal: string;
     logo_url: string | null;
@@ -70,6 +71,7 @@ describe('GET /mis/tarjetas', () => {
       {
         id: tarjeta,
         negocio: {
+          id: negocio.id,
           nombre: 'Negocio de prueba',
           color_principal: '#1A2B3C',
           logo_url: null,

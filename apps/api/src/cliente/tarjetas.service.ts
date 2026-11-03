@@ -82,6 +82,7 @@ const CTE_DE_TARJETA = Prisma.sql`
            p.sellos_requeridos, p.premio,
            n.estado = 'suspendido' AS negocio_suspendido,
            jsonb_build_object(
+             'id', n.id,
              'nombre', n.nombre,
              'color_principal', n.color_principal,
              'logo_url', n.logo_url,

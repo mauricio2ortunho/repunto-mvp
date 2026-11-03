@@ -126,6 +126,12 @@ export type EstadoDeTarjetaDelCliente = (typeof ESTADOS_DE_TARJETA_DEL_CLIENTE)[
  * `plantillaDeTarjetaDe`, que caen en el de por defecto si no los conoce.
  */
 export const esquemaMarcaDelNegocio = z.object({
+  /**
+   * Para reconocer el mismo negocio en el directorio y en la lista de
+   * tarjetas ("Ya tenés tarjeta"). No es alcance: ningun endpoint lo acepta
+   * de vuelta (INV-1).
+   */
+  id: z.uuid(),
   nombre: z.string(),
   /** Hex `#RRGGBB`. El texto encima se elige con `colorDeTextoSobre`. */
   color_principal: z.string(),
@@ -137,6 +143,36 @@ export const esquemaMarcaDelNegocio = z.object({
 });
 
 export type MarcaDelNegocio = z.infer<typeof esquemaMarcaDelNegocio>;
+
+/**
+ * Un negocio adherido, como aparece en el directorio "Dónde juntar sellos".
+ *
+ * Lo que NO viaja importa tanto como lo que viaja: ni el `qr_slug` de sus
+ * locales ni el id de cada local. El slug es la credencial del alta (el QR del
+ * mostrador); publicarlo dejaria registrarse desde la casa con el telefono de
+ * otro (CLAUDE.md, seccion 15). Para anotarse hay que estar frente al QR.
+ */
+export const esquemaNegocioDelDirectorio = esquemaMarcaDelNegocio.extend({
+  categoria: z.string(),
+  /** El del programa vigente. Fijo: la condicion cambia, el premio no. */
+  premio: z.string(),
+  sellos_requeridos: z.int().positive(),
+  /** Solo los abiertos. Un negocio sin ninguno no aparece. */
+  locales: z.array(z.object({ nombre: z.string(), direccion: z.string() })).min(1),
+});
+
+export type NegocioDelDirectorio = z.infer<typeof esquemaNegocioDelDirectorio>;
+
+/**
+ * `GET /negocios`, publico. Los activos, con programa vigente y al menos un
+ * local abierto: un negocio donde la caja responderia `PROMO_NO_CONFIGURADA`
+ * o `NEGOCIO_SUSPENDIDO` no se ofrece. Ordenados por categoria y nombre.
+ */
+export const esquemaDirectorio = z.object({
+  negocios: z.array(esquemaNegocioDelDirectorio),
+});
+
+export type Directorio = z.infer<typeof esquemaDirectorio>;
 
 /** Una tarjeta del cliente, como aparece en su lista. */
 export const esquemaTarjetaDelCliente = z.object({

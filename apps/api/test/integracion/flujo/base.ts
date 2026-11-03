@@ -59,6 +59,11 @@ export class Api {
     return this.pedir('GET', `/mis/tarjetas${query}`, { token });
   }
 
+  /** El directorio publico. `token` existe para probar que no cambia nada. */
+  negocios(token?: string): Promise<Respuesta> {
+    return this.pedir('GET', '/negocios', { token });
+  }
+
   miTarjeta(token: string | undefined, id: string): Promise<Respuesta> {
     return this.pedir('GET', `/mis/tarjetas/${id}`, { token });
   }
