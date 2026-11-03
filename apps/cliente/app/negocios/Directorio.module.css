@@ -1,0 +1,102 @@
+.encabezado {
+  display: grid;
+  gap: var(--espacio-3);
+}
+
+.encabezado h1 {
+  margin: 0;
+  font-size: var(--texto-8);
+  font-weight: var(--peso-negro);
+  line-height: var(--interlineado-titulo);
+}
+
+.encabezado p,
+.nota {
+  margin: 0;
+  color: var(--c-texto-suave);
+}
+
+.sinConexion {
+  margin: 0;
+  padding: var(--espacio-3) var(--espacio-4);
+  border-radius: var(--radio-1);
+  background: var(--c-premio-velo);
+  color: var(--c-sobre-premio-velo);
+  font-weight: var(--peso-medio);
+}
+
+.rubro {
+  display: grid;
+  gap: var(--espacio-3);
+}
+
+.rubro h2 {
+  margin: 0;
+  font-size: var(--texto-5);
+  font-weight: var(--peso-fuerte);
+}
+
+.lista,
+.locales {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lista {
+  gap: var(--espacio-4);
+}
+
+.negocio {
+  overflow: hidden;
+  border: var(--borde-fino) solid var(--c-borde);
+  border-radius: var(--radio-3);
+  background: var(--c-superficie);
+  color: var(--c-texto);
+}
+
+.marca {
+  display: flex;
+  gap: var(--espacio-3);
+  align-items: center;
+  padding: var(--espacio-4);
+}
+
+.marca h3 {
+  margin: 0;
+  font-size: var(--texto-5);
+  font-weight: var(--peso-fuerte);
+  line-height: var(--interlineado-titulo);
+}
+
+.cuerpo {
+  display: grid;
+  gap: var(--espacio-3);
+  padding: var(--espacio-4);
+}
+
+.promo {
+  margin: 0;
+  font-size: var(--texto-5);
+  font-weight: var(--peso-negro);
+}
+
+.locales {
+  gap: var(--espacio-2);
+  color: var(--c-texto-suave);
+}
+
+.comoSumarse,
+.yaTiene {
+  margin: 0;
+  font-weight: var(--peso-medio);
+}
+
+.comoSumarse {
+  color: var(--c-texto-suave);
+}
+
+.yaTiene {
+  color: var(--c-acento);
+}

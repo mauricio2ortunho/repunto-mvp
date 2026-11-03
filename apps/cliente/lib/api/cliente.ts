@@ -1,12 +1,14 @@
 import {
   type CodigoDelCliente,
   type DetalleDeTarjeta,
+  type Directorio,
   type EstadoDelRegistro,
   type MisTarjetas,
   type RegistroPeticion,
   type RegistroRespuesta,
   esquemaCodigoDelCliente,
   esquemaDetalleDeTarjeta,
+  esquemaDirectorio,
   esquemaEstadoDelRegistro,
   esquemaMisTarjetas,
   esquemaRegistroRespuesta,
@@ -71,6 +73,16 @@ export function miTarjeta(
     token,
     senal,
     esquema: esquemaDetalleDeTarjeta,
+  });
+}
+
+/** `GET /negocios`, publico: sin token. */
+export function negocios(senal?: AbortSignal): Promise<Respuesta<Directorio>> {
+  return pedir({
+    metodo: 'GET',
+    ruta: '/negocios',
+    senal,
+    esquema: esquemaDirectorio,
   });
 }
 

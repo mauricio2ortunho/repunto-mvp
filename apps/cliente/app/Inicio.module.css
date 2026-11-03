@@ -45,3 +45,13 @@
   color: var(--c-texto-suave);
   font-size: var(--texto-4);
 }
+
+.enlace {
+  color: var(--c-acento);
+  font-weight: var(--peso-fuerte);
+  text-decoration: none;
+}
+
+.enlace:active {
+  text-decoration: underline;
+}

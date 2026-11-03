@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { esquemaMisTarjetas } from '@repunto/contratos';
@@ -97,6 +98,7 @@ function MisTarjetas(p: { token: string; alPerderLaSesion: (mensaje: string) => 
         </>
       )}
 
+      <EnlaceAlDirectorio />
       <BotonDeCodigo />
     </Pantalla>
   );
@@ -124,6 +126,15 @@ function SinTarjetas(p: { registro: RegistroEnEspera | null; aviso: string | nul
           Volver a mi registro
         </Boton>
       )}
+      <EnlaceAlDirectorio />
     </Pantalla>
+  );
+}
+
+function EnlaceAlDirectorio() {
+  return (
+    <Link href="/negocios" className={css.enlace}>
+      Ver dónde juntar sellos ›
+    </Link>
   );
 }
