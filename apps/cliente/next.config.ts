@@ -22,10 +22,19 @@ const nextConfig: NextConfig = {
  * los descarga. Suben solo si existe `SENTRY_AUTH_TOKEN` (en Vercel); sin el,
  * el build sigue igual y no sube nada.
  */
+// `silent` calla tambien lo que falla: sin esto, un token que no llega al build
+// o una subida rechazada no dejan ni una linea en el log de Vercel.
+if (process.env.SENTRY_AUTH_TOKEN === undefined) {
+  console.warn('[sentry] Sin SENTRY_AUTH_TOKEN: este build no sube source maps.');
+}
+
 export default withSentryConfig(nextConfig, {
   org: 'joel-04',
   project: 'repunto-cliente',
   silent: true,
+  errorHandler: (error) => {
+    console.warn(`[sentry] No se subieron los source maps: ${error.message}`);
+  },
   telemetry: false,
   sourcemaps: { deleteSourcemapsAfterUpload: true },
   bundleSizeOptimizations: {
