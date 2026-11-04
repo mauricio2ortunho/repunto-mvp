@@ -103,6 +103,14 @@ export type {
 } from './vinculacion';
 export type { Caja, PromoConfigurada, RevisionDeCaja } from './caja';
 
+export {
+  DIAS_DE_SESION_DE_ADMIN,
+  MINUTOS_DE_ENTRADA_DE_ADMIN,
+  decidirEntradaDeAdmin,
+  sesionDeAdminVigente,
+} from './admin';
+export type { DecisionDeEntradaDeAdmin, EntradaDeAdmin, SesionDeAdmin } from './admin';
+
 export { decidirSello, planDeSellado } from './sellado';
 export type {
   DecisionDeSellado,

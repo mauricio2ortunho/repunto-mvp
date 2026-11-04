@@ -52,6 +52,17 @@ export { esquemaVincularPeticion, esquemaVincularRespuesta } from './vinculacion
 export type { VincularPeticion, VincularRespuesta } from './vinculacion';
 
 export {
+  esquemaAdminActual,
+  esquemaEntrarComoAdminPeticion,
+  esquemaEntrarComoAdminRespuesta,
+} from './admin';
+export type {
+  AdminActual,
+  EntrarComoAdminPeticion,
+  EntrarComoAdminRespuesta,
+} from './admin';
+
+export {
   CONTRASTE_MINIMO,
   ICONOS_DE_SELLO,
   ICONO_DE_SELLO_POR_DEFECTO,

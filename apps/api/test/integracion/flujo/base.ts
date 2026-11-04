@@ -139,6 +139,19 @@ export class Api {
     return this.pedir('POST', '/caja/vinculacion', { cuerpo });
   }
 
+  /** El panel de administracion: entrar con el codigo, quien soy, salir. */
+  entrarComoAdmin(cuerpo: unknown): Promise<Respuesta> {
+    return this.pedir('POST', '/admin/sesion', { cuerpo });
+  }
+
+  adminActual(token?: string): Promise<Respuesta> {
+    return this.pedir('GET', '/admin/yo', { token });
+  }
+
+  cerrarSesionDeAdmin(token?: string): Promise<Respuesta> {
+    return this.pedir('POST', '/admin/sesion/cierre', { token });
+  }
+
   /** Lo que dispara Vercel Cron: el secreto va como Bearer. */
   tareaNocturna(secreto?: string): Promise<Respuesta> {
     return this.pedir('GET', '/tareas/nocturna', { token: secreto });

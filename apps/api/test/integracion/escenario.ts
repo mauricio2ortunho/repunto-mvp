@@ -260,6 +260,26 @@ export async function crearCodigoDeVinculacion(
   return { id, codigo, admin: creador };
 }
 
+/**
+ * Un codigo de entrada al panel de administracion. `minutos` negativos lo
+ * crean ya vencido: nacio hace media hora.
+ */
+export async function crearEntradaDeAdmin(
+  db: Db,
+  { minutos = 15, admin }: { minutos?: number; admin?: string } = {},
+): Promise<{ id: string; codigo: string; admin: string }> {
+  const quien = admin ?? (await crearAdmin(db));
+  const codigo = codigoDeVinculacionDesde(randomBytes(LARGO_CODIGO_DE_VINCULACION));
+  const { id } = await una<{ id: string }>(
+    db,
+    `INSERT INTO entrada_admin (admin_id, codigo, creado_el, expira_el)
+     VALUES ($1, $2, now() - interval '30 minutes', now() + make_interval(mins => $3::int))
+     RETURNING id`,
+    [quien, codigo, minutos],
+  );
+  return { id, codigo, admin: quien };
+}
+
 export async function crearAdmin(db: Db): Promise<string> {
   return insertar(
     db,

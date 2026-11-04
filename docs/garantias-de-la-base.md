@@ -128,6 +128,21 @@ que apunta.
 | `dispositivo_cliente_token_hash_key`             | `dispositivo_cliente`   | UNIQUE         | `(token_hash)`                                                     | Sección 5  | Dos equipos de cliente con el mismo identificador de sesión.                                                                                                   |
 | `local_qr_slug_key`                              | `local`                 | UNIQUE         | `(qr_slug)`                                                        | Modelo     | Dos locales con el mismo QR impreso.                                                                                                                           |
 
+## Panel de administración
+
+El admin entra con un código de un solo uso que se canjea por una sesión del
+equipo, como la tablet; a diferencia de la tablet, la sesión vence.
+
+| Restricción                              | Tabla           | Tipo   | Definición                                             | Invariante | Qué impide                                                                           |
+| ---------------------------------------- | --------------- | ------ | ------------------------------------------------------ | ---------- | ------------------------------------------------------------------------------------ |
+| `entrada_admin_codigo_key`               | `entrada_admin` | UNIQUE | `(codigo)`                                             | Sección 5  | Dos entradas con el mismo código: el código es lo único que se escribe.              |
+| `entrada_admin_expira_posterior_chk`     | `entrada_admin` | CHECK  | `expira_el > creado_el`                                | Sección 5  | Un código que nace vencido.                                                          |
+| `entrada_admin_uso_antes_de_expirar_chk` | `entrada_admin` | CHECK  | `usado_el` nulo, o entre `creado_el` y `expira_el`     | Sección 5  | Marcar un código como usado después de vencido.                                      |
+| `sesion_admin_token_hash_key`            | `sesion_admin`  | UNIQUE | `(token_hash)`                                         | Sección 5  | Dos sesiones de admin con el mismo token.                                            |
+| `sesion_admin_entrada_id_key`            | `sesion_admin`  | UNIQUE | `(entrada_id)`                                         | Sección 5  | Un código de entrada usado para abrir dos sesiones. Un solo uso, también en la base. |
+| `sesion_admin_entrada_mismo_admin_fkey`  | `sesion_admin`  | FK     | `(entrada_id, admin_id) → entrada_admin(id, admin_id)` | Sección 14 | Una sesión a nombre de otro admin que el del código con que se abrió.                |
+| `sesion_admin_revocada_posterior_chk`    | `sesion_admin`  | CHECK  | `revocada_el` nulo, o posterior a `creado_el`          | Cordura    | Revocar una sesión antes de que exista.                                              |
+
 ## Alta del cliente
 
 El registro ocurre en el mostrador: el cliente escanea el QR y el cajero lo
@@ -185,6 +200,8 @@ borrar: sin ellas, esas FK no se pueden crear.
 | `canje_tarjeta_id_negocio_id_key`              | `canje`                 | UNIQUE | `(tarjeta_id, negocio_id)`   | Prisma     | Prisma lo exige para declarar 1:1 sobre una FK compuesta. La garantía real es `canje_tarjeta_id_key`.                |
 | `vinculacion_pendiente_id_local_id_key`        | `vinculacion_pendiente` | UNIQUE | `(id, local_id)`             | Sección 14 | Destino de la FK de `dispositivo_caja`.                                                                              |
 | `dispositivo_caja_vinculacion_id_local_id_key` | `dispositivo_caja`      | UNIQUE | `(vinculacion_id, local_id)` | Prisma     | Prisma lo exige para declarar 1:1 sobre una FK compuesta. La garantía real es `dispositivo_caja_vinculacion_id_key`. |
+| `entrada_admin_id_admin_id_key`                | `entrada_admin`         | UNIQUE | `(id, admin_id)`             | Sección 14 | Destino de la FK de `sesion_admin`.                                                                                  |
+| `sesion_admin_entrada_id_admin_id_key`         | `sesion_admin`          | UNIQUE | `(entrada_id, admin_id)`     | Prisma     | Prisma lo exige para declarar 1:1 sobre una FK compuesta. La garantía real es `sesion_admin_entrada_id_key`.         |
 
 ### Claves primarias
 
@@ -209,6 +226,8 @@ borrar: sin ellas, esas FK no se pueden crear.
 | `registro_pendiente_pkey`    | `registro_pendiente`    | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
 | `tope_peticion_pkey`         | `tope_peticion`         | PK   | `(clave, ventana)`                  | Sección 6  | Dos cuentas para lo mismo en la misma hora: cada instancia de la api sumaría en la suya y el tope dejaría de contar.                       |
 | `intento_caja_pkey`          | `intento_caja`          | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
+| `entrada_admin_pkey`         | `entrada_admin`         | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
+| `sesion_admin_pkey`          | `sesion_admin`          | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
 
 ### FK simples
 
@@ -219,6 +238,8 @@ Todas `RESTRICT`: no se puede borrar un padre con hijos (INV-17).
 | `local_negocio_id_fkey`                          | `local`                 | FK   | `(negocio_id) → negocio(id)`                   | INV-17     | Un local huérfano, o borrar un negocio con locales.                                                                                                                |
 | `usuario_negocio_negocio_id_fkey`                | `usuario_negocio`       | FK   | `(negocio_id) → negocio(id)`                   | INV-17     | Un usuario sin negocio.                                                                                                                                            |
 | `vinculacion_pendiente_creado_por_admin_id_fkey` | `vinculacion_pendiente` | FK   | `(creado_por_admin_id) → admin_plataforma(id)` | Sección 5  | Atribuir una vinculación a un admin que no existe. Es el otro origen posible del código: el admin vincula las tablets en la capacitación del primer día.           |
+| `entrada_admin_admin_id_fkey`                    | `entrada_admin`         | FK   | `(admin_id) → admin_plataforma(id)`            | Sección 5  | Un código de entrada de un admin que no existe.                                                                                                                    |
+| `sesion_admin_admin_id_fkey`                     | `sesion_admin`          | FK   | `(admin_id) → admin_plataforma(id)`            | Sección 5  | Una sesión de un admin que no existe.                                                                                                                              |
 | `dispositivo_caja_local_id_fkey`                 | `dispositivo_caja`      | FK   | `(local_id) → local(id)`                       | INV-17     | Una tablet de un local que no existe.                                                                                                                              |
 | `programa_negocio_id_fkey`                       | `programa`              | FK   | `(negocio_id) → negocio(id)`                   | INV-17     | Un programa sin negocio.                                                                                                                                           |
 | `condicion_sello_negocio_id_fkey`                | `condicion_sello`       | FK   | `(negocio_id) → negocio(id)`                   | INV-17     | Una condición sin negocio. No se puede violar sola: un negocio inexistente viola también `condicion_sello_autor_mismo_negocio_fkey`, así que no tiene test propio. |

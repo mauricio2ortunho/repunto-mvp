@@ -1,5 +1,6 @@
 import { type MiddlewareConsumer, Module, type NestModule } from '@nestjs/common';
 
+import { AdminModule } from './admin/admin.module';
 import { AltaModule } from './alta/alta.module';
 import { CajaModule } from './caja/caja.module';
 import { ClienteModule } from './cliente/cliente.module';
@@ -19,6 +20,7 @@ import { TareasModule } from './tareas/tareas.module';
     CajaModule,
     ClienteModule,
     AltaModule,
+    AdminModule,
     TareasModule,
   ],
 })

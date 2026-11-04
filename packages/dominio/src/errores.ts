@@ -89,6 +89,11 @@ export const CODIGOS_DE_ERROR = [
    * activo. Uno solo para todo: distinguirlos le diria a quien prueba codigos
    * cuales existen. */
   'VINCULACION_INVALIDA',
+
+  // Panel de administracion.
+  /** El codigo de entrada no existe, ya se uso, vencio, o su admin ya no
+   * esta activo. Uno solo para todo, por lo mismo que la vinculacion. */
+  'ENTRADA_INVALIDA',
 ] as const;
 
 export type CodigoDeError = (typeof CODIGOS_DE_ERROR)[number];

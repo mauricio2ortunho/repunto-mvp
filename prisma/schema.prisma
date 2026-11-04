@@ -98,8 +98,61 @@ model AdminPlataforma {
   creado_el DateTime @default(now()) @db.Timestamptz(3)
 
   vinculaciones_creadas VinculacionPendiente[]
+  entradas              EntradaAdmin[]
+  sesiones              SesionAdmin[]
 
   @@map("admin_plataforma")
+}
+
+/// El codigo de un solo uso con que el admin abre una sesion en el panel de
+/// administracion. Lo genera `pnpm admin entrar` mientras no exista la
+/// verificacion por correo o SMS; cuando exista, el codigo llega por ahi y
+/// esta tabla sigue igual.
+model EntradaAdmin {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  admin_id  String    @db.Uuid
+  /// Lo que se escribe en /admin/entrar. Nunca al log.
+  codigo    String    @unique
+  /// CHECK entrada_admin_expira_posterior_chk y
+  /// entrada_admin_uso_antes_de_expirar_chk, como la vinculacion de tablets.
+  expira_el DateTime  @db.Timestamptz(3)
+  usado_el  DateTime? @db.Timestamptz(3)
+  creado_el DateTime  @default(now()) @db.Timestamptz(3)
+
+  admin  AdminPlataforma @relation(fields: [admin_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sesion SesionAdmin?
+
+  /// Destino de FK compuesta, no una restriccion de negocio. Existe para que
+  /// sesion_admin no pueda ser de otro admin que el del codigo con que se
+  /// abrio (CLAUDE.md, seccion 14). No borrar.
+  @@unique([id, admin_id], map: "entrada_admin_id_admin_id_key")
+  @@index([admin_id, creado_el])
+  @@map("entrada_admin")
+}
+
+/// Una sesion del panel de administracion en un equipo. A diferencia de la
+/// tablet, vence: a los DIAS_DE_SESION_DE_ADMIN sin usarse, porque con ella se
+/// crean y suspenden negocios. Revocarla la invalida al instante.
+model SesionAdmin {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  admin_id      String    @db.Uuid
+  token_hash    String    @unique
+  /// Un codigo, una sesion (UNIQUE sesion_admin_entrada_id_key).
+  entrada_id    String    @unique @db.Uuid
+  /// Se mueve en cada pedido. Es lo que mide el vencimiento.
+  ultimo_acceso DateTime  @db.Timestamptz(3)
+  /// CHECK sesion_admin_revocada_posterior_chk.
+  revocada_el   DateTime? @db.Timestamptz(3)
+  creado_el     DateTime  @default(now()) @db.Timestamptz(3)
+
+  admin   AdminPlataforma @relation(fields: [admin_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  entrada EntradaAdmin    @relation(fields: [entrada_id, admin_id], references: [id, admin_id], onDelete: Restrict, onUpdate: Restrict, map: "sesion_admin_entrada_mismo_admin_fkey")
+
+  /// Prisma lo exige para declarar 1:1 sobre una FK compuesta. La garantia
+  /// real es sesion_admin_entrada_id_key.
+  @@unique([entrada_id, admin_id], map: "sesion_admin_entrada_id_admin_id_key")
+  @@index([admin_id, creado_el])
+  @@map("sesion_admin")
 }
 
 // ---------------------------------------------------------------------------
