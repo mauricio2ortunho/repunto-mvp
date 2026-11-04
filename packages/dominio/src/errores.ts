@@ -94,6 +94,10 @@ export const CODIGOS_DE_ERROR = [
   /** El codigo de entrada no existe, ya se uso, vencio, o su admin ya no
    * esta activo. Uno solo para todo, por lo mismo que la vinculacion. */
   'ENTRADA_INVALIDA',
+
+  // Panel de administracion.
+  /** El negocio de la ruta no existe. */
+  'NEGOCIO_NO_ENCONTRADO',
 ] as const;
 
 export type CodigoDeError = (typeof CODIGOS_DE_ERROR)[number];

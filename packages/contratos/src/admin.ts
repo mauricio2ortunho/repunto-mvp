@@ -72,6 +72,15 @@ const esquemaApariencia = z.object({
   canje_cualquier_local: z.boolean(),
 });
 
+/**
+ * `POST /admin/negocios/:id/datos`: nombre, rubro, apariencia y donde se
+ * canjea. No se versiona (especificacion, seccion 9): aplica a todas las
+ * tarjetas al instante.
+ */
+export const esquemaDatosDelNegocio = esquemaApariencia;
+
+export type DatosDelNegocio = z.infer<typeof esquemaDatosDelNegocio>;
+
 const { sellosRequeridos, vigenciaMeses, horasEntreSellos } = LIMITES_DEL_NEGOCIO;
 
 export const esquemaProgramaNuevo = z.object({
@@ -140,3 +149,78 @@ export const esquemaNegociosDelAdmin = z.object({
 });
 
 export type NegociosDelAdmin = z.infer<typeof esquemaNegociosDelAdmin>;
+
+/**
+ * `GET /admin/negocios/:id`: la ficha. Todo lo que el admin puede cambiar, con
+ * lo que hace falta para decidir: cuantas tarjetas siguen con la promo
+ * actual, y quien cambio la condicion y cuando.
+ */
+export const esquemaFichaDelNegocio = esquemaNegocioDelAdmin
+  .omit({ programa: true, condicion: true })
+  .extend({
+    canje_cualquier_local: z.boolean(),
+    /** La version vigente. */
+    programa: z
+      .object({
+        version: z.int().positive(),
+        sellos_requeridos: z.int().positive(),
+        premio: z.string(),
+        vigencia_meses: z.int().positive().nullable(),
+        horas_entre_sellos: z.int().nonnegative(),
+        pide_monto: z.boolean(),
+        desde: z.iso.datetime(),
+      })
+      .nullable(),
+    /**
+     * Tarjetas activas: terminan con la version con la que empezaron
+     * (INV-6), asi que un cambio de promo no las toca.
+     */
+    tarjetas_en_curso: z.int().nonnegative(),
+    /** La vigente primero. Las ultimas, no todas. */
+    condiciones: z.array(
+      z.object({
+        texto: z.string(),
+        monto_minimo: z.string().nullable(),
+        vigente_desde: z.iso.datetime(),
+        /** Quien la escribio: alguien del negocio, o nosotros en el alta. */
+        autor: z.discriminatedUnion('tipo', [
+          z.object({ tipo: z.literal('administracion') }),
+          z.object({ tipo: z.literal('negocio'), nombre: z.string() }),
+        ]),
+      }),
+    ),
+  });
+
+export type FichaDelNegocio = z.infer<typeof esquemaFichaDelNegocio>;
+
+/** Cuantas condiciones pasadas trae la ficha. */
+export const CONDICIONES_EN_LA_FICHA = 10;
+
+/**
+ * `POST /admin/negocios/:id/programa`, con Idempotency-Key: una version nueva
+ * (INV-5). La anterior deja de ser vigente pero sus tarjetas la conservan.
+ */
+export const esquemaProgramaCambiado = z.object({
+  version: z.int().positive(),
+  /** Las que siguen con la version anterior. */
+  tarjetas_en_curso: z.int().nonnegative(),
+});
+
+export type ProgramaCambiado = z.infer<typeof esquemaProgramaCambiado>;
+
+/**
+ * `POST /admin/negocios/:id/condicion`, con Idempotency-Key: una condicion
+ * nueva, desde ahora (INV-7). Las anteriores quedan en el historial.
+ */
+export const esquemaCondicionCambiada = z.object({
+  vigente_desde: z.iso.datetime(),
+});
+
+export type CondicionCambiada = z.infer<typeof esquemaCondicionCambiada>;
+
+/** `POST /admin/negocios/:id/suspension` y `/reactivacion`. */
+export const esquemaEstadoDelNegocio = z.object({
+  estado: z.enum(['activo', 'suspendido']),
+});
+
+export type EstadoDelNegocio = z.infer<typeof esquemaEstadoDelNegocio>;

@@ -51,6 +51,7 @@ const ESTADO_DE_CAJA: Record<CodigoDeError, number> = {
   PIN_BLOQUEADO: 429,
   VINCULACION_INVALIDA: 422,
   ENTRADA_INVALIDA: 422,
+  NEGOCIO_NO_ENCONTRADO: 404,
 };
 
 const ESTADO_DE_API: Record<CodigoDeErrorDeApi, number> = {

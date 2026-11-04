@@ -156,6 +156,45 @@ export class Api {
     return this.pedir('GET', '/admin/negocios', { token });
   }
 
+  fichaDelNegocio(token: string | undefined, id: string): Promise<Respuesta> {
+    return this.pedir('GET', `/admin/negocios/${id}`, { token });
+  }
+
+  datosDelNegocio(token: string, id: string, cuerpo: unknown): Promise<Respuesta> {
+    return this.pedir('POST', `/admin/negocios/${id}/datos`, { token, cuerpo });
+  }
+
+  /** Sin `clave`, una nueva. */
+  cambiarPrograma(
+    token: string,
+    id: string,
+    cuerpo: unknown,
+    clave: string = randomUUID(),
+  ): Promise<Respuesta> {
+    return this.pedir('POST', `/admin/negocios/${id}/programa`, { token, cuerpo, clave });
+  }
+
+  cambiarCondicion(
+    token: string,
+    id: string,
+    cuerpo: unknown,
+    clave: string = randomUUID(),
+  ): Promise<Respuesta> {
+    return this.pedir('POST', `/admin/negocios/${id}/condicion`, {
+      token,
+      cuerpo,
+      clave,
+    });
+  }
+
+  suspenderNegocio(token: string, id: string): Promise<Respuesta> {
+    return this.pedir('POST', `/admin/negocios/${id}/suspension`, { token });
+  }
+
+  reactivarNegocio(token: string, id: string): Promise<Respuesta> {
+    return this.pedir('POST', `/admin/negocios/${id}/reactivacion`, { token });
+  }
+
   /** Sin `clave`, el pedido sale sin Idempotency-Key. */
   crearNegocioComoAdmin(
     token: string | undefined,

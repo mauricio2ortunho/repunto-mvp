@@ -52,9 +52,15 @@ export { esquemaVincularPeticion, esquemaVincularRespuesta } from './vinculacion
 export type { VincularPeticion, VincularRespuesta } from './vinculacion';
 
 export {
+  CONDICIONES_EN_LA_FICHA,
   LIMITES_DEL_NEGOCIO,
   esquemaAdminActual,
+  esquemaCondicionCambiada,
   esquemaCondicionNueva,
+  esquemaDatosDelNegocio,
+  esquemaEstadoDelNegocio,
+  esquemaFichaDelNegocio,
+  esquemaProgramaCambiado,
   esquemaEntrarComoAdminPeticion,
   esquemaEntrarComoAdminRespuesta,
   esquemaNegocioCreado,
@@ -65,7 +71,12 @@ export {
 } from './admin';
 export type {
   AdminActual,
+  CondicionCambiada,
   CondicionNueva,
+  DatosDelNegocio,
+  EstadoDelNegocio,
+  FichaDelNegocio,
+  ProgramaCambiado,
   EntrarComoAdminPeticion,
   EntrarComoAdminRespuesta,
   NegocioCreado,
