@@ -59,6 +59,13 @@ export interface Pedido {
   /** Para cortar una consulta que ya no importa, como al desmontar. */
   senal?: AbortSignal;
   tiempoMaximoMs?: number;
+  /**
+   * La credencial que viaja. Sin este campo, la de la tablet: es todo lo de
+   * /caja. El panel de administracion pasa la sesion del admin, o null para
+   * no mandar ninguna. Asi la sesion del admin nunca sale hacia la caja ni la
+   * de la tablet hacia /admin.
+   */
+  token?: string | null;
 }
 
 const TIEMPO_MAXIMO_MS = 10_000;
@@ -84,7 +91,8 @@ export async function pedirCrudo(
   };
   // Sin token no se inventa nada: la peticion sale sin cabecera, la API
   // contesta TOKEN_INVALIDO y el cajero lee "Esta tablet no esta vinculada".
-  const token = credencialDeLaTablet().token();
+  const token =
+    pedido.token !== undefined ? pedido.token : credencialDeLaTablet().token();
   if (token !== null) cabeceras.Authorization = `Bearer ${token}`;
   if (pedido.claveDeIdempotencia !== undefined) {
     cabeceras['Idempotency-Key'] = pedido.claveDeIdempotencia;

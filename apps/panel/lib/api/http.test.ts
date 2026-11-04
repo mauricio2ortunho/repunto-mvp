@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { esquemaSellarRespuesta, mensajeParaElCajero } from '@repunto/contratos';
-import { interpretar, type Crudo } from './http';
+import { credencialDeLaTablet } from '../credencial';
+import { interpretar, pedirCrudo, type Crudo } from './http';
 
 const crudo = (estado: number, cuerpo: unknown): Crudo => ({
   estado,
@@ -80,5 +81,41 @@ describe('interpretar una respuesta', () => {
       tipo: 'incierto',
       causa: 'servidor',
     });
+  });
+});
+
+describe('que credencial viaja', () => {
+  // La tablet tiene la suya (en memoria: en Node no hay localStorage).
+  credencialDeLaTablet().guardar('token-de-la-tablet');
+
+  async function cabeceraDe(token?: string | null): Promise<string | null> {
+    let enviada: string | null = null;
+    const original = globalThis.fetch;
+    globalThis.fetch = vi.fn(async (_url: unknown, init?: RequestInit) => {
+      enviada = new Headers(init?.headers).get('Authorization');
+      return new Response('{}', { status: 200 });
+    }) as typeof fetch;
+    try {
+      await pedirCrudo({
+        metodo: 'GET',
+        ruta: '/x',
+        ...(token !== undefined && { token }),
+      });
+    } finally {
+      globalThis.fetch = original;
+    }
+    return enviada;
+  }
+
+  it('sin decir nada, viaja la de la tablet: es todo lo de /caja', async () => {
+    expect(await cabeceraDe()).toBe('Bearer token-de-la-tablet');
+  });
+
+  it('con un token explicito, viaja ese y no el de la tablet', async () => {
+    expect(await cabeceraDe('sesion-del-admin')).toBe('Bearer sesion-del-admin');
+  });
+
+  it('con token null no viaja ninguno, aunque la tablet tenga el suyo', async () => {
+    expect(await cabeceraDe(null)).toBeNull();
   });
 });

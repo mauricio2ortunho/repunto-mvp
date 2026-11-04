@@ -167,6 +167,20 @@ El teléfono tiene que ser de un `admin_plataforma` activo. El seed crea uno de
 demo, `+59170000000`; para un entorno real, el admin se da de alta a mano una
 sola vez.
 
+## 3b'. Entrar al panel de administración
+
+```bash
+# Desde tu máquina, con DATABASE_URL apuntando a la base del entorno
+pnpm admin entrar --admin <tu_telefono_de_admin>
+```
+
+Imprime un código de ocho caracteres, de un solo uso, que vence a los 15
+minutos. Se escribe en el panel, en `/admin/entrar`, y esa computadora queda
+con la sesión. La sesión vence sola a los 7 días sin usarse.
+`pnpm admin sesiones` lista las abiertas; `pnpm admin revocar <id>` cierra una
+al instante, por ejemplo la de una computadora perdida. Cuando exista el envío
+por correo o SMS, el código llega por ahí y `entrar` deja de hacer falta.
+
 - `NODE_ENV` no se carga: Vercel ya la pone en `production`.
 
 ## 3c. La tarea nocturna

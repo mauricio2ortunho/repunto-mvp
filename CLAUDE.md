@@ -192,7 +192,7 @@ preguntar.
 
 | Rol | Alcance | Cómo entra |
 |---|---|---|
-| `admin_plataforma` | Crea negocios, locales y usuarios. Suspende negocios, exporta, ve señales de fraude entre negocios. | Teléfono + código |
+| `admin_plataforma` | Crea negocios, locales y usuarios. Suspende negocios, exporta, ve señales de fraude entre negocios. | Teléfono + código. Hasta que haya correo o SMS, el código lo da `pnpm admin entrar`; la sesión vence a los 7 días sin uso |
 | `dueno` | Su negocio: programa, condición, locales, usuarios, dispositivos, métricas, clientes propios. | Teléfono + código |
 | `supervisor` | Su local: canjear, anular sellos de cualquier cajero del local, gestionar PIN de su equipo, métricas de su sucursal, editar la condición. **No toca el programa.** | PIN sobre dispositivo vinculado |
 | `cajero` | Sellar, canjear, anular su último sello, confirmar registros. Solo en sus locales. | PIN sobre dispositivo vinculado |
@@ -526,6 +526,8 @@ pnpm lint
 pnpm db:migrate           # prisma migrate dev + prisma generate
 pnpm db:generate          # solo regenera el cliente de Prisma
 pnpm db:seed              # negocio de demo con datos ficticios
+pnpm tablets <orden>      # vincular, listar, revocar y salud de las tablets
+pnpm admin <orden>        # entrar al panel de administracion, sesiones, revocar
 ```
 
 ---
