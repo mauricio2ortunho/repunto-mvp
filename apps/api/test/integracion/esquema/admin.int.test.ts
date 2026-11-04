@@ -1,7 +1,7 @@
 import { describe } from 'vitest';
 
 import { esperarAceptacion, esperarRechazo, test } from '../base';
-import { crearAdmin, crearEntradaDeAdmin, unico } from '../escenario';
+import { crearAdmin, crearEntradaDeAdmin, crearNegocio, unico } from '../escenario';
 
 /**
  * La entrada al panel de administracion: un codigo de un solo uso que abre
@@ -83,5 +83,95 @@ describe('Panel de administracion', () => {
       'sesion_admin_revocada_posterior_chk',
       `UPDATE sesion_admin SET revocada_el = creado_el - interval '1 second'`,
     );
+  });
+});
+
+/**
+ * Lo que crea el admin: la condicion que escribe en el alta del negocio, y la
+ * idempotencia de sus pedidos.
+ */
+
+const CONDICION = `
+  INSERT INTO condicion_sello (negocio_id, texto, vigente_desde, usuario_id, creado_por_admin_id)
+  VALUES ($1, 'Un capuchino', now(), $2, $3)`;
+
+const PETICION = `
+  INSERT INTO peticion_idempotente_admin (admin_id, endpoint, clave, huella_peticion)
+  VALUES ($1, 'POST /admin/negocios', $2, 'huella')`;
+
+describe('Lo que crea el admin', () => {
+  test('Seccion 4 · la condicion la puede escribir el admin, sin nadie del negocio', async ({
+    db,
+  }) => {
+    const negocio = await crearNegocio(db);
+    const admin = await crearAdmin(db);
+    await esperarAceptacion(db, CONDICION, [negocio.id, null, admin]);
+  });
+
+  test('Seccion 4 · una condicion sin autor se rechaza', async ({ db }) => {
+    const negocio = await crearNegocio(db);
+    await esperarRechazo(db, 'condicion_sello_un_solo_autor_chk', CONDICION, [
+      negocio.id,
+      null,
+      null,
+    ]);
+  });
+
+  test('Seccion 4 · una condicion con los dos autores se rechaza', async ({ db }) => {
+    const negocio = await crearNegocio(db);
+    const admin = await crearAdmin(db);
+    await esperarRechazo(db, 'condicion_sello_un_solo_autor_chk', CONDICION, [
+      negocio.id,
+      negocio.dueno,
+      admin,
+    ]);
+  });
+
+  test('Seccion 4 · una condicion de un admin que no existe se rechaza', async ({
+    db,
+  }) => {
+    const negocio = await crearNegocio(db);
+    await esperarRechazo(db, 'condicion_sello_creado_por_admin_id_fkey', CONDICION, [
+      negocio.id,
+      null,
+      '00000000-0000-4000-8000-000000000000',
+    ]);
+  });
+
+  test('INV-17 · una condicion de un negocio que no existe se rechaza', async ({
+    db,
+  }) => {
+    // Escrita por el admin no pasa por la FK compuesta del autor, asi que la
+    // que la frena es la simple.
+    const admin = await crearAdmin(db);
+    await esperarRechazo(db, 'condicion_sello_negocio_id_fkey', CONDICION, [
+      '00000000-0000-4000-8000-000000000000',
+      null,
+      admin,
+    ]);
+  });
+
+  test('Seccion 9 · el mismo reintento no se guarda dos veces', async ({ db }) => {
+    const admin = await crearAdmin(db);
+    const clave = unico('clave-larga');
+    await esperarAceptacion(db, PETICION, [admin, clave]);
+    await esperarRechazo(db, 'peticion_idempotente_admin_pkey', PETICION, [admin, clave]);
+  });
+
+  test('Seccion 9 · una clave de idempotencia corta se rechaza', async ({ db }) => {
+    const admin = await crearAdmin(db);
+    await esperarRechazo(db, 'peticion_idempotente_admin_clave_razonable_chk', PETICION, [
+      admin,
+      'corta',
+    ]);
+  });
+
+  test('Seccion 9 · el reintento de un admin que no existe se rechaza', async ({
+    db,
+  }) => {
+    await esperarRechazo(db, 'peticion_idempotente_admin_admin_id_fkey', PETICION, [
+      '00000000-0000-4000-8000-000000000000',
+      unico('clave-larga'),
+    ]);
   });
 });

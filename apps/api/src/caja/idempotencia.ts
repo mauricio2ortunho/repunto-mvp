@@ -91,6 +91,7 @@ export async function guardarRespuesta(
       AND clave = ${peticion.clave}`;
 }
 
-function huellaDe(cuerpo: unknown): string {
+/** Tambien la usa la idempotencia del panel de administracion. */
+export function huellaDe(cuerpo: unknown): string {
   return createHash('sha256').update(JSON.stringify(cuerpo), 'utf8').digest('hex');
 }

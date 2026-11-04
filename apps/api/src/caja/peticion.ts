@@ -11,7 +11,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * Obligatoria en todo endpoint que crea algo (CLAUDE.md, seccion 9). Que falte
  * es un bug del panel: sin ella, el doble toque del cajero crea dos sellos.
  */
-export function claveDeIdempotencia(peticion: PeticionDeCaja): string {
+export function claveDeIdempotencia(peticion: Pick<PeticionDeCaja, 'headers'>): string {
   const clave = peticion.headers['idempotency-key'];
   // El tope de 200 es el de `peticion_idempotente_clave_razonable_chk`. Sin
   // chequearlo aca, una clave mas larga llegaba a la base y volvia como 500.

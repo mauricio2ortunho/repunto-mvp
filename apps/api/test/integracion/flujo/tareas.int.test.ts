@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect } from 'vitest';
 
 import {
   codigoDe,
+  crearAdmin,
   crearCliente,
   crearClienteEnCaja,
   crearNegocio,
@@ -99,6 +100,7 @@ describe('Tarea nocturna · vencer tarjetas', () => {
       purgadas: {
         codigo_usado: 0,
         peticion_idempotente: 0,
+        peticion_idempotente_admin: 0,
         tope_peticion: 0,
         intento_caja: 0,
       },
@@ -170,6 +172,7 @@ describe('Tarea nocturna · purgar', () => {
   test('borra lo de mas de 24 horas y deja lo reciente', async ({ api, db }) => {
     const negocio = await crearNegocio(db);
     const cliente = await crearCliente(db);
+    const admin = await crearAdmin(db);
     for (const horas of [25, 23]) {
       await db.query(
         `INSERT INTO codigo_usado (cliente_id, ventana, negocio_id, creado_el)
@@ -182,6 +185,13 @@ describe('Tarea nocturna · purgar', () => {
          VALUES ($1, $2, 'POST /caja/sellos', 'huella', '{}',
                  now() - make_interval(hours => $3::int))`,
         [negocio.dispositivo, `clave-de-hace-${horas}-horas`, horas],
+      );
+      await db.query(
+        `INSERT INTO peticion_idempotente_admin
+           (admin_id, clave, endpoint, huella_peticion, respuesta, creado_el)
+         VALUES ($1, $2, 'POST /admin/negocios', 'huella', '{}',
+                 now() - make_interval(hours => $3::int))`,
+        [admin, `clave-de-hace-${horas}-horas`, horas],
       );
       await db.query(
         `INSERT INTO tope_peticion (clave, ventana, cuenta)
@@ -209,6 +219,7 @@ describe('Tarea nocturna · purgar', () => {
       purgadas: {
         codigo_usado: 1,
         peticion_idempotente: 1,
+        peticion_idempotente_admin: 1,
         tope_peticion: 1,
         intento_caja: 1,
       },
@@ -220,6 +231,8 @@ describe('Tarea nocturna · purgar', () => {
     expect(await contar(db, 'intento_caja')).toBe(1);
     expect(await contar(db, 'codigo_usado')).toBe(1);
     expect(await contar(db, 'peticion_idempotente')).toBe(1);
+    expect(await contar(db, 'peticion_idempotente_admin', "clave like '%-23-%'")).toBe(1);
+    expect(await contar(db, 'peticion_idempotente_admin')).toBe(1);
     expect(await contar(db, 'tope_peticion')).toBe(1);
   });
 });

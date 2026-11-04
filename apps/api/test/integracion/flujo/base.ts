@@ -152,6 +152,19 @@ export class Api {
     return this.pedir('POST', '/admin/sesion/cierre', { token });
   }
 
+  negociosDelAdmin(token?: string): Promise<Respuesta> {
+    return this.pedir('GET', '/admin/negocios', { token });
+  }
+
+  /** Sin `clave`, el pedido sale sin Idempotency-Key. */
+  crearNegocioComoAdmin(
+    token: string | undefined,
+    cuerpo: unknown,
+    clave?: string,
+  ): Promise<Respuesta> {
+    return this.pedir('POST', '/admin/negocios', { token, cuerpo, clave });
+  }
+
   /** Lo que dispara Vercel Cron: el secreto va como Bearer. */
   tareaNocturna(secreto?: string): Promise<Respuesta> {
     return this.pedir('GET', '/tareas/nocturna', { token: secreto });

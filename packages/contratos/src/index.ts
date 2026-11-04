@@ -52,14 +52,27 @@ export { esquemaVincularPeticion, esquemaVincularRespuesta } from './vinculacion
 export type { VincularPeticion, VincularRespuesta } from './vinculacion';
 
 export {
+  LIMITES_DEL_NEGOCIO,
   esquemaAdminActual,
+  esquemaCondicionNueva,
   esquemaEntrarComoAdminPeticion,
   esquemaEntrarComoAdminRespuesta,
+  esquemaNegocioCreado,
+  esquemaNegocioDelAdmin,
+  esquemaNegocioNuevo,
+  esquemaNegociosDelAdmin,
+  esquemaProgramaNuevo,
 } from './admin';
 export type {
   AdminActual,
+  CondicionNueva,
   EntrarComoAdminPeticion,
   EntrarComoAdminRespuesta,
+  NegocioCreado,
+  NegocioDelAdmin,
+  NegocioNuevo,
+  NegociosDelAdmin,
+  ProgramaNuevo,
 } from './admin';
 
 export {
