@@ -1,0 +1,334 @@
+/* La lista de negocios y el alta. Pantallas de computadora, que en un
+   telefono pasan a una sola columna. */
+
+.volver {
+  display: inline-block;
+  margin-bottom: var(--espacio-2);
+  color: var(--c-accion);
+  font-size: var(--texto-2);
+  font-weight: var(--peso-medio);
+  text-decoration: none;
+}
+
+.volver:hover {
+  text-decoration: underline;
+}
+
+.problema {
+  display: grid;
+  justify-items: start;
+  gap: var(--espacio-4);
+}
+
+/* ---------- Lista ---------- */
+
+.lista {
+  display: grid;
+  gap: var(--espacio-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.negocio {
+  display: flex;
+  overflow: hidden;
+  border: var(--borde-fino) solid var(--c-borde);
+  border-radius: var(--radio-3);
+  background: var(--c-superficie);
+}
+
+.negocio[data-estado='suspendido'] {
+  opacity: 0.7;
+}
+
+.marca {
+  display: grid;
+  flex: none;
+  place-items: center;
+  padding: var(--espacio-4);
+}
+
+.datos {
+  display: grid;
+  flex: 1;
+  align-content: start;
+  gap: var(--espacio-1);
+  min-width: 0;
+  padding: var(--espacio-4) var(--espacio-5);
+}
+
+.datos p {
+  margin: 0;
+}
+
+.nombre {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-3);
+  align-items: center;
+}
+
+.nombre h2 {
+  margin: 0;
+  font-size: var(--texto-5);
+  font-weight: var(--peso-fuerte);
+}
+
+.suspendido {
+  padding: var(--espacio-1) var(--espacio-3);
+  border-radius: var(--radio-pildora);
+  background: var(--c-enfasis);
+  color: var(--c-sobre-enfasis);
+  font-size: var(--texto-1);
+  font-weight: var(--peso-medio);
+}
+
+.detalle {
+  color: var(--c-texto-suave);
+}
+
+.avisos {
+  display: grid;
+  gap: var(--espacio-1);
+  margin: var(--espacio-2) 0 0;
+  padding: var(--espacio-3) var(--espacio-4);
+  border-radius: var(--radio-1);
+  background: var(--c-alerta-velo);
+  color: var(--c-alerta);
+  font-size: var(--texto-2);
+  font-weight: var(--peso-medio);
+  list-style: none;
+}
+
+/* ---------- Alta ---------- */
+
+.alta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--ancho-costado);
+  gap: var(--espacio-7);
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .alta {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* En el telefono la tarjeta va arriba: se ve el resultado antes de llenar. */
+  .previa {
+    order: -1;
+  }
+}
+
+.formulario {
+  display: grid;
+  gap: var(--espacio-6);
+}
+
+.grupo {
+  display: grid;
+  gap: var(--espacio-5);
+  min-width: 0;
+  margin: 0;
+  padding: var(--espacio-6);
+  border: var(--borde-fino) solid var(--c-borde);
+  border-radius: var(--radio-3);
+  background: var(--c-superficie);
+}
+
+.grupo legend {
+  padding: 0 var(--espacio-2);
+  font-size: var(--texto-4);
+  font-weight: var(--peso-fuerte);
+}
+
+.fila {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--espacio-5);
+}
+
+.etiquetado {
+  display: grid;
+  gap: var(--espacio-2);
+}
+
+.entrada {
+  width: 100%;
+  height: var(--alto-control);
+  padding: 0 var(--espacio-4);
+  border: var(--borde-grueso) solid var(--c-borde-fuerte);
+  border-radius: var(--radio-1);
+  background: var(--c-superficie);
+  color: var(--c-texto);
+  font-family: var(--f-texto);
+  font-size: var(--texto-3);
+}
+
+.entrada:focus {
+  outline: none;
+  border-color: var(--c-accion);
+  box-shadow: 0 0 0 var(--ancho-anillo-foco) var(--c-accion-velo);
+}
+
+.etiquetado[data-problema] .entrada {
+  border-color: var(--c-alerta);
+}
+
+.error {
+  margin: 0;
+  color: var(--c-alerta);
+  font-size: var(--texto-2);
+  font-weight: var(--peso-medio);
+}
+
+.ayuda {
+  margin: 0;
+  color: var(--c-texto-suave);
+  font-size: var(--texto-2);
+}
+
+.colores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-3);
+  align-items: center;
+}
+
+.muestra {
+  width: var(--toque-minimo);
+  height: var(--toque-minimo);
+  border: var(--borde-grueso) solid var(--c-borde);
+  border-radius: var(--radio-pildora);
+  cursor: pointer;
+}
+
+.muestra[aria-pressed='true'] {
+  border-color: var(--c-texto);
+  box-shadow: 0 0 0 var(--ancho-anillo-foco) var(--c-accion-velo);
+}
+
+.otroColor {
+  display: flex;
+  gap: var(--espacio-2);
+  align-items: center;
+  color: var(--c-texto-suave);
+  font-weight: var(--peso-medio);
+  cursor: pointer;
+}
+
+.otroColor input {
+  width: var(--toque-minimo);
+  height: var(--toque-minimo);
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.opciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-3);
+}
+
+.opcion {
+  display: flex;
+  gap: var(--espacio-2);
+  align-items: center;
+  min-height: var(--toque-minimo);
+  padding: 0 var(--espacio-4);
+  border: var(--borde-grueso) solid var(--c-borde);
+  border-radius: var(--radio-pildora);
+  font-weight: var(--peso-medio);
+  cursor: pointer;
+}
+
+.opcion:has(input:checked) {
+  border-color: var(--c-accion);
+  background: var(--c-accion-velo);
+}
+
+.opcion input {
+  margin: 0;
+  accent-color: var(--c-accion);
+}
+
+.opcion svg {
+  width: var(--espacio-6);
+  height: var(--espacio-6);
+  color: var(--c-sello);
+}
+
+.casilla {
+  display: flex;
+  gap: var(--espacio-3);
+  align-items: center;
+  min-height: var(--toque-minimo);
+  font-size: var(--texto-3);
+  cursor: pointer;
+}
+
+.casilla input {
+  width: var(--espacio-5);
+  height: var(--espacio-5);
+  margin: 0;
+  accent-color: var(--c-accion);
+}
+
+/* ---------- Vista previa ---------- */
+
+.previa {
+  position: sticky;
+  top: var(--espacio-6);
+  display: grid;
+  gap: var(--espacio-3);
+  margin: 0;
+}
+
+.leyenda {
+  color: var(--c-texto-suave);
+  font-size: var(--texto-2);
+  font-weight: var(--peso-medio);
+}
+
+/* La misma forma que la tarjeta en la lista del cliente. */
+.tarjeta {
+  overflow: hidden;
+  border: var(--borde-fino) solid var(--c-borde);
+  border-radius: var(--radio-3);
+  background: var(--c-superficie);
+}
+
+.cabecera {
+  display: flex;
+  gap: var(--espacio-3);
+  align-items: center;
+  padding: var(--espacio-4);
+}
+
+.cabecera h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--texto-5);
+  font-weight: var(--peso-fuerte);
+  line-height: var(--interlineado-titulo);
+}
+
+.cuerpo {
+  display: grid;
+  gap: var(--espacio-2);
+  padding: var(--espacio-4);
+  --tamano-sello: var(--tamano-sello-compacto);
+}
+
+.cuerpo p {
+  margin: 0;
+}
+
+.faltan {
+  margin-top: var(--espacio-2);
+  font-size: var(--texto-5);
+  font-weight: var(--peso-negro);
+}

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { Aviso, Boton } from '@repunto/ui';
@@ -85,11 +86,18 @@ export function InicioDeAdmin() {
       <ul className={css.menu}>
         {SECCIONES.map((s) => (
           <li key={s.titulo}>
-            <section className={css.seccion}>
-              <h2>{s.titulo}</h2>
-              <p>{s.texto}</p>
-              <span className={css.pronto}>Próximamente</span>
-            </section>
+            {s.ruta === null ? (
+              <section className={css.seccion}>
+                <h2>{s.titulo}</h2>
+                <p>{s.texto}</p>
+                <span className={css.pronto}>Próximamente</span>
+              </section>
+            ) : (
+              <Link href={s.ruta} className={css.seccion}>
+                <h2>{s.titulo}</h2>
+                <p>{s.texto}</p>
+              </Link>
+            )}
           </li>
         ))}
       </ul>
@@ -98,19 +106,26 @@ export function InicioDeAdmin() {
 }
 
 /** Las etapas del plan del panel; cada una se vuelve un enlace cuando exista. */
-const SECCIONES = [
+const SECCIONES: readonly { titulo: string; texto: string; ruta: string | null }[] = [
   {
     titulo: 'Negocios',
     texto: 'Alta, rubro, colores, logo, promo. Suspender y reactivar.',
+    ruta: '/admin/negocios',
   },
-  { titulo: 'Locales', texto: 'Sucursales con su dirección y el QR para imprimir.' },
+  {
+    titulo: 'Locales',
+    texto: 'Sucursales con su dirección y el QR para imprimir.',
+    ruta: null,
+  },
   {
     titulo: 'Personas',
     texto: 'El dueño, los supervisores y los cajeros, con sus locales.',
+    ruta: null,
   },
-  { titulo: 'Tablets', texto: 'Vincular y revocar las tablets de caja.' },
+  { titulo: 'Tablets', texto: 'Vincular y revocar las tablets de caja.', ruta: null },
   {
     titulo: 'Tablero del piloto',
     texto: 'Último sello de cada tablet y clientes nuevos por local.',
+    ruta: null,
   },
-] as const;
+];

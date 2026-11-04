@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  COLORES_SUGERIDOS_DE_NEGOCIO,
   CONTRASTE_MINIMO,
   ICONOS_DE_SELLO,
   ICONO_DE_SELLO_POR_DEFECTO,
@@ -134,5 +135,25 @@ describe('los rubros', () => {
 
   it('uno que la app no conoce cae en "Otros"', () => {
     expect(tituloDeRubro('veterinaria')).toBe('Otros');
+  });
+});
+
+describe('los colores sugeridos del alta', () => {
+  it('son #RRGGBB, que es lo unico que acepta la base', () => {
+    expect(COLORES_SUGERIDOS_DE_NEGOCIO.filter((c) => !esColorHex(c))).toEqual([]);
+  });
+
+  it('no se repiten', () => {
+    expect(new Set(COLORES_SUGERIDOS_DE_NEGOCIO).size).toBe(
+      COLORES_SUGERIDOS_DE_NEGOCIO.length,
+    );
+  });
+
+  it('con cualquiera, el texto encima llega al contraste minimo', () => {
+    for (const c of COLORES_SUGERIDOS_DE_NEGOCIO) {
+      expect(contrasteEntre(c, colorDeTextoSobre(c))).toBeGreaterThanOrEqual(
+        CONTRASTE_MINIMO,
+      );
+    }
   });
 });

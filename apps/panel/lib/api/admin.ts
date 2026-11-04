@@ -2,8 +2,13 @@ import {
   type AdminActual,
   type EntrarComoAdminPeticion,
   type EntrarComoAdminRespuesta,
+  type NegocioCreado,
+  type NegocioNuevo,
+  type NegociosDelAdmin,
   esquemaAdminActual,
   esquemaEntrarComoAdminRespuesta,
+  esquemaNegocioCreado,
+  esquemaNegociosDelAdmin,
 } from '@repunto/contratos';
 
 import { sesionDeAdmin } from '../sesion-de-admin';
@@ -36,6 +41,33 @@ export function cerrarSesion(): Promise<Respuesta<unknown>> {
   return pedir(
     { metodo: 'POST', ruta: '/admin/sesion/cierre', token: sesionDeAdmin().token() },
     { safeParse: (datos: unknown) => ({ success: true as const, data: datos }) },
+  );
+}
+
+export function negocios(senal?: AbortSignal): Promise<Respuesta<NegociosDelAdmin>> {
+  return pedir(
+    { metodo: 'GET', ruta: '/admin/negocios', senal, token: sesionDeAdmin().token() },
+    esquemaNegociosDelAdmin,
+  );
+}
+
+/**
+ * El alta. La clave la decide quien llama: la misma mientras no se sepa si el
+ * alta paso, para que el reintento no cree dos negocios.
+ */
+export function crearNegocio(
+  peticion: NegocioNuevo,
+  clave: string,
+): Promise<Respuesta<NegocioCreado>> {
+  return pedir(
+    {
+      metodo: 'POST',
+      ruta: '/admin/negocios',
+      cuerpo: peticion,
+      claveDeIdempotencia: clave,
+      token: sesionDeAdmin().token(),
+    },
+    esquemaNegocioCreado,
   );
 }
 

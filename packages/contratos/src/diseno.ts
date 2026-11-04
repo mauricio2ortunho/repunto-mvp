@@ -103,6 +103,25 @@ export function tituloDeRubro(valor: string): string {
   return TITULOS_DE_RUBRO[esRubroDeNegocio(valor) ? valor : 'otro'];
 }
 
+/**
+ * Colores para elegir rapido en el alta de un negocio. Son una ayuda, no una
+ * lista cerrada: el color del negocio es cualquier #RRGGBB, y el texto encima
+ * siempre sale de `colorDeTextoSobre`. El primero es el que trae el
+ * formulario.
+ */
+export const COLORES_SUGERIDOS_DE_NEGOCIO = [
+  '#7A3E1D',
+  '#C2410C',
+  '#B91C1C',
+  '#BE185D',
+  '#6D28D9',
+  '#1D4ED8',
+  '#0F766E',
+  '#15803D',
+  '#CA8A04',
+  '#1F2937',
+] as const;
+
 /** El icono que corresponde dibujar, conocido o no. */
 export function iconoDeSelloDe(valor: string): IconoDeSello {
   return esIconoDeSello(valor) ? valor : ICONO_DE_SELLO_POR_DEFECTO;

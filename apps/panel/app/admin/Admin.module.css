@@ -107,6 +107,15 @@
   background: var(--c-superficie);
 }
 
+a.seccion {
+  color: var(--c-texto);
+  text-decoration: none;
+}
+
+a.seccion:hover {
+  border-color: var(--c-accion);
+}
+
 .seccion h2 {
   margin: 0;
   font-size: var(--texto-5);

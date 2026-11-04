@@ -76,6 +76,7 @@ export type {
 } from './admin';
 
 export {
+  COLORES_SUGERIDOS_DE_NEGOCIO,
   CONTRASTE_MINIMO,
   ICONOS_DE_SELLO,
   ICONO_DE_SELLO_POR_DEFECTO,
