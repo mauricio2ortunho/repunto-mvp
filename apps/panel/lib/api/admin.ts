@@ -2,13 +2,24 @@ import {
   type AdminActual,
   type EntrarComoAdminPeticion,
   type EntrarComoAdminRespuesta,
+  type CondicionCambiada,
+  type CondicionNueva,
+  type DatosDelNegocio,
+  type EstadoDelNegocio,
+  type FichaDelNegocio,
   type NegocioCreado,
   type NegocioNuevo,
   type NegociosDelAdmin,
+  type ProgramaCambiado,
+  type ProgramaNuevo,
   esquemaAdminActual,
+  esquemaCondicionCambiada,
   esquemaEntrarComoAdminRespuesta,
+  esquemaEstadoDelNegocio,
+  esquemaFichaDelNegocio,
   esquemaNegocioCreado,
   esquemaNegociosDelAdmin,
+  esquemaProgramaCambiado,
 } from '@repunto/contratos';
 
 import { sesionDeAdmin } from '../sesion-de-admin';
@@ -68,6 +79,86 @@ export function crearNegocio(
       token: sesionDeAdmin().token(),
     },
     esquemaNegocioCreado,
+  );
+}
+
+export function ficha(
+  id: string,
+  senal?: AbortSignal,
+): Promise<Respuesta<FichaDelNegocio>> {
+  return pedir(
+    {
+      metodo: 'GET',
+      ruta: `/admin/negocios/${encodeURIComponent(id)}`,
+      senal,
+      token: sesionDeAdmin().token(),
+    },
+    esquemaFichaDelNegocio,
+  );
+}
+
+/** Devuelve la ficha ya cambiada. Sin clave: el mismo cuerpo deja lo mismo. */
+export function guardarDatos(
+  id: string,
+  datos: DatosDelNegocio,
+): Promise<Respuesta<FichaDelNegocio>> {
+  return pedir(
+    {
+      metodo: 'POST',
+      ruta: `/admin/negocios/${encodeURIComponent(id)}/datos`,
+      cuerpo: datos,
+      token: sesionDeAdmin().token(),
+    },
+    esquemaFichaDelNegocio,
+  );
+}
+
+export function cambiarPrograma(
+  id: string,
+  programa: ProgramaNuevo,
+  clave: string,
+): Promise<Respuesta<ProgramaCambiado>> {
+  return pedir(
+    {
+      metodo: 'POST',
+      ruta: `/admin/negocios/${encodeURIComponent(id)}/programa`,
+      cuerpo: programa,
+      claveDeIdempotencia: clave,
+      token: sesionDeAdmin().token(),
+    },
+    esquemaProgramaCambiado,
+  );
+}
+
+export function cambiarCondicion(
+  id: string,
+  condicion: CondicionNueva,
+  clave: string,
+): Promise<Respuesta<CondicionCambiada>> {
+  return pedir(
+    {
+      metodo: 'POST',
+      ruta: `/admin/negocios/${encodeURIComponent(id)}/condicion`,
+      cuerpo: condicion,
+      claveDeIdempotencia: clave,
+      token: sesionDeAdmin().token(),
+    },
+    esquemaCondicionCambiada,
+  );
+}
+
+export function cambiarEstado(
+  id: string,
+  estado: EstadoDelNegocio['estado'],
+): Promise<Respuesta<EstadoDelNegocio>> {
+  const accion = estado === 'suspendido' ? 'suspension' : 'reactivacion';
+  return pedir(
+    {
+      metodo: 'POST',
+      ruta: `/admin/negocios/${encodeURIComponent(id)}/${accion}`,
+      token: sesionDeAdmin().token(),
+    },
+    esquemaEstadoDelNegocio,
   );
 }
 

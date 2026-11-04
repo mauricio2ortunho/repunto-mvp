@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
+import type { FichaDelNegocio } from '@repunto/contratos';
+
 import {
   BORRADOR_INICIAL,
   type Borrador,
+  borradorDesde,
   promoEnTexto,
   revisar,
+  revisarCondicion,
+  revisarDatos,
+  revisarPrograma,
 } from './alta-de-negocio';
 
 const completo: Borrador = {
@@ -89,5 +95,98 @@ describe('promoEnTexto', () => {
   it('dice sellos y premio como en la app', () => {
     expect(promoEnTexto(10, 'Un café')).toBe('10 sellos → Un café');
     expect(promoEnTexto(1, 'Un café')).toBe('1 sello → Un café');
+  });
+});
+
+describe('cada parte por separado, como la guarda la ficha', () => {
+  it('la promo no mira el nombre ni la condicion', () => {
+    const r = revisarPrograma({ ...BORRADOR_INICIAL, premio: 'Un pan' });
+    expect(r).toEqual({
+      ok: true,
+      peticion: {
+        sellos_requeridos: 10,
+        premio: 'Un pan',
+        vigencia_meses: 1,
+        horas_entre_sellos: 4,
+        pide_monto: false,
+      },
+    });
+  });
+
+  it('la condicion no mira la promo', () => {
+    const r = revisarCondicion({ ...BORRADOR_INICIAL, condicion: ' Un pan ' });
+    expect(r).toEqual({ ok: true, peticion: { texto: 'Un pan', monto_minimo: null } });
+  });
+
+  it('los datos solo marcan lo suyo', () => {
+    const r = revisarDatos({ ...BORRADOR_INICIAL });
+    expect(r.ok ? [] : Object.keys(r.problemas).sort()).toEqual(['categoria', 'nombre']);
+  });
+});
+
+describe('borradorDesde', () => {
+  const ficha: FichaDelNegocio = {
+    id: '11111111-1111-4111-8111-111111111111',
+    nombre: 'Café Aroma',
+    categoria: 'cafe',
+    estado: 'activo',
+    color_principal: '#7A3E1D',
+    logo_url: null,
+    icono_sello: 'corazon',
+    plantilla_tarjeta: 'moderna',
+    canje_cualquier_local: false,
+    locales_activos: 1,
+    tarjetas_en_curso: 3,
+    creado_el: '2026-11-04T12:00:00.000Z',
+    programa: {
+      version: 2,
+      sellos_requeridos: 8,
+      premio: 'Un café',
+      vigencia_meses: null,
+      horas_entre_sellos: 0,
+      pide_monto: true,
+      desde: '2026-11-04T12:00:00.000Z',
+    },
+    condiciones: [
+      {
+        texto: 'Un capuchino',
+        monto_minimo: '15.50',
+        vigente_desde: '2026-11-04T12:00:00.000Z',
+        autor: { tipo: 'administracion' },
+      },
+    ],
+  };
+
+  it('llena el formulario con lo que el negocio tiene hoy', () => {
+    expect(borradorDesde(ficha)).toEqual({
+      nombre: 'Café Aroma',
+      categoria: 'cafe',
+      color: '#7A3E1D',
+      icono: 'corazon',
+      plantilla: 'moderna',
+      canjeCualquierLocal: false,
+      sellos: '8',
+      premio: 'Un café',
+      vence: false,
+      vigenciaMeses: '1',
+      horasEntreSellos: '0',
+      pideMonto: true,
+      condicion: 'Un capuchino',
+      montoMinimo: '15,50',
+    });
+  });
+
+  it('lo que se carga de vuelta pasa la revision sin cambios', () => {
+    const b = borradorDesde(ficha);
+    expect([revisarDatos(b).ok, revisarPrograma(b).ok, revisarCondicion(b).ok]).toEqual([
+      true,
+      true,
+      true,
+    ]);
+  });
+
+  it('un rubro o un icono que este panel no conoce no rompe el formulario', () => {
+    const b = borradorDesde({ ...ficha, categoria: 'nuevo', icono_sello: 'logo' });
+    expect([b.categoria, b.icono]).toEqual(['otro', 'estrella']);
   });
 });

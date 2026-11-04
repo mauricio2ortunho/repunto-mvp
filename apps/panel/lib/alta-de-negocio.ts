@@ -4,10 +4,20 @@ import {
   LIMITES_DEL_NEGOCIO,
   PLANTILLA_DE_TARJETA_POR_DEFECTO,
   esColorHex,
+  esRubroDeNegocio,
+  esquemaCondicionNueva,
+  esquemaDatosDelNegocio,
   esquemaNegocioNuevo,
+  esquemaProgramaNuevo,
+  iconoDeSelloDe,
+  plantillaDeTarjetaDe,
+  type CondicionNueva,
+  type DatosDelNegocio,
+  type FichaDelNegocio,
   type IconoDeSello,
   type NegocioNuevo,
   type PlantillaDeTarjeta,
+  type ProgramaNuevo,
   type RubroDeNegocio,
 } from '@repunto/contratos';
 
@@ -63,25 +73,47 @@ export const BORRADOR_INICIAL: Readonly<Borrador> = {
   montoMinimo: '',
 };
 
-export type Revision =
-  | { ok: true; peticion: NegocioNuevo }
-  | { ok: false; problemas: Partial<Record<Campo, string>> };
+/**
+ * Cada parte del formulario se revisa sola, porque la ficha del negocio
+ * guarda cada una por separado: la apariencia, la promo y la condicion.
+ */
+export type Revision<T> =
+  { ok: true; peticion: T } | { ok: false; problemas: Partial<Record<Campo, string>> };
 
 const L = LIMITES_DEL_NEGOCIO;
 
-/** Que corregir, campo por campo, o el pedido listo para mandar. */
-export function revisar(b: Borrador): Revision {
+/** Si lo de arriba ya cubre el esquema y algun dia divergen, que no se mande. */
+const NO_SE_PUEDE_MANDAR = 'Revisá los datos del formulario.';
+
+/** Nombre, rubro, apariencia y donde se canjea. */
+export function revisarDatos(b: Borrador): Revision<DatosDelNegocio> {
   const problemas: Partial<Record<Campo, string>> = {};
 
   const nombre = b.nombre.trim();
   if (nombre === '') problemas.nombre = 'Escribí el nombre del negocio.';
   else if (nombre.length > L.nombre) problemas.nombre = `Hasta ${L.nombre} letras.`;
 
-  const categoria = b.categoria;
-  if (categoria === '') problemas.categoria = 'Elegí el rubro.';
+  if (b.categoria === '') problemas.categoria = 'Elegí el rubro.';
 
   if (!esColorHex(b.color))
     problemas.color = 'Elegí un color de la lista o de la paleta.';
+
+  if (Object.keys(problemas).length > 0) return { ok: false, problemas };
+  const datos = esquemaDatosDelNegocio.safeParse({
+    nombre,
+    categoria: b.categoria,
+    color_principal: b.color,
+    icono_sello: b.icono,
+    plantilla_tarjeta: b.plantilla,
+    canje_cualquier_local: b.canjeCualquierLocal,
+  });
+  return datos.success
+    ? { ok: true, peticion: datos.data }
+    : { ok: false, problemas: { nombre: NO_SE_PUEDE_MANDAR } };
+}
+
+export function revisarPrograma(b: Borrador): Revision<ProgramaNuevo> {
+  const problemas: Partial<Record<Campo, string>> = {};
 
   const sellos = entero(b.sellos);
   const { minimo: minS, maximo: maxS } = L.sellosRequeridos;
@@ -108,40 +140,88 @@ export function revisar(b: Borrador): Revision {
     problemas.horasEntreSellos = `Entre ${minH} y ${maxH} horas.`;
   }
 
-  const condicion = b.condicion.trim();
-  if (condicion === '') problemas.condicion = 'Escribí qué compra suma un sello.';
-  else if (condicion.length > L.condicion) {
+  if (Object.keys(problemas).length > 0) return { ok: false, problemas };
+  const programa = esquemaProgramaNuevo.safeParse({
+    sellos_requeridos: sellos,
+    premio,
+    vigencia_meses: vigencia,
+    horas_entre_sellos: horas,
+    pide_monto: b.pideMonto,
+  });
+  return programa.success
+    ? { ok: true, peticion: programa.data }
+    : { ok: false, problemas: { sellos: NO_SE_PUEDE_MANDAR } };
+}
+
+export function revisarCondicion(b: Borrador): Revision<CondicionNueva> {
+  const problemas: Partial<Record<Campo, string>> = {};
+
+  const texto = b.condicion.trim();
+  if (texto === '') problemas.condicion = 'Escribí qué compra suma un sello.';
+  else if (texto.length > L.condicion) {
     problemas.condicion = `Hasta ${L.condicion} letras.`;
   }
 
   const monto = montoDesde(b.montoMinimo);
   if (monto === undefined) problemas.montoMinimo = 'Un monto como 15 o 15,50.';
 
-  if (Object.keys(problemas).length > 0 || categoria === '' || monto === undefined) {
-    return { ok: false, problemas };
-  }
+  if (Object.keys(problemas).length > 0) return { ok: false, problemas };
+  const condicion = esquemaCondicionNueva.safeParse({ texto, monto_minimo: monto });
+  return condicion.success
+    ? { ok: true, peticion: condicion.data }
+    : { ok: false, problemas: { condicion: NO_SE_PUEDE_MANDAR } };
+}
 
-  const peticion = esquemaNegocioNuevo.safeParse({
-    nombre,
-    categoria,
-    color_principal: b.color,
-    icono_sello: b.icono,
-    plantilla_tarjeta: b.plantilla,
-    canje_cualquier_local: b.canjeCualquierLocal,
-    programa: {
-      sellos_requeridos: sellos,
-      premio,
-      vigencia_meses: vigencia,
-      horas_entre_sellos: horas,
-      pide_monto: b.pideMonto,
-    },
-    condicion: { texto: condicion, monto_minimo: monto },
-  });
-  // Lo de arriba ya cubre el esquema; si algun dia divergen, que no se mande.
-  if (!peticion.success) {
-    return { ok: false, problemas: { nombre: 'Revisá los datos del formulario.' } };
+/** El alta: las tres partes juntas, con todos los problemas a la vez. */
+export function revisar(b: Borrador): Revision<NegocioNuevo> {
+  const datos = revisarDatos(b);
+  const programa = revisarPrograma(b);
+  const condicion = revisarCondicion(b);
+  if (!datos.ok || !programa.ok || !condicion.ok) {
+    return {
+      ok: false,
+      problemas: {
+        ...(datos.ok ? {} : datos.problemas),
+        ...(programa.ok ? {} : programa.problemas),
+        ...(condicion.ok ? {} : condicion.problemas),
+      },
+    };
   }
-  return { ok: true, peticion: peticion.data };
+  const alta = esquemaNegocioNuevo.safeParse({
+    ...datos.peticion,
+    programa: programa.peticion,
+    condicion: condicion.peticion,
+  });
+  return alta.success
+    ? { ok: true, peticion: alta.data }
+    : { ok: false, problemas: { nombre: NO_SE_PUEDE_MANDAR } };
+}
+
+/**
+ * El formulario lleno con lo que el negocio tiene hoy, para editarlo en la
+ * ficha. Un valor de diseño que este panel no conoce cae en el de por
+ * defecto, como al dibujarlo.
+ */
+export function borradorDesde(f: FichaDelNegocio): Borrador {
+  const condicion = f.condiciones[0];
+  return {
+    nombre: f.nombre,
+    categoria: esRubroDeNegocio(f.categoria) ? f.categoria : 'otro',
+    color: f.color_principal,
+    icono: iconoDeSelloDe(f.icono_sello),
+    plantilla: plantillaDeTarjetaDe(f.plantilla_tarjeta),
+    canjeCualquierLocal: f.canje_cualquier_local,
+    sellos: String(f.programa?.sellos_requeridos ?? BORRADOR_INICIAL.sellos),
+    premio: f.programa?.premio ?? '',
+    vence: f.programa === null ? true : f.programa.vigencia_meses !== null,
+    vigenciaMeses: String(f.programa?.vigencia_meses ?? BORRADOR_INICIAL.vigenciaMeses),
+    horasEntreSellos: String(
+      f.programa?.horas_entre_sellos ?? BORRADOR_INICIAL.horasEntreSellos,
+    ),
+    pideMonto: f.programa?.pide_monto ?? false,
+    condicion: condicion?.texto ?? '',
+    montoMinimo: condicion?.monto_minimo?.replace('.', ',') ?? '',
+  };
 }
 
 function entero(texto: string): number | null {

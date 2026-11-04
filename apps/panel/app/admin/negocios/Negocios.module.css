@@ -332,3 +332,111 @@
   font-size: var(--texto-5);
   font-weight: var(--peso-negro);
 }
+
+/* ---------- Ficha ---------- */
+
+.tituloDeSeccion {
+  margin: 0;
+  font-size: var(--texto-5);
+  font-weight: var(--peso-fuerte);
+}
+
+/* Los campos dentro de una seccion de la ficha: el marco ya lo pone la seccion. */
+.sinMarco {
+  display: grid;
+  gap: var(--espacio-5);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.suspension {
+  display: grid;
+  justify-items: end;
+  gap: var(--espacio-2);
+  max-width: var(--ancho-costado);
+  text-align: right;
+}
+
+.resumen {
+  display: grid;
+  gap: var(--espacio-2);
+}
+
+.resumen p {
+  margin: 0;
+}
+
+.destacado {
+  font-size: var(--texto-5);
+  font-weight: var(--peso-fuerte);
+}
+
+.frases {
+  display: grid;
+  gap: var(--espacio-1);
+  margin: 0;
+  padding-left: var(--espacio-5);
+}
+
+/* Lo que hay que leer antes de guardar una promo nueva: no se puede pasar por alto. */
+.advertencia {
+  margin: 0;
+  padding: var(--espacio-4);
+  border-left: var(--espacio-1) solid var(--c-premio-borde);
+  border-radius: var(--radio-1);
+  background: var(--c-premio-velo);
+  color: var(--c-sobre-premio-velo);
+  font-size: var(--texto-3);
+  font-weight: var(--peso-medio);
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-4);
+  align-items: center;
+}
+
+.listo {
+  margin: 0;
+  color: var(--c-exito);
+  font-weight: var(--peso-medio);
+}
+
+.historial summary {
+  color: var(--c-accion);
+  font-weight: var(--peso-medio);
+  cursor: pointer;
+}
+
+.historial ul {
+  display: grid;
+  gap: var(--espacio-2);
+  margin: var(--espacio-3) 0 0;
+  padding-left: var(--espacio-5);
+}
+
+/* La fila de la lista es un enlace a la ficha. */
+.enlace {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.enlace:hover .negocio {
+  border-color: var(--c-accion);
+}
+
+@media (max-width: 860px) {
+  .suspension {
+    justify-items: start;
+    text-align: left;
+  }
+}
+
+/* Un boton que no ocupa toda la fila de la grilla. */
+.alInicio {
+  justify-self: start;
+}

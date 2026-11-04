@@ -1,4 +1,4 @@
-import type { NegocioDelAdmin } from '@repunto/contratos';
+import type { FichaDelNegocio, NegocioDelAdmin } from '@repunto/contratos';
 
 /**
  * Lo que le falta a un negocio para funcionar, dicho para el admin. Cada
@@ -28,4 +28,40 @@ export function avisosDelNegocio(n: NegocioDelAdmin): string[] {
 export function localesEnTexto(cantidad: number): string {
   if (cantidad === 0) return 'Sin locales';
   return cantidad === 1 ? '1 local' : `${cantidad} locales`;
+}
+
+type ProgramaDeLaFicha = NonNullable<FichaDelNegocio['programa']>;
+type CondicionDeLaFicha = FichaDelNegocio['condiciones'][number];
+
+/** La promo vigente, en frases cortas, para la ficha. */
+export function describirPrograma(p: ProgramaDeLaFicha): string[] {
+  const vence =
+    p.vigencia_meses === null
+      ? 'La tarjeta no vence'
+      : p.vigencia_meses === 1
+        ? 'Vence al mes del primer sello'
+        : `Vence a los ${p.vigencia_meses} meses del primer sello`;
+  const horas =
+    p.horas_entre_sellos === 0
+      ? 'Sin mínimo entre sellos'
+      : p.horas_entre_sellos === 1
+        ? '1 hora mínima entre sellos'
+        : `${p.horas_entre_sellos} horas mínimas entre sellos`;
+  return [vence, horas, ...(p.pide_monto ? ['Pide el monto de la compra'] : [])];
+}
+
+/**
+ * Lo que el admin tiene que leer antes de guardar una promo nueva
+ * (especificacion, seccion 8): va a suponer que cambio todo, y no.
+ */
+export function avisoDeTarjetasEnCurso(enCurso: number): string {
+  const nuevas = 'La nueva vale para las tarjetas que se abran desde ahora.';
+  if (enCurso === 0) return `No hay tarjetas en curso. ${nuevas}`;
+  const cuantas =
+    enCurso === 1 ? '1 tarjeta en curso sigue' : `${enCurso} tarjetas en curso siguen`;
+  return `${cuantas} con la promo actual hasta completarse o vencer. ${nuevas}`;
+}
+
+export function autorDe(c: CondicionDeLaFicha): string {
+  return c.autor.tipo === 'administracion' ? 'Administración' : c.autor.nombre;
 }

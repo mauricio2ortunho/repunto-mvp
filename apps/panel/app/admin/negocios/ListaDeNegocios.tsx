@@ -75,7 +75,9 @@ export function ListaDeNegocios() {
         <ul className={estilos.lista}>
           {estado.negocios.map((n) => (
             <li key={n.id}>
-              <FilaDeNegocio negocio={n} />
+              <Link href={`/admin/negocios/${n.id}`} className={estilos.enlace}>
+                <FilaDeNegocio negocio={n} />
+              </Link>
             </li>
           ))}
         </ul>
