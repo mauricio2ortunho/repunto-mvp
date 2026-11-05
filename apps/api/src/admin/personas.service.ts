@@ -1,8 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
+  type DatosDePersona,
+  type EstadoDePersona,
   type PersonaCreada,
   type PersonaNueva,
   type PinPuesto,
+  esquemaEstadoDePersona,
   esquemaPersonaCreada,
   esquemaPinPuesto,
 } from '@repunto/contratos';
@@ -91,6 +94,71 @@ export class PersonasDeAdminService {
     return esquemaPinPuesto.parse({ tiene_pin: true });
   }
 
+  /**
+   * `POST .../personas/:persona/datos`. Nombre, rol, telefono y la lista
+   * completa de sus locales. Sacarle un local da de baja esa asignacion, no
+   * la borra: sus turnos viejos la referencian (INV-17). La tablet de ese
+   * local deja de aceptarla al instante (LOCAL_NO_AUTORIZADO).
+   */
+  async actualizar(
+    negocioId: string,
+    personaId: string,
+    datos: DatosDePersona,
+  ): Promise<void> {
+    const telefono = telefonoNormalizado(datos.telefono);
+
+    await this.prisma.$transaction(async (tx) => {
+      await bloquearNegocio(tx, negocioId);
+      const actual = await leerPersona(tx, negocioId, personaId);
+      if ((actual.rol === 'dueno') !== (datos.rol === 'dueno')) {
+        throw errorDeRechazo(rechazo('ROL_NO_CAMBIABLE'), null);
+      }
+      await exigirLocalesDelNegocio(tx, negocioId, datos.locales);
+      // Un dado de baja no choca: el indice es solo entre los activos.
+      if (actual.activo) await exigirNombreLibre(tx, negocioId, datos.nombre, personaId);
+      if (telefono !== null) await exigirTelefonoLibre(tx, telefono, personaId);
+
+      await tx.$executeRaw`
+        UPDATE usuario_negocio
+        SET nombre = ${datos.nombre}, rol = ${datos.rol}::rol_usuario,
+            telefono = ${telefono}
+        WHERE id = ${personaId}::uuid`;
+      await tx.$executeRaw`
+        UPDATE usuario_local SET activo = (local_id = ANY(${datos.locales}::uuid[]))
+        WHERE usuario_id = ${personaId}::uuid`;
+      if (datos.locales.length > 0) {
+        await tx.$executeRaw`
+          INSERT INTO usuario_local (usuario_id, local_id, negocio_id)
+          SELECT ${personaId}::uuid, l, ${negocioId}::uuid
+          FROM unnest(${datos.locales}::uuid[]) AS l
+          ON CONFLICT (usuario_id, local_id) DO UPDATE SET activo = true`;
+      }
+    });
+  }
+
+  /**
+   * Dar de baja o reactivar. De baja, sale de la lista de la tablet y, si
+   * tenia el turno abierto, la caja lo rechaza en el proximo sello
+   * (TURNO_CERRADO). Sus sellos de antes siguen firmados con su nombre.
+   * Reactivar choca si mientras tanto alguien activo tomo su nombre.
+   */
+  async cambiarEstado(
+    negocioId: string,
+    personaId: string,
+    activo: boolean,
+  ): Promise<EstadoDePersona> {
+    await this.prisma.$transaction(async (tx) => {
+      await bloquearNegocio(tx, negocioId);
+      const actual = await leerPersona(tx, negocioId, personaId);
+      if (activo && !actual.activo) {
+        await exigirNombreLibre(tx, negocioId, actual.nombre, personaId);
+      }
+      await tx.$executeRaw`
+        UPDATE usuario_negocio SET activo = ${activo} WHERE id = ${personaId}::uuid`;
+    });
+    return esquemaEstadoDePersona.parse({ activo });
+  }
+
   /** Cual falta: un negocio que no existe es NEGOCIO_NO_ENCONTRADO. */
   private async personaNoEncontrada(negocioId: string): Promise<Error> {
     const negocios = await this.prisma.$queryRaw<{ id: string }[]>`
@@ -98,6 +166,21 @@ export class PersonasDeAdminService {
     if (negocios.length === 0) return negocioNoEncontrado();
     return errorDeRechazo(rechazo('PERSONA_NO_ENCONTRADA'), null);
   }
+}
+
+/** La persona, tomada para esta transaccion, o PERSONA_NO_ENCONTRADA. */
+async function leerPersona(
+  tx: Transaccion,
+  negocioId: string,
+  personaId: string,
+): Promise<{ rol: string; activo: boolean; nombre: string }> {
+  const filas = await tx.$queryRaw<{ rol: string; activo: boolean; nombre: string }[]>`
+    SELECT rol::text AS rol, activo, nombre FROM usuario_negocio
+    WHERE id = ${personaId}::uuid AND negocio_id = ${negocioId}::uuid
+    FOR UPDATE`;
+  const persona = filas[0];
+  if (persona === undefined) throw errorDeRechazo(rechazo('PERSONA_NO_ENCONTRADA'), null);
+  return persona;
 }
 
 /** En E.164 antes de cualquier consulta (INV-20), o TELEFONO_INVALIDO. */

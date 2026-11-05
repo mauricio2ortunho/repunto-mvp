@@ -259,6 +259,38 @@ export class Api {
     });
   }
 
+  datosDePersona(
+    token: string,
+    negocio: string,
+    persona: string,
+    cuerpo: unknown,
+  ): Promise<Respuesta> {
+    return this.pedir('POST', `/admin/negocios/${negocio}/personas/${persona}/datos`, {
+      token,
+      cuerpo,
+    });
+  }
+
+  darDeBaja(
+    token: string | undefined,
+    negocio: string,
+    persona: string,
+  ): Promise<Respuesta> {
+    return this.pedir('POST', `/admin/negocios/${negocio}/personas/${persona}/baja`, {
+      token,
+    });
+  }
+
+  reactivarPersona(token: string, negocio: string, persona: string): Promise<Respuesta> {
+    return this.pedir(
+      'POST',
+      `/admin/negocios/${negocio}/personas/${persona}/reactivacion`,
+      {
+        token,
+      },
+    );
+  }
+
   /** Sin `clave`, el pedido sale sin Idempotency-Key. */
   crearNegocioComoAdmin(
     token: string | undefined,

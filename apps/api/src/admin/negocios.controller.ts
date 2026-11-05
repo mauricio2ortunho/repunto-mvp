@@ -16,6 +16,7 @@ import {
   type EstadoDelNegocio,
   type FichaDelNegocio,
   type LocalCreado,
+  type EstadoDePersona,
   type PersonaCreada,
   type PinPuesto,
   type NegocioCreado,
@@ -23,6 +24,7 @@ import {
   type ProgramaCambiado,
   esquemaCondicionNueva,
   esquemaDatosDelLocal,
+  esquemaDatosDePersona,
   esquemaPersonaNueva,
   esquemaPinNuevo,
   esquemaDatosDelNegocio,
@@ -198,5 +200,38 @@ export class NegociosDeAdminController {
     const pin = esquemaPinNuevo.safeParse(cuerpo);
     if (!pin.success) throw errorDeApi('PETICION_INVALIDA');
     return this.personas.ponerPin(negocio, laPersona, pin.data.pin);
+  }
+
+  @Post(':id/personas/:persona/datos')
+  @HttpCode(HttpStatus.OK)
+  async datosDePersona(
+    @Param('id') id: string,
+    @Param('persona') persona: string,
+    @Body() cuerpo: unknown,
+  ): Promise<FichaDelNegocio> {
+    const negocio = idEnLaRuta(id);
+    const laPersona = idEnLaRuta(persona);
+    const datos = esquemaDatosDePersona.safeParse(cuerpo);
+    if (!datos.success) throw errorDeApi('PETICION_INVALIDA');
+    await this.personas.actualizar(negocio, laPersona, datos.data);
+    return this.negocios.ficha(negocio);
+  }
+
+  @Post(':id/personas/:persona/baja')
+  @HttpCode(HttpStatus.OK)
+  darDeBaja(
+    @Param('id') id: string,
+    @Param('persona') persona: string,
+  ): Promise<EstadoDePersona> {
+    return this.personas.cambiarEstado(idEnLaRuta(id), idEnLaRuta(persona), false);
+  }
+
+  @Post(':id/personas/:persona/reactivacion')
+  @HttpCode(HttpStatus.OK)
+  reactivarPersona(
+    @Param('id') id: string,
+    @Param('persona') persona: string,
+  ): Promise<EstadoDePersona> {
+    return this.personas.cambiarEstado(idEnLaRuta(id), idEnLaRuta(persona), true);
   }
 }

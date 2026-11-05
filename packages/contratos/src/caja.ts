@@ -51,6 +51,7 @@ export const CODIGOS_DE_ERROR_DE_CAJA = [
   'PERSONA_NO_ENCONTRADA',
   'NOMBRE_REPETIDO',
   'TELEFONO_EN_USO',
+  'ROL_NO_CAMBIABLE',
 ] as const;
 
 export type CodigoDeErrorDeCaja = (typeof CODIGOS_DE_ERROR_DE_CAJA)[number];
@@ -168,6 +169,8 @@ export function mensajeParaElCajero(
       return 'Esa persona no está en este negocio. Volvé a la ficha.';
     case 'NOMBRE_REPETIDO':
       return 'Ya hay una persona activa con ese nombre en este negocio. Agregale el apellido o una inicial.';
+    case 'ROL_NO_CAMBIABLE':
+      return 'El dueño no pasa a supervisor ni a cajero, ni al revés. Si te equivocaste, dalo de baja y cargalo de nuevo.';
     case 'TELEFONO_EN_USO':
       return 'Ese teléfono ya es de otra persona en Repunto. Por ahora un teléfono sirve para un solo negocio.';
     case 'TARJETA_NO_ENCONTRADA':

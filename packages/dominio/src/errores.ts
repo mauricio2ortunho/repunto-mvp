@@ -108,6 +108,10 @@ export const CODIGOS_DE_ERROR = [
   /** El telefono ya es de otra persona de la plataforma, en cualquier negocio
    * (usuario_negocio_telefono_key). */
   'TELEFONO_EN_USO',
+  /** El dueno no pasa a supervisor o cajero, ni al reves: entra por otro
+   * lado (telefono y no PIN). Si fue un error, se da de baja y se carga de
+   * nuevo. Entre supervisor y cajero si se cambia. */
+  'ROL_NO_CAMBIABLE',
 ] as const;
 
 export type CodigoDeError = (typeof CODIGOS_DE_ERROR)[number];

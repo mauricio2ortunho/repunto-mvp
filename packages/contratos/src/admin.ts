@@ -260,6 +260,21 @@ export const esquemaPersonaNueva = z
 
 export type PersonaNueva = z.infer<typeof esquemaPersonaNueva>;
 
+/**
+ * `POST .../personas/:persona/datos`: lo mismo que el alta, menos el PIN.
+ * Los locales son la lista completa: el que no esta, se le saca. El rol
+ * cambia entre supervisor y cajero; el dueno no pasa a ninguno de los dos
+ * (ROL_NO_CAMBIABLE).
+ */
+export const esquemaDatosDePersona = esquemaPersonaNueva;
+
+export type DatosDePersona = PersonaNueva;
+
+/** `POST .../personas/:persona/baja` y `/reactivacion`. */
+export const esquemaEstadoDePersona = z.object({ activo: z.boolean() });
+
+export type EstadoDePersona = z.infer<typeof esquemaEstadoDePersona>;
+
 export const esquemaPersonaCreada = z.object({ id: z.uuid() });
 
 export type PersonaCreada = z.infer<typeof esquemaPersonaCreada>;
