@@ -48,6 +48,9 @@ export const CODIGOS_DE_ERROR_DE_CAJA = [
   'ENTRADA_INVALIDA',
   'NEGOCIO_NO_ENCONTRADO',
   'LOCAL_NO_ENCONTRADO',
+  'PERSONA_NO_ENCONTRADA',
+  'NOMBRE_REPETIDO',
+  'TELEFONO_EN_USO',
 ] as const;
 
 export type CodigoDeErrorDeCaja = (typeof CODIGOS_DE_ERROR_DE_CAJA)[number];
@@ -161,6 +164,12 @@ export function mensajeParaElCajero(
       return 'Ese negocio no está. Volvé a la lista de negocios.';
     case 'LOCAL_NO_ENCONTRADO':
       return 'Ese local no está. Volvé a la ficha del negocio.';
+    case 'PERSONA_NO_ENCONTRADA':
+      return 'Esa persona no está en este negocio. Volvé a la ficha.';
+    case 'NOMBRE_REPETIDO':
+      return 'Ya hay una persona activa con ese nombre en este negocio. Agregale el apellido o una inicial.';
+    case 'TELEFONO_EN_USO':
+      return 'Ese teléfono ya es de otra persona en Repunto. Por ahora un teléfono sirve para un solo negocio.';
     case 'TARJETA_NO_ENCONTRADA':
       return 'Esa tarjeta no está.';
     case 'SELLO_YA_CANJEADO':

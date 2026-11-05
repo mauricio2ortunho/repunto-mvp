@@ -165,12 +165,16 @@ export async function crearUsuario(
   negocio: string,
   rol: 'dueno' | 'supervisor' | 'cajero',
   tel: string | null,
+  // Dos activos del mismo negocio no pueden llamarse igual
+  // (usuario_negocio_nombre_unico_entre_activos): el segundo cajero de un
+  // negocio necesita otro nombre.
+  nombre = `${rol} de prueba`,
 ): Promise<string> {
   return insertar(
     db,
     `INSERT INTO usuario_negocio (negocio_id, rol, telefono, nombre)
      VALUES ($1, $2, $3, $4) RETURNING id`,
-    [negocio, rol, tel, `${rol} de prueba`],
+    [negocio, rol, tel, nombre],
   );
 }
 

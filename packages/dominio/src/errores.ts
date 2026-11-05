@@ -100,6 +100,14 @@ export const CODIGOS_DE_ERROR = [
   'NEGOCIO_NO_ENCONTRADO',
   /** El local de la ruta no existe, o es de otro negocio que el de la ruta. */
   'LOCAL_NO_ENCONTRADO',
+  /** La persona de la ruta no existe, o es de otro negocio. */
+  'PERSONA_NO_ENCONTRADA',
+  /** Ya hay una persona activa con ese nombre en el negocio: en la tablet el
+   * nombre es lo que se toca (usuario_negocio_nombre_unico_entre_activos). */
+  'NOMBRE_REPETIDO',
+  /** El telefono ya es de otra persona de la plataforma, en cualquier negocio
+   * (usuario_negocio_telefono_key). */
+  'TELEFONO_EN_USO',
 ] as const;
 
 export type CodigoDeError = (typeof CODIGOS_DE_ERROR)[number];

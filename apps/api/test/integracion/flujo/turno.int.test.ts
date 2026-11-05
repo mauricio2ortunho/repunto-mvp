@@ -54,10 +54,10 @@ describe('GET /caja/usuarios · la lista que el cajero toca', () => {
     // Con PIN pero sin asignacion al local: no aparece.
     await ponerPin(db, negocio.dueno, '0000');
     // Asignado pero sin PIN: un nombre sin PIN es un callejon sin salida.
-    const sinPin = await crearUsuario(db, negocio.id, 'cajero', null);
+    const sinPin = await crearUsuario(db, negocio.id, 'cajero', null, 'cajero sin PIN');
     await asignar(db, sinPin, negocio.local, negocio.id);
     // Con PIN y asignado, pero dado de baja.
-    const deBaja = await crearUsuario(db, negocio.id, 'cajero', null);
+    const deBaja = await crearUsuario(db, negocio.id, 'cajero', null, 'cajero de baja');
     await asignar(db, deBaja, negocio.local, negocio.id);
     await ponerPin(db, deBaja, '1111');
     await db.query('UPDATE usuario_negocio SET activo = false WHERE id = $1', [deBaja]);
@@ -255,7 +255,7 @@ describe('POST /caja/turnos · abrir con PIN', () => {
         usuario,
       ]);
     } else if (quien === 'sinPin') {
-      usuario = await crearUsuario(db, negocio.id, 'cajero', null);
+      usuario = await crearUsuario(db, negocio.id, 'cajero', null, 'cajero sin PIN');
       await asignar(db, usuario, negocio.local, negocio.id);
     } else {
       const otro = await crearNegocio(db);

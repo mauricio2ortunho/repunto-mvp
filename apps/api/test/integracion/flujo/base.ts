@@ -233,6 +233,32 @@ export class Api {
     });
   }
 
+  /** Con `clave` null, el pedido sale sin Idempotency-Key. */
+  crearPersona(
+    token: string | undefined,
+    negocio: string,
+    cuerpo: unknown,
+    clave: string | null = randomUUID(),
+  ): Promise<Respuesta> {
+    return this.pedir('POST', `/admin/negocios/${negocio}/personas`, {
+      token,
+      cuerpo,
+      clave: clave ?? undefined,
+    });
+  }
+
+  ponerPin(
+    token: string | undefined,
+    negocio: string,
+    persona: string,
+    cuerpo: unknown,
+  ): Promise<Respuesta> {
+    return this.pedir('POST', `/admin/negocios/${negocio}/personas/${persona}/pin`, {
+      token,
+      cuerpo,
+    });
+  }
+
   /** Sin `clave`, el pedido sale sin Idempotency-Key. */
   crearNegocioComoAdmin(
     token: string | undefined,

@@ -119,7 +119,7 @@ describe('Codigo publico del cliente', () => {
 });
 
 describe('Seccion 5 · el dueno entra por telefono; supervisor y cajero, por PIN', () => {
-  const USUARIO = `INSERT INTO usuario_negocio (negocio_id, rol, telefono, nombre) VALUES ($1, $2, $3, 'x')`;
+  const USUARIO = `INSERT INTO usuario_negocio (negocio_id, rol, telefono, nombre) VALUES ($1, $2, $3, gen_random_uuid()::text)`;
 
   test('Seccion 5 · rechaza un dueno sin telefono', async ({ db }) => {
     const a = await crearNegocio(db);
@@ -142,6 +142,30 @@ describe('Seccion 5 · el dueno entra por telefono; supervisor y cajero, por PIN
       'dueno',
       tel,
     ]);
+  });
+
+  const CON_NOMBRE = `INSERT INTO usuario_negocio (negocio_id, rol, nombre, activo) VALUES ($1, 'cajero', $2, $3)`;
+
+  test('Seccion 5 · rechaza dos activos del mismo negocio con el mismo nombre, sin importar mayusculas', async ({
+    db,
+  }) => {
+    const a = await crearNegocio(db);
+    await db.query(CON_NOMBRE, [a.id, 'Ana', true]);
+    await esperarRechazo(db, 'usuario_negocio_nombre_unico_entre_activos', CON_NOMBRE, [
+      a.id,
+      'ana',
+      true,
+    ]);
+  });
+
+  test('Seccion 5 · acepta el nombre de uno dado de baja, y el mismo nombre en otro negocio', async ({
+    db,
+  }) => {
+    const a = await crearNegocio(db);
+    const otro = await crearNegocio(db);
+    await db.query(CON_NOMBRE, [a.id, 'Ana', false]);
+    await esperarAceptacion(db, CON_NOMBRE, [a.id, 'Ana', true]);
+    await esperarAceptacion(db, CON_NOMBRE, [otro.id, 'Ana', true]);
   });
 
   test('Seccion 5 · acepta varios cajeros sin telefono: los nulos no chocan', async ({

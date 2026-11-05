@@ -78,6 +78,16 @@ interface FilaDeLocal {
   qr_slug: string;
 }
 
+interface FilaDePersona {
+  id: string;
+  nombre: string;
+  rol: string;
+  telefono: string | null;
+  activo: boolean;
+  tiene_pin: boolean;
+  locales: string[];
+}
+
 interface FilaDeCondicion {
   texto: string;
   monto_minimo: string | null;
@@ -207,6 +217,19 @@ export class NegociosDeAdminService {
       WHERE negocio_id = ${id}::uuid
       ORDER BY activo DESC, creado_el, id`;
 
+    // Del PIN solo si lo tiene: el hash no sale de aca.
+    const personas = await this.prisma.$queryRaw<FilaDePersona[]>`
+      SELECT u.id, u.nombre, u.rol::text AS rol, u.telefono, u.activo,
+             u.pin_hash IS NOT NULL AS tiene_pin,
+             COALESCE((SELECT array_agg(ul.local_id::text ORDER BY ul.creado_el)
+                       FROM usuario_local ul
+                       WHERE ul.usuario_id = u.id AND ul.activo), '{}') AS locales
+      FROM usuario_negocio u
+      WHERE u.negocio_id = ${id}::uuid
+      ORDER BY u.activo DESC,
+               array_position(ARRAY['dueno', 'supervisor', 'cajero'], u.rol::text),
+               lower(u.nombre), u.id`;
+
     return esquemaFichaDelNegocio.parse({
       id: f.id,
       nombre: f.nombre,
@@ -221,6 +244,7 @@ export class NegociosDeAdminService {
       locales_activos: f.locales_activos,
       tarjetas_en_curso: f.tarjetas_en_curso,
       locales,
+      personas,
       programa:
         f.version === null
           ? null
@@ -454,12 +478,12 @@ export class NegociosDeAdminService {
 }
 
 /** Toma el negocio para esta transaccion, o rechaza si no existe. */
-async function bloquearNegocio(tx: Transaccion, id: string): Promise<void> {
+export async function bloquearNegocio(tx: Transaccion, id: string): Promise<void> {
   const filas = await tx.$queryRaw<{ id: string }[]>`
     SELECT id FROM negocio WHERE id = ${id}::uuid FOR UPDATE`;
   if (filas.length === 0) throw negocioNoEncontrado();
 }
 
-function negocioNoEncontrado(): Error {
+export function negocioNoEncontrado(): Error {
   return errorDeRechazo(rechazo('NEGOCIO_NO_ENCONTRADO'), null);
 }

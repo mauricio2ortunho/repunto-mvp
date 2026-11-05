@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { ICONOS_DE_SELLO, PLANTILLAS_DE_TARJETA, RUBROS_DE_NEGOCIO } from './diseno';
+import { FORMATO_DEL_PIN } from './turno';
 
 /**
  * El panel de administracion (apps/panel, /admin). Lo usa el admin de
@@ -196,6 +197,105 @@ export const esquemaEstadoDelLocal = z.object({
 
 export type EstadoDelLocal = z.infer<typeof esquemaEstadoDelLocal>;
 
+// ---------------------------------------------------------------------------
+// Personas
+// ---------------------------------------------------------------------------
+
+/** Quien trabaja en un negocio. El orden es el de la lista de la ficha. */
+export const ROLES_DE_PERSONA = ['dueno', 'supervisor', 'cajero'] as const;
+
+export type RolDePersona = (typeof ROLES_DE_PERSONA)[number];
+
+export const LIMITES_DE_PERSONA = {
+  /** Lo que entra en un boton de la lista de la tablet. */
+  nombre: 40,
+  /** Lo tipeado, antes de normalizar: espacios, guiones, el +591. */
+  telefono: 30,
+} as const;
+
+/**
+ * `POST /admin/negocios/:id/personas`, con Idempotency-Key. Sin PIN: la
+ * clave guarda una huella del cuerpo, y la de un PIN de cuatro digitos se
+ * revierte probando las diez mil combinaciones (lo mismo que abrir turno). El
+ * PIN va despues, en `.../personas/:persona/pin`.
+ *
+ * Solo el dueno tiene telefono: entra a su panel con el. Supervisor y cajero
+ * entran con su nombre y su PIN en la tablet, y tienen que estar en al menos
+ * un local, o no aparecen en ninguna. El telefono va tal cual se tipeo: lo
+ * normaliza la api (INV-20).
+ */
+export const esquemaPersonaNueva = z
+  .object({
+    nombre: texto(LIMITES_DE_PERSONA.nombre),
+    rol: z.enum(ROLES_DE_PERSONA),
+    telefono: z.string().trim().min(1).max(LIMITES_DE_PERSONA.telefono).nullable(),
+    locales: z.array(z.uuid()).max(50),
+  })
+  .superRefine((p, ctx) => {
+    if (p.rol === 'dueno' && p.telefono === null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['telefono'],
+        message: 'El dueño entra con su teléfono.',
+      });
+    }
+    if (p.rol !== 'dueno' && p.telefono !== null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['telefono'],
+        message: 'Solo el dueño tiene teléfono.',
+      });
+    }
+    if (p.rol !== 'dueno' && p.locales.length === 0) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['locales'],
+        message: 'Tiene que estar en un local.',
+      });
+    }
+    if (new Set(p.locales).size !== p.locales.length) {
+      ctx.addIssue({ code: 'custom', path: ['locales'], message: 'Locales repetidos.' });
+    }
+  });
+
+export type PersonaNueva = z.infer<typeof esquemaPersonaNueva>;
+
+export const esquemaPersonaCreada = z.object({ id: z.uuid() });
+
+export type PersonaCreada = z.infer<typeof esquemaPersonaCreada>;
+
+/**
+ * `POST .../personas/:persona/pin`: poner o cambiar el PIN. Sin clave: poner
+ * dos veces el mismo PIN deja lo mismo. La api lo guarda hasheado y no lo
+ * devuelve nunca.
+ */
+export const esquemaPinNuevo = z.object({
+  pin: z.string().regex(FORMATO_DEL_PIN),
+});
+
+export type PinNuevo = z.infer<typeof esquemaPinNuevo>;
+
+export const esquemaPinPuesto = z.object({ tiene_pin: z.literal(true) });
+
+export type PinPuesto = z.infer<typeof esquemaPinPuesto>;
+
+/**
+ * Una persona en la ficha. Del PIN solo se sabe si lo tiene: sin PIN no
+ * aparece en la tablet, y la tablet no lo explica. `locales` son los que
+ * tiene asignados hoy.
+ */
+export const esquemaPersonaDelAdmin = z.object({
+  id: z.uuid(),
+  nombre: z.string(),
+  rol: z.enum(ROLES_DE_PERSONA),
+  telefono: z.string().nullable(),
+  activo: z.boolean(),
+  tiene_pin: z.boolean(),
+  locales: z.array(z.uuid()),
+});
+
+export type PersonaDelAdmin = z.infer<typeof esquemaPersonaDelAdmin>;
+
 /**
  * `GET /admin/negocios/:id`: la ficha. Todo lo que el admin puede cambiar, con
  * lo que hace falta para decidir: cuantas tarjetas siguen con la promo
@@ -224,6 +324,8 @@ export const esquemaFichaDelNegocio = esquemaNegocioDelAdmin
     tarjetas_en_curso: z.int().nonnegative(),
     /** Los abiertos primero; cerrados tambien, con su historial. */
     locales: z.array(esquemaLocalDelAdmin),
+    /** Los activos primero, por rol y por nombre; los dados de baja tambien. */
+    personas: z.array(esquemaPersonaDelAdmin),
     /** La vigente primero. Las ultimas, no todas. */
     condiciones: z.array(
       z.object({

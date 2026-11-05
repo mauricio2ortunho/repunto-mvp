@@ -138,6 +138,7 @@ describe('borradorDesde', () => {
     locales_activos: 1,
     tarjetas_en_curso: 3,
     locales: [],
+    personas: [],
     creado_el: '2026-11-04T12:00:00.000Z',
     programa: {
       version: 2,

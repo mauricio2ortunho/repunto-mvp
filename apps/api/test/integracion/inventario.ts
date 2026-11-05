@@ -73,17 +73,20 @@ function primerCodigo(celda: string | undefined): string | null {
 export async function leerCatalogo(db: Db): Promise<Garantia[]> {
   const { rows } = await db.query<Garantia>(`
     -- PK, UNIQUE y UNIQUE parcial: los indices unicos, con sus columnas en orden.
+    -- pg_get_indexdef por columna devuelve el nombre de la columna, o la
+    -- expresion si la clave es una (lower(nombre)): leer pg_attribute solo
+    -- veria las columnas y se saltearia las expresiones.
     SELECT i.relname AS nombre,
            t.relname AS tabla,
            CASE WHEN x.indisprimary THEN 'PK'
                 WHEN x.indpred IS NOT NULL THEN 'UNIQUE parcial'
                 ELSE 'UNIQUE' END AS tipo,
-           '(' || string_agg(a.attname, ', ' ORDER BY k.orden) || ')' AS definicion
+           '(' || string_agg(pg_get_indexdef(x.indexrelid, k.orden::int, true), ', '
+                             ORDER BY k.orden) || ')' AS definicion
     FROM pg_index x
     JOIN pg_class i ON i.oid = x.indexrelid
     JOIN pg_class t ON t.oid = x.indrelid
-    CROSS JOIN LATERAL unnest(x.indkey::int2[]) WITH ORDINALITY AS k(attnum, orden)
-    JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = k.attnum
+    CROSS JOIN LATERAL generate_series(1, x.indnkeyatts) AS k(orden)
     WHERE t.relnamespace = 'public'::regnamespace
       AND x.indisunique
       AND t.relname <> '_prisma_migrations'

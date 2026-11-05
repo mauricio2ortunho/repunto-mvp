@@ -4,6 +4,8 @@ import {
   LIMITES_DEL_LOCAL,
   LIMITES_DEL_NEGOCIO,
   esquemaDatosDelLocal,
+  esquemaPersonaNueva,
+  esquemaPinNuevo,
   esquemaNegocioNuevo,
   type NegocioNuevo,
 } from './admin';
@@ -115,5 +117,51 @@ describe('esquemaDatosDelLocal', () => {
 
   it('el QR no viaja: lo pone la api', () => {
     expect(esquemaDatosDelLocal.parse({ ...local, qr_slug: 'elegido' })).toEqual(local);
+  });
+});
+
+describe('esquemaPersonaNueva', () => {
+  const LOCAL = '11111111-1111-4111-8111-111111111111';
+  const cajera = { nombre: 'Ana', rol: 'cajero', telefono: null, locales: [LOCAL] };
+  const duena = { nombre: 'Rocío', rol: 'dueno', telefono: '70012345', locales: [] };
+
+  it('acepta una cajera con local y un dueño con teléfono y sin locales', () => {
+    expect(esquemaPersonaNueva.safeParse(cajera).success).toBe(true);
+    expect(esquemaPersonaNueva.safeParse(duena).success).toBe(true);
+  });
+
+  it('el dueño necesita teléfono; supervisor y cajero no lo llevan', () => {
+    expect(esquemaPersonaNueva.safeParse({ ...duena, telefono: null }).success).toBe(
+      false,
+    );
+    expect(
+      esquemaPersonaNueva.safeParse({ ...cajera, telefono: '70012345' }).success,
+    ).toBe(false);
+  });
+
+  it('supervisor y cajero tienen que estar en algún local, sin repetir', () => {
+    expect(esquemaPersonaNueva.safeParse({ ...cajera, locales: [] }).success).toBe(false);
+    expect(
+      esquemaPersonaNueva.safeParse({ ...cajera, rol: 'supervisor', locales: [] })
+        .success,
+    ).toBe(false);
+    expect(
+      esquemaPersonaNueva.safeParse({ ...cajera, locales: [LOCAL, LOCAL] }).success,
+    ).toBe(false);
+  });
+
+  it('el PIN no viaja en el alta', () => {
+    expect(esquemaPersonaNueva.parse({ ...cajera, pin: '1234' })).not.toHaveProperty(
+      'pin',
+    );
+  });
+});
+
+describe('esquemaPinNuevo', () => {
+  it('son cuatro dígitos, ni más ni menos', () => {
+    expect(esquemaPinNuevo.safeParse({ pin: '0042' }).success).toBe(true);
+    for (const pin of ['123', '12345', '12a4', ' 1234']) {
+      expect(esquemaPinNuevo.safeParse({ pin }).success).toBe(false);
+    }
   });
 });

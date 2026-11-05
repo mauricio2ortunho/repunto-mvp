@@ -16,11 +16,15 @@ import {
   type EstadoDelNegocio,
   type FichaDelNegocio,
   type LocalCreado,
+  type PersonaCreada,
+  type PinPuesto,
   type NegocioCreado,
   type NegociosDelAdmin,
   type ProgramaCambiado,
   esquemaCondicionNueva,
   esquemaDatosDelLocal,
+  esquemaPersonaNueva,
+  esquemaPinNuevo,
   esquemaDatosDelNegocio,
   esquemaNegocioNuevo,
   esquemaProgramaNuevo,
@@ -30,12 +34,14 @@ import { errorDeApi } from '../caja/errores-http';
 import { claveDeIdempotencia, idEnLaRuta } from '../caja/peticion';
 import { GuardDeAdmin, type PeticionDeAdmin } from './admin.guard';
 import { NegociosDeAdminService } from './negocios.service';
+import { PersonasDeAdminService } from './personas.service';
 
 @Controller('admin/negocios')
 @UseGuards(GuardDeAdmin)
 export class NegociosDeAdminController {
   constructor(
     @Inject(NegociosDeAdminService) private readonly negocios: NegociosDeAdminService,
+    @Inject(PersonasDeAdminService) private readonly personas: PersonasDeAdminService,
   ) {}
 
   @Get()
@@ -163,5 +169,34 @@ export class NegociosDeAdminController {
     @Param('local') local: string,
   ): Promise<EstadoDelLocal> {
     return this.negocios.cambiarEstadoDelLocal(idEnLaRuta(id), idEnLaRuta(local), true);
+  }
+
+  @Post(':id/personas')
+  @HttpCode(HttpStatus.CREATED)
+  crearPersona(
+    @Req() peticion: PeticionDeAdmin,
+    @Param('id') id: string,
+    @Body() cuerpo: unknown,
+  ): Promise<PersonaCreada> {
+    const negocio = idEnLaRuta(id);
+    const clave = claveDeIdempotencia(peticion);
+    const persona = esquemaPersonaNueva.safeParse(cuerpo);
+    if (!persona.success) throw errorDeApi('PETICION_INVALIDA');
+    return this.personas.crear(peticion.admin.id, negocio, clave, persona.data);
+  }
+
+  /** Sin Idempotency-Key: la huella del cuerpo dejaria el PIN a la vista. */
+  @Post(':id/personas/:persona/pin')
+  @HttpCode(HttpStatus.OK)
+  ponerPin(
+    @Param('id') id: string,
+    @Param('persona') persona: string,
+    @Body() cuerpo: unknown,
+  ): Promise<PinPuesto> {
+    const negocio = idEnLaRuta(id);
+    const laPersona = idEnLaRuta(persona);
+    const pin = esquemaPinNuevo.safeParse(cuerpo);
+    if (!pin.success) throw errorDeApi('PETICION_INVALIDA');
+    return this.personas.ponerPin(negocio, laPersona, pin.data.pin);
   }
 }
