@@ -304,7 +304,7 @@ export function CamposDeCondicion({ f }: PropsDeCampos) {
   );
 }
 
-function Etiquetado(p: {
+export function Etiquetado(p: {
   id: string;
   titulo: string;
   problema: string | undefined;

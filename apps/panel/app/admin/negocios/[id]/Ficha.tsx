@@ -34,6 +34,7 @@ import {
 } from '../Campos';
 import estilos from '../Negocios.module.css';
 import { VistaPrevia } from '../nuevo/VistaPrevia';
+import { SeccionLocales } from './Locales';
 
 type Estado =
   | { tipo: 'cargando' }
@@ -154,6 +155,7 @@ export function Ficha() {
         fallo={fallo}
         alGuardar={() => void cargar()}
       />
+      <SeccionLocales ficha={ficha} fallo={fallo} alCambiar={() => void cargar()} />
     </main>
   );
 }

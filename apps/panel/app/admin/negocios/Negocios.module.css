@@ -440,3 +440,38 @@
 .alInicio {
   justify-self: start;
 }
+
+/* ---------- Locales de la ficha ---------- */
+
+.locales {
+  display: grid;
+  gap: var(--espacio-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.local {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-4);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--espacio-4);
+  border: var(--borde-fino) solid var(--c-borde);
+  border-radius: var(--radio-2);
+}
+
+.local[data-activo='false'] {
+  background: var(--c-fondo);
+}
+
+.local > form {
+  flex: 1;
+}
+
+.datosDelLocal {
+  display: grid;
+  gap: var(--espacio-1);
+  min-width: 0;
+}

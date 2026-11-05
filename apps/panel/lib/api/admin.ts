@@ -4,9 +4,12 @@ import {
   type EntrarComoAdminRespuesta,
   type CondicionCambiada,
   type CondicionNueva,
+  type DatosDelLocal,
   type DatosDelNegocio,
+  type EstadoDelLocal,
   type EstadoDelNegocio,
   type FichaDelNegocio,
+  type LocalCreado,
   type NegocioCreado,
   type NegocioNuevo,
   type NegociosDelAdmin,
@@ -15,8 +18,10 @@ import {
   esquemaAdminActual,
   esquemaCondicionCambiada,
   esquemaEntrarComoAdminRespuesta,
+  esquemaEstadoDelLocal,
   esquemaEstadoDelNegocio,
   esquemaFichaDelNegocio,
+  esquemaLocalCreado,
   esquemaNegocioCreado,
   esquemaNegociosDelAdmin,
   esquemaProgramaCambiado,
@@ -159,6 +164,56 @@ export function cambiarEstado(
       token: sesionDeAdmin().token(),
     },
     esquemaEstadoDelNegocio,
+  );
+}
+
+export function crearLocal(
+  negocio: string,
+  datos: DatosDelLocal,
+  clave: string,
+): Promise<Respuesta<LocalCreado>> {
+  return pedir(
+    {
+      metodo: 'POST',
+      ruta: `/admin/negocios/${encodeURIComponent(negocio)}/locales`,
+      cuerpo: datos,
+      claveDeIdempotencia: clave,
+      token: sesionDeAdmin().token(),
+    },
+    esquemaLocalCreado,
+  );
+}
+
+/** Devuelve la ficha ya cambiada. Sin clave: el mismo cuerpo deja lo mismo. */
+export function guardarLocal(
+  negocio: string,
+  local: string,
+  datos: DatosDelLocal,
+): Promise<Respuesta<FichaDelNegocio>> {
+  return pedir(
+    {
+      metodo: 'POST',
+      ruta: `/admin/negocios/${encodeURIComponent(negocio)}/locales/${encodeURIComponent(local)}/datos`,
+      cuerpo: datos,
+      token: sesionDeAdmin().token(),
+    },
+    esquemaFichaDelNegocio,
+  );
+}
+
+export function cambiarEstadoDelLocal(
+  negocio: string,
+  local: string,
+  activo: boolean,
+): Promise<Respuesta<EstadoDelLocal>> {
+  const accion = activo ? 'reapertura' : 'cierre';
+  return pedir(
+    {
+      metodo: 'POST',
+      ruta: `/admin/negocios/${encodeURIComponent(negocio)}/locales/${encodeURIComponent(local)}/${accion}`,
+      token: sesionDeAdmin().token(),
+    },
+    esquemaEstadoDelLocal,
   );
 }
 
