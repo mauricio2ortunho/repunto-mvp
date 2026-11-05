@@ -195,6 +195,44 @@ export class Api {
     return this.pedir('POST', `/admin/negocios/${id}/reactivacion`, { token });
   }
 
+  /** Con `clave` null, el pedido sale sin Idempotency-Key. */
+  crearLocal(
+    token: string | undefined,
+    negocio: string,
+    cuerpo: unknown,
+    clave: string | null = randomUUID(),
+  ): Promise<Respuesta> {
+    return this.pedir('POST', `/admin/negocios/${negocio}/locales`, {
+      token,
+      cuerpo,
+      clave: clave ?? undefined,
+    });
+  }
+
+  datosDelLocal(
+    token: string,
+    negocio: string,
+    local: string,
+    cuerpo: unknown,
+  ): Promise<Respuesta> {
+    return this.pedir('POST', `/admin/negocios/${negocio}/locales/${local}/datos`, {
+      token,
+      cuerpo,
+    });
+  }
+
+  cerrarLocal(token: string, negocio: string, local: string): Promise<Respuesta> {
+    return this.pedir('POST', `/admin/negocios/${negocio}/locales/${local}/cierre`, {
+      token,
+    });
+  }
+
+  reabrirLocal(token: string, negocio: string, local: string): Promise<Respuesta> {
+    return this.pedir('POST', `/admin/negocios/${negocio}/locales/${local}/reapertura`, {
+      token,
+    });
+  }
+
   /** Sin `clave`, el pedido sale sin Idempotency-Key. */
   crearNegocioComoAdmin(
     token: string | undefined,

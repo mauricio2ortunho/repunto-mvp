@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { LIMITES_DEL_NEGOCIO, esquemaNegocioNuevo, type NegocioNuevo } from './admin';
+import {
+  LIMITES_DEL_LOCAL,
+  LIMITES_DEL_NEGOCIO,
+  esquemaDatosDelLocal,
+  esquemaNegocioNuevo,
+  type NegocioNuevo,
+} from './admin';
 
 const valido: NegocioNuevo = {
   nombre: 'Café Aroma',
@@ -83,5 +89,31 @@ describe('esquemaNegocioNuevo', () => {
 
   it('el maximo de sellos es el que dibuja la tarjeta', () => {
     expect(LIMITES_DEL_NEGOCIO.sellosRequeridos.maximo).toBe(30);
+  });
+});
+
+describe('esquemaDatosDelLocal', () => {
+  const local = { nombre: 'Equipetrol', direccion: 'Av. San Martín 123' };
+
+  it('acepta nombre y dirección, sin espacios de más', () => {
+    expect(
+      esquemaDatosDelLocal.parse({ nombre: ' Centro ', direccion: local.direccion }),
+    ).toEqual({ nombre: 'Centro', direccion: local.direccion });
+  });
+
+  it('pide los dos, no vacíos ni más largos que el límite', () => {
+    for (const cuerpo of [
+      { nombre: local.nombre },
+      { direccion: local.direccion },
+      { ...local, nombre: '   ' },
+      { ...local, nombre: 'x'.repeat(LIMITES_DEL_LOCAL.nombre + 1) },
+      { ...local, direccion: 'x'.repeat(LIMITES_DEL_LOCAL.direccion + 1) },
+    ]) {
+      expect(esquemaDatosDelLocal.safeParse(cuerpo).success).toBe(false);
+    }
+  });
+
+  it('el QR no viaja: lo pone la api', () => {
+    expect(esquemaDatosDelLocal.parse({ ...local, qr_slug: 'elegido' })).toEqual(local);
   });
 });

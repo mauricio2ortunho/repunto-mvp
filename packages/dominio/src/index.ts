@@ -96,6 +96,7 @@ export {
   formatearCodigoDeVinculacion,
   normalizarCodigoDeVinculacion,
 } from './vinculacion';
+export { LARGO_QR_DEL_LOCAL, qrDelLocalDesde } from './local';
 export type {
   DecisionDeVinculacion,
   EntradaDeVinculacion,

@@ -98,6 +98,8 @@ export const CODIGOS_DE_ERROR = [
   // Panel de administracion.
   /** El negocio de la ruta no existe. */
   'NEGOCIO_NO_ENCONTRADO',
+  /** El local de la ruta no existe, o es de otro negocio que el de la ruta. */
+  'LOCAL_NO_ENCONTRADO',
 ] as const;
 
 export type CodigoDeError = (typeof CODIGOS_DE_ERROR)[number];

@@ -150,6 +150,52 @@ export const esquemaNegociosDelAdmin = z.object({
 
 export type NegociosDelAdmin = z.infer<typeof esquemaNegociosDelAdmin>;
 
+// ---------------------------------------------------------------------------
+// Locales
+// ---------------------------------------------------------------------------
+
+export const LIMITES_DEL_LOCAL = {
+  nombre: 60,
+  direccion: 160,
+} as const;
+
+/**
+ * `POST /admin/negocios/:id/locales` (con Idempotency-Key) y
+ * `POST /admin/negocios/:id/locales/:local/datos`. El QR no se elige: lo pone
+ * la api, al azar, porque es lo unico que impide anotarse desde la casa.
+ */
+export const esquemaDatosDelLocal = z.object({
+  nombre: texto(LIMITES_DEL_LOCAL.nombre),
+  direccion: texto(LIMITES_DEL_LOCAL.direccion),
+});
+
+export type DatosDelLocal = z.infer<typeof esquemaDatosDelLocal>;
+
+export const esquemaLocalCreado = z.object({ id: z.uuid() });
+
+export type LocalCreado = z.infer<typeof esquemaLocalCreado>;
+
+/**
+ * Un local en la ficha. El `qr_slug` viaja solo hasta aca, al admin, que es
+ * quien imprime el cartel: la app del cliente nunca lo recibe.
+ */
+export const esquemaLocalDelAdmin = z.object({
+  id: z.uuid(),
+  nombre: z.string(),
+  direccion: z.string(),
+  activo: z.boolean(),
+  qr_slug: z.string(),
+});
+
+export type LocalDelAdmin = z.infer<typeof esquemaLocalDelAdmin>;
+
+/** `POST .../locales/:local/cierre` y `/reapertura`. */
+export const esquemaEstadoDelLocal = z.object({
+  activo: z.boolean(),
+});
+
+export type EstadoDelLocal = z.infer<typeof esquemaEstadoDelLocal>;
+
 /**
  * `GET /admin/negocios/:id`: la ficha. Todo lo que el admin puede cambiar, con
  * lo que hace falta para decidir: cuantas tarjetas siguen con la promo
@@ -176,6 +222,8 @@ export const esquemaFichaDelNegocio = esquemaNegocioDelAdmin
      * (INV-6), asi que un cambio de promo no las toca.
      */
     tarjetas_en_curso: z.int().nonnegative(),
+    /** Los abiertos primero; cerrados tambien, con su historial. */
+    locales: z.array(esquemaLocalDelAdmin),
     /** La vigente primero. Las ultimas, no todas. */
     condiciones: z.array(
       z.object({

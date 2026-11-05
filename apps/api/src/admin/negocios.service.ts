@@ -1,25 +1,32 @@
+import { randomBytes } from 'node:crypto';
+
 import { Inject, Injectable } from '@nestjs/common';
 import {
   CONDICIONES_EN_LA_FICHA,
   type CondicionCambiada,
   type CondicionNueva,
+  type DatosDelLocal,
   type DatosDelNegocio,
+  type EstadoDelLocal,
   type EstadoDelNegocio,
   type FichaDelNegocio,
+  type LocalCreado,
   type NegocioCreado,
   type NegocioNuevo,
   type NegociosDelAdmin,
   type ProgramaCambiado,
   type ProgramaNuevo,
   esquemaCondicionCambiada,
+  esquemaEstadoDelLocal,
   esquemaEstadoDelNegocio,
   esquemaFichaDelNegocio,
+  esquemaLocalCreado,
   esquemaNegocioCreado,
   esquemaNegociosDelAdmin,
   esquemaProgramaCambiado,
 } from '@repunto/contratos';
 
-import { rechazo } from '@repunto/dominio';
+import { LARGO_QR_DEL_LOCAL, qrDelLocalDesde, rechazo } from '@repunto/dominio';
 
 import { errorDeRechazo } from '../caja/errores-http';
 import type { Transaccion } from '../caja/lectura';
@@ -61,6 +68,14 @@ interface FilaDeFicha {
   horas_entre_sellos: number | null;
   pide_monto: boolean | null;
   programa_desde: Date | null;
+}
+
+interface FilaDeLocal {
+  id: string;
+  nombre: string;
+  direccion: string;
+  activo: boolean;
+  qr_slug: string;
 }
 
 interface FilaDeCondicion {
@@ -187,6 +202,11 @@ export class NegociosDeAdminService {
       ORDER BY c.vigente_desde DESC, c.creado_el DESC
       LIMIT ${CONDICIONES_EN_LA_FICHA}`;
 
+    const locales = await this.prisma.$queryRaw<FilaDeLocal[]>`
+      SELECT id, nombre, direccion, activo, qr_slug FROM local
+      WHERE negocio_id = ${id}::uuid
+      ORDER BY activo DESC, creado_el, id`;
+
     return esquemaFichaDelNegocio.parse({
       id: f.id,
       nombre: f.nombre,
@@ -200,6 +220,7 @@ export class NegociosDeAdminService {
       creado_el: f.creado_el.toISOString(),
       locales_activos: f.locales_activos,
       tarjetas_en_curso: f.tarjetas_en_curso,
+      locales,
       programa:
         f.version === null
           ? null
@@ -346,6 +367,89 @@ export class NegociosDeAdminService {
       UPDATE negocio SET estado = ${estado}::estado_negocio WHERE id = ${id}::uuid`;
     if (cambiadas === 0) throw negocioNoEncontrado();
     return esquemaEstadoDelNegocio.parse({ estado });
+  }
+
+  /**
+   * `POST /admin/negocios/:id/locales`: un local nuevo, abierto, con su QR al
+   * azar. Abierto y con la promo del negocio, el negocio aparece en "Donde
+   * juntar sellos"; para sellar le falta una tablet y alguien que la use.
+   */
+  async crearLocal(
+    adminId: string,
+    negocioId: string,
+    clave: string,
+    datos: DatosDelLocal,
+  ): Promise<LocalCreado> {
+    // El negocio va en la huella: el mismo local para otro negocio no es un
+    // reintento.
+    const peticion = {
+      admin_id: adminId,
+      endpoint: 'POST /admin/negocios/:id/locales',
+      clave,
+      cuerpo: { negocio_id: negocioId, ...datos },
+    };
+
+    return this.prisma.$transaction(async (tx) => {
+      const guardada = await reservarIdempotenciaDeAdmin(tx, peticion);
+      if (guardada !== null) return esquemaLocalCreado.parse(guardada);
+
+      await bloquearNegocio(tx, negocioId);
+      // Con 400 billones de combinaciones no se repite; si alguna vez pasa,
+      // local_qr_slug_key lo rechaza y el admin vuelve a tocar.
+      const qr = qrDelLocalDesde(randomBytes(LARGO_QR_DEL_LOCAL));
+      const filas = await tx.$queryRaw<{ id: string }[]>`
+        INSERT INTO local (negocio_id, nombre, direccion, qr_slug)
+        VALUES (${negocioId}::uuid, ${datos.nombre}, ${datos.direccion}, ${qr})
+        RETURNING id`;
+
+      const respuesta = esquemaLocalCreado.parse({ id: filas[0]?.id });
+      await guardarRespuestaDeAdmin(tx, peticion, respuesta);
+      return respuesta;
+    });
+  }
+
+  /**
+   * `POST /admin/negocios/:id/locales/:local/datos`. Nombre y direccion, al
+   * instante; el QR impreso sigue valiendo.
+   */
+  async actualizarLocal(
+    negocioId: string,
+    localId: string,
+    datos: DatosDelLocal,
+  ): Promise<FichaDelNegocio> {
+    const cambiadas = await this.prisma.$executeRaw`
+      UPDATE local SET nombre = ${datos.nombre}, direccion = ${datos.direccion}
+      WHERE id = ${localId}::uuid AND negocio_id = ${negocioId}::uuid`;
+    if (cambiadas === 0) throw await this.localNoEncontrado(negocioId);
+    return this.ficha(negocioId);
+  }
+
+  /**
+   * Cerrar o reabrir un local. Cerrado, sus tablets reciben
+   * LOCAL_NO_AUTORIZADO, su QR deja de anotar gente y sale de "Donde juntar
+   * sellos". No se borra nada: el historial queda (INV-17).
+   */
+  async cambiarEstadoDelLocal(
+    negocioId: string,
+    localId: string,
+    activo: boolean,
+  ): Promise<EstadoDelLocal> {
+    const cambiadas = await this.prisma.$executeRaw`
+      UPDATE local SET activo = ${activo}
+      WHERE id = ${localId}::uuid AND negocio_id = ${negocioId}::uuid`;
+    if (cambiadas === 0) throw await this.localNoEncontrado(negocioId);
+    return esquemaEstadoDelLocal.parse({ activo });
+  }
+
+  /**
+   * Cual de los dos falta: un negocio que no existe es NEGOCIO_NO_ENCONTRADO
+   * aunque el local tampoco este, como en el resto de la ficha.
+   */
+  private async localNoEncontrado(negocioId: string): Promise<Error> {
+    const negocios = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT id FROM negocio WHERE id = ${negocioId}::uuid`;
+    if (negocios.length === 0) return negocioNoEncontrado();
+    return errorDeRechazo(rechazo('LOCAL_NO_ENCONTRADO'), null);
   }
 }
 

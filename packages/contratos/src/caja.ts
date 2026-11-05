@@ -47,6 +47,7 @@ export const CODIGOS_DE_ERROR_DE_CAJA = [
   'VINCULACION_INVALIDA',
   'ENTRADA_INVALIDA',
   'NEGOCIO_NO_ENCONTRADO',
+  'LOCAL_NO_ENCONTRADO',
 ] as const;
 
 export type CodigoDeErrorDeCaja = (typeof CODIGOS_DE_ERROR_DE_CAJA)[number];
@@ -158,6 +159,8 @@ export function mensajeParaElCajero(
       return 'Solo podés deshacer tu último sello y dentro de los 5 minutos. Pedíselo a tu supervisor.';
     case 'NEGOCIO_NO_ENCONTRADO':
       return 'Ese negocio no está. Volvé a la lista de negocios.';
+    case 'LOCAL_NO_ENCONTRADO':
+      return 'Ese local no está. Volvé a la ficha del negocio.';
     case 'TARJETA_NO_ENCONTRADA':
       return 'Esa tarjeta no está.';
     case 'SELLO_YA_CANJEADO':

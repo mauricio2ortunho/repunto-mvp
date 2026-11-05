@@ -12,12 +12,15 @@ import {
 } from '@nestjs/common';
 import {
   type CondicionCambiada,
+  type EstadoDelLocal,
   type EstadoDelNegocio,
   type FichaDelNegocio,
+  type LocalCreado,
   type NegocioCreado,
   type NegociosDelAdmin,
   type ProgramaCambiado,
   esquemaCondicionNueva,
+  esquemaDatosDelLocal,
   esquemaDatosDelNegocio,
   esquemaNegocioNuevo,
   esquemaProgramaNuevo,
@@ -114,5 +117,51 @@ export class NegociosDeAdminController {
   @HttpCode(HttpStatus.OK)
   reactivar(@Param('id') id: string): Promise<EstadoDelNegocio> {
     return this.negocios.cambiarEstado(idEnLaRuta(id), 'activo');
+  }
+
+  @Post(':id/locales')
+  @HttpCode(HttpStatus.CREATED)
+  crearLocal(
+    @Req() peticion: PeticionDeAdmin,
+    @Param('id') id: string,
+    @Body() cuerpo: unknown,
+  ): Promise<LocalCreado> {
+    const negocio = idEnLaRuta(id);
+    const clave = claveDeIdempotencia(peticion);
+    const datos = esquemaDatosDelLocal.safeParse(cuerpo);
+    if (!datos.success) throw errorDeApi('PETICION_INVALIDA');
+    return this.negocios.crearLocal(peticion.admin.id, negocio, clave, datos.data);
+  }
+
+  @Post(':id/locales/:local/datos')
+  @HttpCode(HttpStatus.OK)
+  datosDelLocal(
+    @Param('id') id: string,
+    @Param('local') local: string,
+    @Body() cuerpo: unknown,
+  ): Promise<FichaDelNegocio> {
+    const negocio = idEnLaRuta(id);
+    const elLocal = idEnLaRuta(local);
+    const datos = esquemaDatosDelLocal.safeParse(cuerpo);
+    if (!datos.success) throw errorDeApi('PETICION_INVALIDA');
+    return this.negocios.actualizarLocal(negocio, elLocal, datos.data);
+  }
+
+  @Post(':id/locales/:local/cierre')
+  @HttpCode(HttpStatus.OK)
+  cerrarLocal(
+    @Param('id') id: string,
+    @Param('local') local: string,
+  ): Promise<EstadoDelLocal> {
+    return this.negocios.cambiarEstadoDelLocal(idEnLaRuta(id), idEnLaRuta(local), false);
+  }
+
+  @Post(':id/locales/:local/reapertura')
+  @HttpCode(HttpStatus.OK)
+  reabrirLocal(
+    @Param('id') id: string,
+    @Param('local') local: string,
+  ): Promise<EstadoDelLocal> {
+    return this.negocios.cambiarEstadoDelLocal(idEnLaRuta(id), idEnLaRuta(local), true);
   }
 }
