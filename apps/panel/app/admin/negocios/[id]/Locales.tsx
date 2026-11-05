@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRef, useState } from 'react';
 import type { FichaDelNegocio, LocalDelAdmin } from '@repunto/contratos';
 import { LIMITES_DEL_LOCAL } from '@repunto/contratos';
@@ -119,6 +120,12 @@ function FilaDeLocal(p: Props & { local: LocalDelAdmin }) {
             >
               Editar
             </Boton>
+            <Link
+              className={estilos.enlaceDeAccion}
+              href={`/admin/negocios/${p.ficha.id}/locales/${local.id}/qr`}
+            >
+              QR para imprimir
+            </Link>
             <BotonDeDosToques
               texto="Cerrar"
               confirmar={confirmacionDeCierre(p.ficha, local)}

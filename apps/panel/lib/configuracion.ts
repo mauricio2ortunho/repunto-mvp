@@ -9,6 +9,20 @@ export const urlDeLaApi = (
 ).replace(/\/+$/, '');
 
 /**
+ * Donde contesta la app del cliente, sin barra final: el QR impreso de cada
+ * local lleva a `<esta url>/r/<qr>`. En `next dev`, la app del cliente local.
+ *
+ * Fuera de `next dev` no hay valor por defecto: null si falta, y la hoja del
+ * QR avisa en lugar de dibujar. Un cartel impreso que apunta a localhost se
+ * pega en el mostrador y nadie se entera hasta que un cliente lo escanea.
+ */
+export const urlDeLaAppDelCliente: string | null =
+  (
+    process.env.NEXT_PUBLIC_URL_CLIENTE ||
+    (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : '')
+  ).replace(/\/+$/, '') || null;
+
+/**
  * Token de la tablet de demo, SOLO para `next dev`. Siembra el almacenamiento
  * de la tablet cuando esta vacio (ver `credencial.ts`), para no tener que
  * vincular el navegador de desarrollo cada vez que se limpia.

@@ -1,0 +1,129 @@
+/* El cartel del QR. En pantalla, con las herramientas arriba; al imprimir,
+   solo el cartel, centrado en la hoja. */
+
+.hoja {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: var(--espacio-6);
+  min-height: 100dvh;
+  padding: var(--espacio-7) var(--espacio-5);
+}
+
+.herramientas {
+  display: grid;
+  justify-items: start;
+  gap: var(--espacio-4);
+  width: 100%;
+  max-width: var(--ancho-telefono);
+}
+
+.volver {
+  color: var(--c-accion);
+  font-size: var(--texto-2);
+  font-weight: var(--peso-medio);
+  text-decoration: none;
+}
+
+.volver:hover {
+  text-decoration: underline;
+}
+
+/* Media hoja carta de ancho: entra en A4 y en carta, y se lee a un metro. */
+.cartel {
+  width: 100%;
+  max-width: 14cm;
+  overflow: hidden;
+  border: var(--borde-fino) solid var(--c-borde-fuerte);
+  border-radius: var(--radio-3);
+  background: var(--c-superficie);
+}
+
+.marca {
+  display: flex;
+  gap: var(--espacio-4);
+  align-items: center;
+  padding: var(--espacio-5) var(--espacio-6);
+  /* Sin esto el navegador no imprime el color de fondo. */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.marca h1 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--texto-7);
+  font-weight: var(--peso-negro);
+  line-height: var(--interlineado-titulo);
+}
+
+.cuerpo {
+  display: grid;
+  justify-items: center;
+  gap: var(--espacio-3);
+  padding: var(--espacio-6);
+  text-align: center;
+}
+
+.cuerpo p,
+.cuerpo h2 {
+  margin: 0;
+}
+
+.sucursal {
+  color: var(--c-texto-suave);
+  font-size: var(--texto-4);
+  font-weight: var(--peso-medio);
+}
+
+.llamado {
+  font-size: var(--texto-8);
+  font-weight: var(--peso-negro);
+  line-height: var(--interlineado-titulo);
+}
+
+.pasos {
+  max-width: 28ch;
+  font-size: var(--texto-4);
+}
+
+/* Grande: a la distancia de la fila tiene que entrar en la camara. */
+.qr {
+  width: 100%;
+  max-width: 9cm;
+  margin: var(--espacio-3) 0;
+}
+
+.fondoDelQr {
+  fill: var(--c-superficie);
+}
+
+.modulos {
+  fill: var(--c-texto);
+}
+
+.direccion {
+  overflow-wrap: anywhere;
+  color: var(--c-texto-suave);
+  font-family: var(--f-codigo);
+  font-size: var(--texto-2);
+}
+
+@media print {
+  @page {
+    margin: 1.5cm;
+  }
+
+  .herramientas {
+    display: none;
+  }
+
+  .hoja {
+    min-height: auto;
+    padding: 0;
+  }
+
+  .cartel {
+    break-inside: avoid;
+  }
+}

@@ -90,7 +90,7 @@ desde la raíz del monorepo y compila los paquetes compartidos antes de la app.
 | ----------------- | -------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | `repunto-api`     | `apps/api`     | Other     | `DATABASE_URL`, `CLAVE_CIFRADO_SEMILLAS`, `ORIGENES_PERMITIDOS`, `APP_VERSION`, `CRON_SECRET`, `SENTRY_DSN`, `SENTRY_ENVIRONMENT` |
 | `repunto-cliente` | `apps/cliente` | Next.js   | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_ENVIRONMENT`, `SENTRY_AUTH_TOKEN`                            |
-| `repunto-panel`   | `apps/panel`   | Next.js   | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_ENVIRONMENT`, `SENTRY_AUTH_TOKEN`                            |
+| `repunto-panel`   | `apps/panel`   | Next.js   | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_URL_CLIENTE`, `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_ENVIRONMENT`, `SENTRY_AUTH_TOKEN` |
 
 Detalles que importan:
 
@@ -115,6 +115,11 @@ Detalles que importan:
   hay que tocarla en el panel de Vercel. Cada salto entre región de función y región de base son
   decenas de milisegundos por consulta, y el sellado hace varias.
 - `NEXT_PUBLIC_API_URL` es la URL del proyecto de la API, sin barra final.
+- **`NEXT_PUBLIC_URL_CLIENTE`**, solo en el panel, es la URL del proyecto
+  `repunto-cliente`, sin barra final: con ella arma el QR que se imprime para
+  cada local (`<url>/r/<qr>`). Sin ella, la hoja del QR no dibuja nada y
+  avisa que falta: un cartel impreso con otra dirección no se corrige
+  después. Se lee al compilar, así que cambiarla exige redesplegar el panel.
 - **`SENTRY_DSN`** es el DSN del proyecto `repunto-api` en Sentry (Settings →
   Client Keys). No es un secreto. Sin ella la API anda igual, pero sin
   avisar de sus errores. **`SENTRY_ENVIRONMENT`** dice de qué entorno es cada

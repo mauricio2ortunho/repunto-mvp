@@ -475,3 +475,20 @@
   gap: var(--espacio-1);
   min-width: 0;
 }
+
+/* Un enlace con la forma de un boton secundario: lleva a otra pantalla. */
+.enlaceDeAccion {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--toque-minimo);
+  padding: 0 var(--espacio-5);
+  border: var(--borde-grueso) solid var(--c-accion);
+  border-radius: var(--radio-1);
+  color: var(--c-accion);
+  font-weight: var(--peso-fuerte);
+  text-decoration: none;
+}
+
+.enlaceDeAccion:hover {
+  background: var(--c-accion-velo);
+}
