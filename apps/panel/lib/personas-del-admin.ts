@@ -4,6 +4,7 @@ import {
   LIMITES_DE_PERSONA,
   type PersonaDelAdmin,
   type PersonaNueva,
+  ROLES_DE_PERSONA,
   type RolDePersona,
   esquemaPersonaNueva,
 } from '@repunto/contratos';
@@ -69,7 +70,14 @@ export type RevisionDePersona =
   | { ok: true; peticion: PersonaNueva; pin: string | null }
   | { ok: false; problemas: Problemas };
 
-export function revisarPersona(b: BorradorDePersona): RevisionDePersona {
+/**
+ * `conPin`: en el alta va el PIN; al editar no, que se cambia con su propio
+ * boton.
+ */
+export function revisarPersona(
+  b: BorradorDePersona,
+  { conPin }: { conPin: boolean } = { conPin: true },
+): RevisionDePersona {
   const problemas: Problemas = {};
 
   const nombre = b.nombre.trim();
@@ -91,7 +99,9 @@ export function revisarPersona(b: BorradorDePersona): RevisionDePersona {
     problemas.locales = 'Elegí al menos un local: si no, no aparece en ninguna tablet.';
   }
 
-  const pin = revisarPin(b, b.rol !== '' && !esDueno);
+  const pin = conPin
+    ? revisarPin(b, b.rol !== '' && !esDueno)
+    : ({ ok: true, pin: null } as const);
   if (!pin.ok) Object.assign(problemas, pin.problemas);
 
   if (Object.keys(problemas).length > 0 || !pin.ok || b.rol === '') {
@@ -135,4 +145,36 @@ export function avisoDePersona(persona: PersonaDelAdmin): string | null {
   if (persona.locales.length === 0) return 'Sin local: no aparece en ninguna tablet.';
   if (!persona.tiene_pin) return 'Sin PIN: no aparece en la tablet.';
   return null;
+}
+
+/** Lo que trae el formulario al editar: lo que la persona tiene hoy. */
+export function borradorDesdePersona(p: PersonaDelAdmin): BorradorDePersona {
+  return {
+    ...PERSONA_VACIA,
+    nombre: p.nombre,
+    rol: p.rol,
+    telefono: p.telefono === null ? '' : telefonoParaVer(p.telefono),
+    locales: p.locales,
+  };
+}
+
+/**
+ * Los roles que se le pueden elegir. Al alta, todos. Al editar, el dueño
+ * sigue siendo dueño y los demás van entre supervisor y cajero
+ * (ROL_NO_CAMBIABLE).
+ */
+export function rolesPosibles(p: PersonaDelAdmin | null): readonly RolDePersona[] {
+  if (p === null) return ROLES_DE_PERSONA;
+  return p.rol === 'dueno' ? ['dueno'] : ['supervisor', 'cajero'];
+}
+
+/**
+ * Los locales que se ofrecen: los abiertos, y los cerrados que ya tiene, para
+ * que guardar no se los saque sin que nadie lo haya pedido.
+ */
+export function localesParaElegir(
+  ficha: FichaDelNegocio,
+  tiene: readonly string[],
+): FichaDelNegocio['locales'] {
+  return ficha.locales.filter((l) => l.activo || tiene.includes(l.id));
 }

@@ -5,9 +5,8 @@ import {
   type FichaDelNegocio,
   LIMITES_DE_PERSONA,
   type PersonaDelAdmin,
-  ROLES_DE_PERSONA,
 } from '@repunto/contratos';
-import { Aviso, Boton } from '@repunto/ui';
+import { Aviso, Boton, BotonDeDosToques } from '@repunto/ui';
 
 import * as api from '../../../../lib/api/admin';
 import type { Fallo } from '../../../../lib/api/http';
@@ -19,9 +18,12 @@ import {
   type Problemas,
   TITULOS_DE_ROL,
   avisoDePersona,
+  borradorDesdePersona,
   localesDe,
+  localesParaElegir,
   revisarPersona,
   revisarPin,
+  rolesPosibles,
   telefonoParaVer,
 } from '../../../../lib/personas-del-admin';
 import css from '../../Admin.module.css';
@@ -54,7 +56,11 @@ export function SeccionPersonas(p: Props) {
       {p.ficha.personas.length > 0 && (
         <ul className={estilos.locales}>
           {p.ficha.personas.map((persona) => (
-            <FilaDePersona key={persona.id} {...p} persona={persona} />
+            <FilaDePersona
+              key={`${persona.id}-${persona.activo}-${persona.nombre}-${persona.locales.join()}`}
+              {...p}
+              persona={persona}
+            />
           ))}
         </ul>
       )}
@@ -84,15 +90,36 @@ export function SeccionPersonas(p: Props) {
   );
 }
 
+type Modo = 'viendo' | 'editando' | 'pin';
+
 function FilaDePersona(p: Props & { persona: PersonaDelAdmin }) {
   const { persona } = p;
-  const [cambiandoPin, setCambiandoPin] = useState(false);
+  const [modo, setModo] = useState<Modo>('viendo');
+  const [trabajando, setTrabajando] = useState(false);
+  const [aviso, setAviso] = useState<string | null>(null);
   const falta = avisoDePersona(persona);
   const detalle = [
     TITULOS_DE_ROL[persona.rol],
     ...(persona.telefono === null ? [] : [telefonoParaVer(persona.telefono)]),
     localesDe(persona, p.ficha),
   ].join(' · ');
+
+  const cambiarEstado = async () => {
+    setTrabajando(true);
+    setAviso(null);
+    const r = await api.cambiarEstadoDePersona(p.ficha.id, persona.id, !persona.activo);
+    setTrabajando(false);
+    if (r.ok) return p.alCambiar();
+    setAviso(p.fallo(r));
+  };
+
+  if (modo === 'editando') {
+    return (
+      <li className={estilos.local}>
+        <EditarPersona {...p} persona={persona} alTerminar={() => setModo('viendo')} />
+      </li>
+    );
+  }
 
   return (
     <li className={estilos.local} data-activo={persona.activo}>
@@ -104,20 +131,48 @@ function FilaDePersona(p: Props & { persona: PersonaDelAdmin }) {
         <span className={estilos.detalle}>{detalle}</span>
         {falta !== null && <span className={estilos.error}>{falta}</span>}
       </div>
-      {persona.activo && !cambiandoPin && (
+      {modo === 'viendo' && (
         <div className={estilos.acciones}>
-          <Boton variante="secundario" onClick={() => setCambiandoPin(true)}>
-            {persona.tiene_pin ? 'Cambiar PIN' : 'Poner PIN'}
-          </Boton>
+          {persona.activo ? (
+            <>
+              <Boton
+                variante="secundario"
+                disabled={trabajando}
+                onClick={() => setModo('editando')}
+              >
+                Editar
+              </Boton>
+              <Boton
+                variante="secundario"
+                disabled={trabajando}
+                onClick={() => setModo('pin')}
+              >
+                {persona.tiene_pin ? 'Cambiar PIN' : 'Poner PIN'}
+              </Boton>
+              <BotonDeDosToques
+                texto="Dar de baja"
+                confirmar="Tocá de nuevo: sale de la tablet al instante"
+                trabajando={trabajando}
+                textoTrabajando="Dando de baja…"
+                disabled={trabajando}
+                alConfirmar={() => void cambiarEstado()}
+              />
+            </>
+          ) : (
+            <Boton
+              variante="secundario"
+              disabled={trabajando}
+              onClick={() => void cambiarEstado()}
+            >
+              {trabajando ? 'Reactivando…' : 'Reactivar'}
+            </Boton>
+          )}
         </div>
       )}
-      {cambiandoPin && (
-        <FormularioDePin
-          {...p}
-          persona={persona}
-          alTerminar={() => setCambiandoPin(false)}
-        />
+      {modo === 'pin' && (
+        <FormularioDePin {...p} persona={persona} alTerminar={() => setModo('viendo')} />
       )}
+      {aviso !== null && <Aviso mensaje={aviso} />}
     </li>
   );
 }
@@ -184,19 +239,11 @@ function FormularioDePin(
   );
 }
 
-/**
- * El alta, en dos pedidos: la persona (con clave, por si se toca dos veces) y
- * despues su PIN, que no puede ir en el primero. Si el segundo falla, la
- * persona queda cargada sin PIN y la fila lo dice.
- */
-function PersonaNueva(p: Props & { alTerminar: (aviso: string | null) => void }) {
-  const [b, setB] = useState<BorradorDePersona>(PERSONA_VACIA);
+/** El estado de un formulario de persona: el alta y la edicion. */
+function useBorrador(inicial: BorradorDePersona) {
+  const [b, setB] = useState<BorradorDePersona>(inicial);
   const [problemas, setProblemas] = useState<Problemas>({});
-  const [enviando, setEnviando] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
-  const idempotencia = useRef(crearGestorDeIdempotencia());
-  const abiertos = p.ficha.locales.filter((l) => l.activo);
-
   const poner = <K extends CampoDePersona>(campo: K, valor: BorradorDePersona[K]) => {
     setB((actual) => ({ ...actual, [campo]: valor }));
     setProblemas((actuales) => {
@@ -206,13 +253,25 @@ function PersonaNueva(p: Props & { alTerminar: (aviso: string | null) => void })
     });
     setAviso(null);
   };
+  return { b, problemas, setProblemas, aviso, setAviso, poner };
+}
+
+/**
+ * El alta, en dos pedidos: la persona (con clave, por si se toca dos veces) y
+ * despues su PIN, que no puede ir en el primero. Si el segundo falla, la
+ * persona queda cargada sin PIN y la fila lo dice.
+ */
+function PersonaNueva(p: Props & { alTerminar: (aviso: string | null) => void }) {
+  const f = useBorrador(PERSONA_VACIA);
+  const [enviando, setEnviando] = useState(false);
+  const idempotencia = useRef(crearGestorDeIdempotencia());
 
   const guardar = async () => {
     if (enviando) return;
-    const revision = revisarPersona(b);
-    if (!revision.ok) return setProblemas(revision.problemas);
+    const revision = revisarPersona(f.b);
+    if (!revision.ok) return f.setProblemas(revision.problemas);
     setEnviando(true);
-    setAviso(null);
+    f.setAviso(null);
 
     const firma = `persona:${p.ficha.id}:${JSON.stringify(revision.peticion)}`;
     const creada = await api.crearPersona(
@@ -224,8 +283,8 @@ function PersonaNueva(p: Props & { alTerminar: (aviso: string | null) => void })
       setEnviando(false);
       if (creada.tipo === 'rechazo') idempotencia.current.olvidar(firma);
       const mensaje = p.fallo(creada);
-      if (mensaje === null || creada.tipo === 'rechazo') return setAviso(mensaje);
-      return setAviso(`${mensaje} Si volvés a tocar "Agregar", no se carga dos veces.`);
+      if (mensaje === null || creada.tipo === 'rechazo') return f.setAviso(mensaje);
+      return f.setAviso(`${mensaje} Si volvés a tocar "Agregar", no se carga dos veces.`);
     }
     idempotencia.current.olvidar(firma);
 
@@ -241,8 +300,6 @@ function PersonaNueva(p: Props & { alTerminar: (aviso: string | null) => void })
     p.alCambiar();
   };
 
-  const esDueno = b.rol === 'dueno';
-
   return (
     <div className={estilos.local}>
       <form
@@ -254,106 +311,27 @@ function PersonaNueva(p: Props & { alTerminar: (aviso: string | null) => void })
         }}
       >
         <fieldset className={estilos.sinMarco} disabled={enviando}>
-          <Etiquetado id="persona-nombre" titulo="Nombre" problema={problemas.nombre}>
-            <input
-              id="persona-nombre"
-              className={estilos.entrada}
-              value={b.nombre}
-              maxLength={LIMITES_DE_PERSONA.nombre}
-              placeholder="Ana Pérez"
-              autoComplete="off"
-              onChange={(e) => poner('nombre', e.target.value)}
-            />
-          </Etiquetado>
-
-          <div className={estilos.etiquetado}>
-            <span className={css.etiqueta}>Qué hace</span>
-            <div className={estilos.opciones} role="radiogroup" aria-label="Rol">
-              {ROLES_DE_PERSONA.map((rol) => (
-                <label key={rol} className={estilos.opcion}>
-                  <input
-                    type="radio"
-                    name="rol"
-                    checked={b.rol === rol}
-                    onChange={() => poner('rol', rol)}
-                  />
-                  {TITULOS_DE_ROL[rol]}
-                </label>
-              ))}
-            </div>
-            {problemas.rol !== undefined && (
-              <p className={estilos.error}>{problemas.rol}</p>
-            )}
-          </div>
-
-          {esDueno && (
-            <Etiquetado
-              id="persona-telefono"
-              titulo="Teléfono"
-              problema={problemas.telefono}
-            >
-              <input
-                id="persona-telefono"
-                className={estilos.entrada}
-                inputMode="tel"
-                value={b.telefono}
-                maxLength={LIMITES_DE_PERSONA.telefono}
-                placeholder="7001 2345"
-                autoComplete="off"
-                onChange={(e) => poner('telefono', e.target.value)}
-              />
-            </Etiquetado>
-          )}
-
-          <div className={estilos.etiquetado}>
-            <span className={css.etiqueta}>
-              {esDueno
-                ? 'Locales donde atiende la caja (opcional)'
-                : 'Locales donde trabaja'}
-            </span>
-            {abiertos.length === 0 ? (
-              <p className={estilos.ayuda}>
-                No hay locales abiertos: agregá uno arriba para poder asignarlo.
-              </p>
-            ) : (
-              <div className={estilos.opciones}>
-                {abiertos.map((l) => (
-                  <label key={l.id} className={estilos.opcion}>
-                    <input
-                      type="checkbox"
-                      checked={b.locales.includes(l.id)}
-                      onChange={(e) =>
-                        poner(
-                          'locales',
-                          e.target.checked
-                            ? [...b.locales, l.id]
-                            : b.locales.filter((id) => id !== l.id),
-                        )
-                      }
-                    />
-                    {l.nombre}
-                  </label>
-                ))}
-              </div>
-            )}
-            {problemas.locales !== undefined && (
-              <p className={estilos.error}>{problemas.locales}</p>
-            )}
-          </div>
-
-          {b.rol !== '' && (
+          <CamposDePersona
+            id="nueva"
+            ficha={p.ficha}
+            persona={null}
+            b={f.b}
+            problemas={f.problemas}
+            poner={f.poner}
+          />
+          {f.b.rol !== '' && (
             <>
               <p className={estilos.ayuda}>
-                {esDueno
+                {f.b.rol === 'dueno'
                   ? 'El PIN solo hace falta si el dueño también atiende la caja.'
                   : 'Pasale la pantalla: que escriba su PIN sin que nadie mire. No se muestra nunca más.'}
               </p>
-              <CamposDePin id="nueva" b={b} problemas={problemas} poner={poner} />
+              <CamposDePin id="nueva" b={f.b} problemas={f.problemas} poner={f.poner} />
             </>
           )}
         </fieldset>
 
-        {aviso !== null && <Aviso mensaje={aviso} />}
+        {f.aviso !== null && <Aviso mensaje={f.aviso} />}
         <div className={estilos.acciones}>
           <Boton type="submit" disabled={enviando}>
             {enviando ? 'Agregando…' : 'Agregar'}
@@ -364,6 +342,172 @@ function PersonaNueva(p: Props & { alTerminar: (aviso: string | null) => void })
         </div>
       </form>
     </div>
+  );
+}
+
+/** Nombre, rol, telefono y locales, al instante. El PIN, con su boton. */
+function EditarPersona(p: Props & { persona: PersonaDelAdmin; alTerminar: () => void }) {
+  const f = useBorrador(borradorDesdePersona(p.persona));
+  const [enviando, setEnviando] = useState(false);
+
+  const guardar = async () => {
+    if (enviando) return;
+    const revision = revisarPersona(f.b, { conPin: false });
+    if (!revision.ok) return f.setProblemas(revision.problemas);
+    setEnviando(true);
+    f.setAviso(null);
+    const r = await api.guardarPersona(p.ficha.id, p.persona.id, revision.peticion);
+    setEnviando(false);
+    if (r.ok) {
+      p.alTerminar();
+      return p.alCambiar();
+    }
+    f.setAviso(p.fallo(r));
+  };
+
+  return (
+    <form
+      className={estilos.formulario}
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        void guardar();
+      }}
+    >
+      <fieldset className={estilos.sinMarco} disabled={enviando}>
+        <CamposDePersona
+          id={p.persona.id}
+          ficha={p.ficha}
+          persona={p.persona}
+          b={f.b}
+          problemas={f.problemas}
+          poner={f.poner}
+        />
+      </fieldset>
+      <p className={estilos.ayuda}>
+        Se aplica al instante: si le sacás un local, la tablet de ese local deja de
+        aceptarlo. Lo que ya hizo no cambia.
+      </p>
+      {f.aviso !== null && <Aviso mensaje={f.aviso} />}
+      <div className={estilos.acciones}>
+        <Boton type="submit" disabled={enviando}>
+          {enviando ? 'Guardando…' : 'Guardar'}
+        </Boton>
+        <Boton variante="texto" disabled={enviando} onClick={p.alTerminar}>
+          Cancelar
+        </Boton>
+      </div>
+    </form>
+  );
+}
+
+/** `persona`: null en el alta; al editar, quien se esta editando. */
+function CamposDePersona(p: {
+  id: string;
+  ficha: FichaDelNegocio;
+  persona: PersonaDelAdmin | null;
+  b: BorradorDePersona;
+  problemas: Problemas;
+  poner: <K extends CampoDePersona>(campo: K, valor: BorradorDePersona[K]) => void;
+}) {
+  const { b, problemas, poner } = p;
+  const esDueno = b.rol === 'dueno';
+  const roles = rolesPosibles(p.persona);
+  const locales = localesParaElegir(p.ficha, p.persona?.locales ?? []);
+
+  return (
+    <>
+      <Etiquetado
+        id={`persona-nombre-${p.id}`}
+        titulo="Nombre"
+        problema={problemas.nombre}
+      >
+        <input
+          id={`persona-nombre-${p.id}`}
+          className={estilos.entrada}
+          value={b.nombre}
+          maxLength={LIMITES_DE_PERSONA.nombre}
+          placeholder="Ana Pérez"
+          autoComplete="off"
+          onChange={(e) => poner('nombre', e.target.value)}
+        />
+      </Etiquetado>
+
+      {roles.length > 1 && (
+        <div className={estilos.etiquetado}>
+          <span className={css.etiqueta}>Qué hace</span>
+          <div className={estilos.opciones} role="radiogroup" aria-label="Rol">
+            {roles.map((rol) => (
+              <label key={rol} className={estilos.opcion}>
+                <input
+                  type="radio"
+                  name={`rol-${p.id}`}
+                  checked={b.rol === rol}
+                  onChange={() => poner('rol', rol)}
+                />
+                {TITULOS_DE_ROL[rol]}
+              </label>
+            ))}
+          </div>
+          {problemas.rol !== undefined && (
+            <p className={estilos.error}>{problemas.rol}</p>
+          )}
+        </div>
+      )}
+
+      {esDueno && (
+        <Etiquetado
+          id={`persona-telefono-${p.id}`}
+          titulo="Teléfono"
+          problema={problemas.telefono}
+        >
+          <input
+            id={`persona-telefono-${p.id}`}
+            className={estilos.entrada}
+            inputMode="tel"
+            value={b.telefono}
+            maxLength={LIMITES_DE_PERSONA.telefono}
+            placeholder="7001 2345"
+            autoComplete="off"
+            onChange={(e) => poner('telefono', e.target.value)}
+          />
+        </Etiquetado>
+      )}
+
+      <div className={estilos.etiquetado}>
+        <span className={css.etiqueta}>
+          {esDueno ? 'Locales donde atiende la caja (opcional)' : 'Locales donde trabaja'}
+        </span>
+        {locales.length === 0 ? (
+          <p className={estilos.ayuda}>
+            No hay locales abiertos: agregá uno arriba para poder asignarlo.
+          </p>
+        ) : (
+          <div className={estilos.opciones}>
+            {locales.map((l) => (
+              <label key={l.id} className={estilos.opcion}>
+                <input
+                  type="checkbox"
+                  checked={b.locales.includes(l.id)}
+                  onChange={(e) =>
+                    poner(
+                      'locales',
+                      e.target.checked
+                        ? [...b.locales, l.id]
+                        : b.locales.filter((id) => id !== l.id),
+                    )
+                  }
+                />
+                {l.activo ? l.nombre : `${l.nombre} (cerrado)`}
+              </label>
+            ))}
+          </div>
+        )}
+        {problemas.locales !== undefined && (
+          <p className={estilos.error}>{problemas.locales}</p>
+        )}
+      </div>
+    </>
   );
 }
 

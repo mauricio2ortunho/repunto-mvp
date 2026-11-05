@@ -10,6 +10,8 @@ import {
   type EstadoDelNegocio,
   type FichaDelNegocio,
   type LocalCreado,
+  type DatosDePersona,
+  type EstadoDePersona,
   type PersonaCreada,
   type PersonaNueva,
   type PinPuesto,
@@ -25,6 +27,7 @@ import {
   esquemaEstadoDelNegocio,
   esquemaFichaDelNegocio,
   esquemaLocalCreado,
+  esquemaEstadoDePersona,
   esquemaPersonaCreada,
   esquemaPinPuesto,
   esquemaNegocioCreado,
@@ -253,6 +256,39 @@ export function ponerPin(
       token: sesionDeAdmin().token(),
     },
     esquemaPinPuesto,
+  );
+}
+
+/** Devuelve la ficha ya cambiada. Sin clave: el mismo cuerpo deja lo mismo. */
+export function guardarPersona(
+  negocio: string,
+  persona: string,
+  datos: DatosDePersona,
+): Promise<Respuesta<FichaDelNegocio>> {
+  return pedir(
+    {
+      metodo: 'POST',
+      ruta: `/admin/negocios/${encodeURIComponent(negocio)}/personas/${encodeURIComponent(persona)}/datos`,
+      cuerpo: datos,
+      token: sesionDeAdmin().token(),
+    },
+    esquemaFichaDelNegocio,
+  );
+}
+
+export function cambiarEstadoDePersona(
+  negocio: string,
+  persona: string,
+  activo: boolean,
+): Promise<Respuesta<EstadoDePersona>> {
+  const accion = activo ? 'reactivacion' : 'baja';
+  return pedir(
+    {
+      metodo: 'POST',
+      ruta: `/admin/negocios/${encodeURIComponent(negocio)}/personas/${encodeURIComponent(persona)}/${accion}`,
+      token: sesionDeAdmin().token(),
+    },
+    esquemaEstadoDePersona,
   );
 }
 

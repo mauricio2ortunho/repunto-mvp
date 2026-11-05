@@ -5,6 +5,9 @@ import {
   type BorradorDePersona,
   PERSONA_VACIA,
   avisoDePersona,
+  borradorDesdePersona,
+  localesParaElegir,
+  rolesPosibles,
   localesDe,
   revisarPersona,
   revisarPin,
@@ -126,5 +129,52 @@ describe('cómo se muestra', () => {
       avisoDePersona(persona({ rol: 'dueno', locales: [], tiene_pin: false })),
     ).toBeNull();
     expect(avisoDePersona(persona({ activo: false, tiene_pin: false }))).toBeNull();
+  });
+});
+
+describe('editar', () => {
+  const ana: PersonaDelAdmin = {
+    id: '33333333-3333-4333-8333-333333333333',
+    nombre: 'Ana',
+    rol: 'cajero',
+    telefono: null,
+    activo: true,
+    tiene_pin: true,
+    locales: [CERRADO],
+  };
+
+  it('al editar no se pide PIN', () => {
+    const b = { ...borradorDesdePersona(ana) };
+    expect(revisarPersona(b, { conPin: false })).toEqual({
+      ok: true,
+      peticion: { nombre: 'Ana', rol: 'cajero', telefono: null, locales: [CERRADO] },
+      pin: null,
+    });
+  });
+
+  it('el dueño sigue dueño; los demás, entre supervisor y cajero', () => {
+    expect(rolesPosibles(null)).toEqual(['dueno', 'supervisor', 'cajero']);
+    expect(rolesPosibles(ana)).toEqual(['supervisor', 'cajero']);
+    expect(rolesPosibles({ ...ana, rol: 'dueno' })).toEqual(['dueno']);
+  });
+
+  it('ofrece los abiertos y los cerrados que ya tiene', () => {
+    const ficha = {
+      locales: [
+        { id: LOCAL, nombre: 'Centro', direccion: 'x', activo: true, qr_slug: 'a' },
+        { id: CERRADO, nombre: 'Norte', direccion: 'y', activo: false, qr_slug: 'b' },
+      ],
+    } as FichaDelNegocio;
+    expect(localesParaElegir(ficha, []).map((l) => l.id)).toEqual([LOCAL]);
+    expect(localesParaElegir(ficha, [CERRADO]).map((l) => l.id)).toEqual([
+      LOCAL,
+      CERRADO,
+    ]);
+  });
+
+  it('el teléfono del dueño vuelve como se lo ve', () => {
+    expect(
+      borradorDesdePersona({ ...ana, rol: 'dueno', telefono: '+59170012345' }).telefono,
+    ).toBe('7001 2345');
   });
 });
