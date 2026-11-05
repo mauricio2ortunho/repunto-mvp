@@ -35,6 +35,7 @@ import {
 import estilos from '../Negocios.module.css';
 import { VistaPrevia } from '../nuevo/VistaPrevia';
 import { SeccionLocales } from './Locales';
+import { SeccionPersonas } from './Personas';
 
 type Estado =
   | { tipo: 'cargando' }
@@ -156,6 +157,7 @@ export function Ficha() {
         alGuardar={() => void cargar()}
       />
       <SeccionLocales ficha={ficha} fallo={fallo} alCambiar={() => void cargar()} />
+      <SeccionPersonas ficha={ficha} fallo={fallo} alCambiar={() => void cargar()} />
     </main>
   );
 }

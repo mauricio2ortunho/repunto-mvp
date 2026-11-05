@@ -10,6 +10,9 @@ import {
   type EstadoDelNegocio,
   type FichaDelNegocio,
   type LocalCreado,
+  type PersonaCreada,
+  type PersonaNueva,
+  type PinPuesto,
   type NegocioCreado,
   type NegocioNuevo,
   type NegociosDelAdmin,
@@ -22,6 +25,8 @@ import {
   esquemaEstadoDelNegocio,
   esquemaFichaDelNegocio,
   esquemaLocalCreado,
+  esquemaPersonaCreada,
+  esquemaPinPuesto,
   esquemaNegocioCreado,
   esquemaNegociosDelAdmin,
   esquemaProgramaCambiado,
@@ -217,6 +222,40 @@ export function cambiarEstadoDelLocal(
   );
 }
 
+export function crearPersona(
+  negocio: string,
+  persona: PersonaNueva,
+  clave: string,
+): Promise<Respuesta<PersonaCreada>> {
+  return pedir(
+    {
+      metodo: 'POST',
+      ruta: `/admin/negocios/${encodeURIComponent(negocio)}/personas`,
+      cuerpo: persona,
+      claveDeIdempotencia: clave,
+      token: sesionDeAdmin().token(),
+    },
+    esquemaPersonaCreada,
+  );
+}
+
+/** Sin clave: la huella del cuerpo dejaria el PIN a la vista, y repetirlo no hace daño. */
+export function ponerPin(
+  negocio: string,
+  persona: string,
+  pin: string,
+): Promise<Respuesta<PinPuesto>> {
+  return pedir(
+    {
+      metodo: 'POST',
+      ruta: `/admin/negocios/${encodeURIComponent(negocio)}/personas/${encodeURIComponent(persona)}/pin`,
+      cuerpo: { pin },
+      token: sesionDeAdmin().token(),
+    },
+    esquemaPinPuesto,
+  );
+}
+
 /** La api dijo que esta sesion ya no sirve: hay que volver a entrar. */
 export function sesionPerdida(fallo: Fallo): boolean {
   return fallo.tipo === 'rechazo' && fallo.codigo === 'TOKEN_INVALIDO';
@@ -228,6 +267,10 @@ export function sesionPerdida(fallo: Fallo): boolean {
  */
 export function mensajeParaElAdmin(fallo: Fallo): string {
   if (fallo.tipo === 'incierto') return QUE_PASO[fallo.causa];
+  // El de la caja le habla al cajero de un cliente.
+  if (fallo.codigo === 'TELEFONO_INVALIDO') {
+    return 'Ese teléfono no es válido: si es boliviano, son ocho números.';
+  }
   if (fallo.codigo === 'TOPE_SUPERADO') {
     return 'Demasiados intentos desde esta conexión. Probá de nuevo en una hora.';
   }
