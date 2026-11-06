@@ -86,6 +86,7 @@ interface FilaDePersona {
   activo: boolean;
   tiene_pin: boolean;
   locales: string[];
+  con_historia: boolean;
 }
 
 interface FilaDeCondicion {
@@ -223,7 +224,12 @@ export class NegociosDeAdminService {
              u.pin_hash IS NOT NULL AS tiene_pin,
              COALESCE((SELECT array_agg(ul.local_id::text ORDER BY ul.creado_el)
                        FROM usuario_local ul
-                       WHERE ul.usuario_id = u.id AND ul.activo), '{}') AS locales
+                       WHERE ul.usuario_id = u.id AND ul.activo), '{}') AS locales,
+             -- Lo mismo que pregunta el borrado (personas.service, tieneHistoria).
+             (EXISTS (SELECT 1 FROM turno_caja t WHERE t.usuario_id = u.id)
+              OR EXISTS (SELECT 1 FROM condicion_sello c WHERE c.usuario_id = u.id)
+              OR EXISTS (SELECT 1 FROM vinculacion_pendiente v
+                         WHERE v.creado_por_usuario_id = u.id)) AS con_historia
       FROM usuario_negocio u
       WHERE u.negocio_id = ${id}::uuid
       ORDER BY u.activo DESC,

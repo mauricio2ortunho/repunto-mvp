@@ -112,6 +112,10 @@ export const CODIGOS_DE_ERROR = [
    * lado (telefono y no PIN). Si fue un error, se da de baja y se carga de
    * nuevo. Entre supervisor y cajero si se cambia. */
   'ROL_NO_CAMBIABLE',
+  /** Abrio un turno, escribio una condicion o vinculo una tablet: lo que hizo
+   * queda firmado con su nombre, y borrarla lo dejaria sin firma (INV-17).
+   * Se da de baja. */
+  'PERSONA_CON_HISTORIA',
 ] as const;
 
 export type CodigoDeError = (typeof CODIGOS_DE_ERROR)[number];

@@ -281,14 +281,31 @@ export class Api {
     });
   }
 
-  reactivarPersona(token: string, negocio: string, persona: string): Promise<Respuesta> {
+  /** `cuerpo`: el telefono del dueno, que se le libero al darlo de baja. */
+  reactivarPersona(
+    token: string,
+    negocio: string,
+    persona: string,
+    cuerpo: unknown = {},
+  ): Promise<Respuesta> {
     return this.pedir(
       'POST',
       `/admin/negocios/${negocio}/personas/${persona}/reactivacion`,
       {
         token,
+        cuerpo,
       },
     );
+  }
+
+  borrarPersona(
+    token: string | undefined,
+    negocio: string,
+    persona: string,
+  ): Promise<Respuesta> {
+    return this.pedir('POST', `/admin/negocios/${negocio}/personas/${persona}/borrado`, {
+      token,
+    });
   }
 
   /** Sin `clave`, el pedido sale sin Idempotency-Key. */

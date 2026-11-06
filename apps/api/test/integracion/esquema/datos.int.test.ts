@@ -121,6 +121,15 @@ describe('Codigo publico del cliente', () => {
 describe('Seccion 5 · el dueno entra por telefono; supervisor y cajero, por PIN', () => {
   const USUARIO = `INSERT INTO usuario_negocio (negocio_id, rol, telefono, nombre) VALUES ($1, $2, $3, gen_random_uuid()::text)`;
 
+  test('Seccion 5 · acepta un dueno de baja sin telefono: lo libera', async ({ db }) => {
+    const a = await crearNegocio(db);
+    await esperarAceptacion(
+      db,
+      `INSERT INTO usuario_negocio (negocio_id, rol, telefono, nombre, activo) VALUES ($1, 'dueno', NULL, 'x de baja', false)`,
+      [a.id],
+    );
+  });
+
   test('Seccion 5 · rechaza un dueno sin telefono', async ({ db }) => {
     const a = await crearNegocio(db);
     await esperarRechazo(db, 'usuario_negocio_dueno_con_telefono_chk', USUARIO, [

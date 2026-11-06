@@ -99,6 +99,7 @@ describe('cómo se muestra', () => {
     activo: true,
     tiene_pin: true,
     locales: [LOCAL],
+    con_historia: true,
     ...cambio,
   });
   const ficha = {
@@ -141,6 +142,7 @@ describe('editar', () => {
     activo: true,
     tiene_pin: true,
     locales: [CERRADO],
+    con_historia: true,
   };
 
   it('al editar no se pide PIN', () => {

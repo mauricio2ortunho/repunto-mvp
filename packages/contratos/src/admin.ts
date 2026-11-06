@@ -275,6 +275,31 @@ export const esquemaEstadoDePersona = z.object({ activo: z.boolean() });
 
 export type EstadoDePersona = z.infer<typeof esquemaEstadoDePersona>;
 
+/**
+ * El cuerpo de `.../reactivacion`. Al dueno, dado de baja, se le borro el
+ * telefono para liberarlo: reactivado tiene que traer uno. Los demas no
+ * llevan.
+ */
+export const esquemaReactivacionDePersona = z.object({
+  telefono: z
+    .string()
+    .trim()
+    .min(1)
+    .max(LIMITES_DE_PERSONA.telefono)
+    .nullable()
+    .default(null),
+});
+
+export type ReactivacionDePersona = z.input<typeof esquemaReactivacionDePersona>;
+
+/**
+ * `POST .../personas/:persona/borrado`: solo sin historia
+ * (PERSONA_CON_HISTORIA si la tiene). Libera el nombre y el telefono.
+ */
+export const esquemaPersonaBorrada = z.object({ borrada: z.literal(true) });
+
+export type PersonaBorrada = z.infer<typeof esquemaPersonaBorrada>;
+
 export const esquemaPersonaCreada = z.object({ id: z.uuid() });
 
 export type PersonaCreada = z.infer<typeof esquemaPersonaCreada>;
@@ -307,6 +332,12 @@ export const esquemaPersonaDelAdmin = z.object({
   activo: z.boolean(),
   tiene_pin: z.boolean(),
   locales: z.array(z.uuid()),
+  /**
+   * Si ya hizo algo que queda firmado: abrio un turno, escribio una
+   * condicion o vinculo una tablet. Con historia se da de baja; sin ella,
+   * cargada por error, se puede borrar.
+   */
+  con_historia: z.boolean(),
 });
 
 export type PersonaDelAdmin = z.infer<typeof esquemaPersonaDelAdmin>;

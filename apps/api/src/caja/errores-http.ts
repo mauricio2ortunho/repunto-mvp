@@ -57,6 +57,7 @@ const ESTADO_DE_CAJA: Record<CodigoDeError, number> = {
   NOMBRE_REPETIDO: 409,
   TELEFONO_EN_USO: 409,
   ROL_NO_CAMBIABLE: 422,
+  PERSONA_CON_HISTORIA: 409,
 };
 
 const ESTADO_DE_API: Record<CodigoDeErrorDeApi, number> = {

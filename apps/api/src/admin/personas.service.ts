@@ -5,13 +5,15 @@ import {
   type PersonaCreada,
   type PersonaNueva,
   type PinPuesto,
+  type PersonaBorrada,
   esquemaEstadoDePersona,
+  esquemaPersonaBorrada,
   esquemaPersonaCreada,
   esquemaPinPuesto,
 } from '@repunto/contratos';
 import { normalizarTelefono, rechazo } from '@repunto/dominio';
 
-import { errorDeRechazo } from '../caja/errores-http';
+import { errorDeApi, errorDeRechazo } from '../caja/errores-http';
 import type { Transaccion } from '../caja/lectura';
 import { PrismaService } from '../prisma/prisma.service';
 import { hashDePin } from '../seguridad/pin';
@@ -137,26 +139,69 @@ export class PersonasDeAdminService {
   }
 
   /**
-   * Dar de baja o reactivar. De baja, sale de la lista de la tablet y, si
-   * tenia el turno abierto, la caja lo rechaza en el proximo sello
-   * (TURNO_CERRADO). Sus sellos de antes siguen firmados con su nombre.
-   * Reactivar choca si mientras tanto alguien activo tomo su nombre.
+   * Dar de baja. Sale de la lista de la tablet y, si tenia el turno abierto,
+   * la caja lo rechaza en el proximo sello (TURNO_CERRADO). Sus sellos de
+   * antes siguen firmados con su nombre. Al dueno se le borra el telefono:
+   * es unico en la plataforma, y de baja no lo usa
+   * (usuario_negocio_dueno_con_telefono_chk solo lo exige al activo).
    */
-  async cambiarEstado(
+  async darDeBaja(negocioId: string, personaId: string): Promise<EstadoDePersona> {
+    await this.prisma.$transaction(async (tx) => {
+      await bloquearNegocio(tx, negocioId);
+      await leerPersona(tx, negocioId, personaId);
+      await tx.$executeRaw`
+        UPDATE usuario_negocio
+        SET activo = false,
+            telefono = CASE WHEN rol = 'dueno' THEN NULL ELSE telefono END
+        WHERE id = ${personaId}::uuid`;
+    });
+    return esquemaEstadoDePersona.parse({ activo: false });
+  }
+
+  /**
+   * Reactivar. Choca si mientras tanto otro activo tomo su nombre. El dueno
+   * trae su telefono, que se le libero al darlo de baja; los demas no llevan.
+   */
+  async reactivar(
     negocioId: string,
     personaId: string,
-    activo: boolean,
+    tipeado: string | null,
   ): Promise<EstadoDePersona> {
+    const telefono = telefonoNormalizado(tipeado);
     await this.prisma.$transaction(async (tx) => {
       await bloquearNegocio(tx, negocioId);
       const actual = await leerPersona(tx, negocioId, personaId);
-      if (activo && !actual.activo) {
+      const esDueno = actual.rol === 'dueno';
+      if (esDueno !== (telefono !== null)) throw errorDeApi('PETICION_INVALIDA');
+      if (!actual.activo)
         await exigirNombreLibre(tx, negocioId, actual.nombre, personaId);
-      }
+      if (telefono !== null) await exigirTelefonoLibre(tx, telefono, personaId);
       await tx.$executeRaw`
-        UPDATE usuario_negocio SET activo = ${activo} WHERE id = ${personaId}::uuid`;
+        UPDATE usuario_negocio
+        SET activo = true, telefono = COALESCE(${telefono}, telefono)
+        WHERE id = ${personaId}::uuid`;
     });
-    return esquemaEstadoDePersona.parse({ activo });
+    return esquemaEstadoDePersona.parse({ activo: true });
+  }
+
+  /**
+   * Borrar a alguien cargado por error. Solo sin historia: si abrio un turno,
+   * escribio una condicion o vinculo una tablet, lo que hizo esta firmado con
+   * su nombre y borrarlo lo dejaria sin firma (INV-17). Las FK RESTRICT lo
+   * impedirian igual; revisarlo antes deja contestar PERSONA_CON_HISTORIA.
+   * Sus asignaciones a locales se van con ella: sin turnos, no son historia.
+   */
+  async borrar(negocioId: string, personaId: string): Promise<PersonaBorrada> {
+    await this.prisma.$transaction(async (tx) => {
+      await bloquearNegocio(tx, negocioId);
+      await leerPersona(tx, negocioId, personaId);
+      if (await tieneHistoria(tx, personaId)) {
+        throw errorDeRechazo(rechazo('PERSONA_CON_HISTORIA'), null);
+      }
+      await tx.$executeRaw`DELETE FROM usuario_local WHERE usuario_id = ${personaId}::uuid`;
+      await tx.$executeRaw`DELETE FROM usuario_negocio WHERE id = ${personaId}::uuid`;
+    });
+    return esquemaPersonaBorrada.parse({ borrada: true });
   }
 
   /** Cual falta: un negocio que no existe es NEGOCIO_NO_ENCONTRADO. */
@@ -166,6 +211,23 @@ export class PersonasDeAdminService {
     if (negocios.length === 0) return negocioNoEncontrado();
     return errorDeRechazo(rechazo('PERSONA_NO_ENCONTRADA'), null);
   }
+}
+
+/**
+ * Lo que queda firmado con su nombre: un turno (y con el, cada sello, canje y
+ * anulacion), una condicion o una tablet vinculada. Son las tres tablas que
+ * apuntan a usuario_negocio o a usuario_local, ademas de usuario_local. La
+ * ficha hace la misma pregunta (negocios.service, con_historia).
+ */
+async function tieneHistoria(tx: Transaccion, personaId: string): Promise<boolean> {
+  const filas = await tx.$queryRaw<{ con_historia: boolean }[]>`
+    SELECT (
+      EXISTS (SELECT 1 FROM turno_caja t WHERE t.usuario_id = ${personaId}::uuid)
+      OR EXISTS (SELECT 1 FROM condicion_sello c WHERE c.usuario_id = ${personaId}::uuid)
+      OR EXISTS (SELECT 1 FROM vinculacion_pendiente v
+                 WHERE v.creado_por_usuario_id = ${personaId}::uuid)
+    ) AS con_historia`;
+  return filas[0]?.con_historia ?? true;
 }
 
 /** La persona, tomada para esta transaccion, o PERSONA_NO_ENCONTRADA. */

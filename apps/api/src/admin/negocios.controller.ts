@@ -17,6 +17,7 @@ import {
   type FichaDelNegocio,
   type LocalCreado,
   type EstadoDePersona,
+  type PersonaBorrada,
   type PersonaCreada,
   type PinPuesto,
   type NegocioCreado,
@@ -26,6 +27,7 @@ import {
   esquemaDatosDelLocal,
   esquemaDatosDePersona,
   esquemaPersonaNueva,
+  esquemaReactivacionDePersona,
   esquemaPinNuevo,
   esquemaDatosDelNegocio,
   esquemaNegocioNuevo,
@@ -223,15 +225,31 @@ export class NegociosDeAdminController {
     @Param('id') id: string,
     @Param('persona') persona: string,
   ): Promise<EstadoDePersona> {
-    return this.personas.cambiarEstado(idEnLaRuta(id), idEnLaRuta(persona), false);
+    return this.personas.darDeBaja(idEnLaRuta(id), idEnLaRuta(persona));
   }
 
+  /** El dueno trae su telefono: se le libero al darlo de baja. */
   @Post(':id/personas/:persona/reactivacion')
   @HttpCode(HttpStatus.OK)
   reactivarPersona(
     @Param('id') id: string,
     @Param('persona') persona: string,
+    @Body() cuerpo: unknown,
   ): Promise<EstadoDePersona> {
-    return this.personas.cambiarEstado(idEnLaRuta(id), idEnLaRuta(persona), true);
+    const negocio = idEnLaRuta(id);
+    const laPersona = idEnLaRuta(persona);
+    const reactivacion = esquemaReactivacionDePersona.safeParse(cuerpo ?? {});
+    if (!reactivacion.success) throw errorDeApi('PETICION_INVALIDA');
+    return this.personas.reactivar(negocio, laPersona, reactivacion.data.telefono);
+  }
+
+  /** Solo a quien no tiene historia: lo cargado por error. */
+  @Post(':id/personas/:persona/borrado')
+  @HttpCode(HttpStatus.OK)
+  borrarPersona(
+    @Param('id') id: string,
+    @Param('persona') persona: string,
+  ): Promise<PersonaBorrada> {
+    return this.personas.borrar(idEnLaRuta(id), idEnLaRuta(persona));
   }
 }

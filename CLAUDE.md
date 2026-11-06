@@ -634,6 +634,19 @@ físicamente, por diseño (sección 7): no son historial, son candados de corta
 vida. `intento_caja` también, a los 90 días: es una bitácora, no historial, y
 por eso tampoco tiene FK.
 
+Una persona (`usuario_negocio`) **sin historia** se puede borrar, con sus
+`usuario_local`: es lo cargado por error. Historia es haber abierto un turno
+(y con él cada sello, canje y anulación), escrito una condición o vinculado
+una tablet; con cualquiera de las tres se da de baja y nunca se borra
+(`PERSONA_CON_HISTORIA`). Que las tarjetas que selló ya se hayan canjeado o
+vencido no cambia nada: sus sellos se guardan para las métricas y el control
+de fraude. Borrar historia vieja sería una retención de datos a decidir
+aparte, para todo junto, no persona por persona.
+
+El dueño dado de baja **libera su teléfono**: la api se lo borra al darlo de
+baja, para que esa persona pueda cargarse en otro negocio, y al reactivarlo
+pide uno (`usuario_negocio_dueno_con_telefono_chk` lo exige solo al activo).
+
 ### Límite conocido: un teléfono, un negocio
 
 `usuario_negocio.telefono` es único global entre los no nulos, y obligatorio
