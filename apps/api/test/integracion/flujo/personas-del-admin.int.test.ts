@@ -68,6 +68,7 @@ describe('POST /admin/negocios/:id/personas · agregar una persona', () => {
       activo: true,
       tiene_pin: false,
       locales: [negocio.local],
+      con_historia: false,
     });
     // Sin PIN no aparece en la tablet: no tendria con que confirmar.
     const antes = (await api.usuariosDeCaja(negocio.token)).cuerpo['usuarios'] as {
