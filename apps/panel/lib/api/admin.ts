@@ -12,6 +12,7 @@ import {
   type LocalCreado,
   type DatosDePersona,
   type EstadoDePersona,
+  type PersonaBorrada,
   type PersonaCreada,
   type PersonaNueva,
   type PinPuesto,
@@ -28,6 +29,7 @@ import {
   esquemaFichaDelNegocio,
   esquemaLocalCreado,
   esquemaEstadoDePersona,
+  esquemaPersonaBorrada,
   esquemaPersonaCreada,
   esquemaPinPuesto,
   esquemaNegocioCreado,
@@ -276,19 +278,49 @@ export function guardarPersona(
   );
 }
 
-export function cambiarEstadoDePersona(
+export function darDeBaja(
   negocio: string,
   persona: string,
-  activo: boolean,
 ): Promise<Respuesta<EstadoDePersona>> {
-  const accion = activo ? 'reactivacion' : 'baja';
   return pedir(
     {
       metodo: 'POST',
-      ruta: `/admin/negocios/${encodeURIComponent(negocio)}/personas/${encodeURIComponent(persona)}/${accion}`,
+      ruta: `/admin/negocios/${encodeURIComponent(negocio)}/personas/${encodeURIComponent(persona)}/baja`,
       token: sesionDeAdmin().token(),
     },
     esquemaEstadoDePersona,
+  );
+}
+
+/** `telefono`: el del dueño, que se le liberó al darlo de baja. Los demás, null. */
+export function reactivarPersona(
+  negocio: string,
+  persona: string,
+  telefono: string | null,
+): Promise<Respuesta<EstadoDePersona>> {
+  return pedir(
+    {
+      metodo: 'POST',
+      ruta: `/admin/negocios/${encodeURIComponent(negocio)}/personas/${encodeURIComponent(persona)}/reactivacion`,
+      cuerpo: { telefono },
+      token: sesionDeAdmin().token(),
+    },
+    esquemaEstadoDePersona,
+  );
+}
+
+/** Solo a quien no tiene historia; si la tiene, PERSONA_CON_HISTORIA. */
+export function borrarPersona(
+  negocio: string,
+  persona: string,
+): Promise<Respuesta<PersonaBorrada>> {
+  return pedir(
+    {
+      metodo: 'POST',
+      ruta: `/admin/negocios/${encodeURIComponent(negocio)}/personas/${encodeURIComponent(persona)}/borrado`,
+      token: sesionDeAdmin().token(),
+    },
+    esquemaPersonaBorrada,
   );
 }
 

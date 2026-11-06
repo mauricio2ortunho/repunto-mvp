@@ -45,6 +45,9 @@ interface Props {
 export function SeccionPersonas(p: Props) {
   const [agregando, setAgregando] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
+  // Los dados de baja, plegados al final: no se borran, pero no molestan.
+  const activas = p.ficha.personas.filter((x) => x.activo);
+  const deBaja = p.ficha.personas.filter((x) => !x.activo);
 
   return (
     <section className={estilos.grupo}>
@@ -53,16 +56,22 @@ export function SeccionPersonas(p: Props) {
         Quien atiende la caja aparece en la tablet de sus locales con su nombre, y abre
         turno con su PIN.
       </p>
-      {p.ficha.personas.length > 0 && (
+      {activas.length > 0 && (
         <ul className={estilos.locales}>
-          {p.ficha.personas.map((persona) => (
-            <FilaDePersona
-              key={`${persona.id}-${persona.activo}-${persona.nombre}-${persona.locales.join()}`}
-              {...p}
-              persona={persona}
-            />
+          {activas.map((persona) => (
+            <FilaDePersona key={claveDeFila(persona)} {...p} persona={persona} />
           ))}
         </ul>
+      )}
+      {deBaja.length > 0 && (
+        <details className={estilos.historial}>
+          <summary>Dados de baja ({deBaja.length})</summary>
+          <ul className={estilos.locales}>
+            {deBaja.map((persona) => (
+              <FilaDePersona key={claveDeFila(persona)} {...p} persona={persona} />
+            ))}
+          </ul>
+        </details>
       )}
 
       {aviso !== null && <Aviso mensaje={aviso} />}
@@ -90,7 +99,12 @@ export function SeccionPersonas(p: Props) {
   );
 }
 
-type Modo = 'viendo' | 'editando' | 'pin';
+/** Cambia cuando cambia lo que se ve: la fila vuelve a mostrarse, sin formularios abiertos. */
+function claveDeFila(x: PersonaDelAdmin): string {
+  return `${x.id}-${x.activo}-${x.nombre}-${x.rol}-${x.telefono ?? ''}-${x.locales.join()}`;
+}
+
+type Modo = 'viendo' | 'editando' | 'pin' | 'reactivando';
 
 function FilaDePersona(p: Props & { persona: PersonaDelAdmin }) {
   const { persona } = p;
@@ -104,14 +118,35 @@ function FilaDePersona(p: Props & { persona: PersonaDelAdmin }) {
     localesDe(persona, p.ficha),
   ].join(' · ');
 
-  const cambiarEstado = async () => {
+  /** Lo comun a baja, reactivacion y borrado: un pedido y volver a la ficha. */
+  const hacer = async (pedido: () => Promise<{ ok: true } | Fallo>) => {
     setTrabajando(true);
     setAviso(null);
-    const r = await api.cambiarEstadoDePersona(p.ficha.id, persona.id, !persona.activo);
+    const r = await pedido();
     setTrabajando(false);
     if (r.ok) return p.alCambiar();
     setAviso(p.fallo(r));
   };
+  const darDeBaja = () => void hacer(() => api.darDeBaja(p.ficha.id, persona.id));
+  const borrar = () => void hacer(() => api.borrarPersona(p.ficha.id, persona.id));
+  // Al dueño se le liberó el teléfono al darlo de baja: reactivarlo lo pide.
+  const reactivar = () =>
+    persona.rol === 'dueno'
+      ? setModo('reactivando')
+      : void hacer(() => api.reactivarPersona(p.ficha.id, persona.id, null));
+
+  // Sin historia, cargado por error: se borra. Con historia, solo se da de
+  // baja, para no dejar sin firma lo que hizo.
+  const botonDeBorrar = (
+    <BotonDeDosToques
+      texto="Borrar"
+      confirmar="Tocá de nuevo: se borra para siempre"
+      trabajando={trabajando}
+      textoTrabajando="Borrando…"
+      disabled={trabajando}
+      alConfirmar={borrar}
+    />
+  );
 
   if (modo === 'editando') {
     return (
@@ -149,31 +184,103 @@ function FilaDePersona(p: Props & { persona: PersonaDelAdmin }) {
               >
                 {persona.tiene_pin ? 'Cambiar PIN' : 'Poner PIN'}
               </Boton>
-              <BotonDeDosToques
-                texto="Dar de baja"
-                confirmar="Tocá de nuevo: sale de la tablet al instante"
-                trabajando={trabajando}
-                textoTrabajando="Dando de baja…"
-                disabled={trabajando}
-                alConfirmar={() => void cambiarEstado()}
-              />
+              {persona.con_historia ? (
+                <BotonDeDosToques
+                  texto="Dar de baja"
+                  confirmar="Tocá de nuevo: sale de la tablet al instante"
+                  trabajando={trabajando}
+                  textoTrabajando="Dando de baja…"
+                  disabled={trabajando}
+                  alConfirmar={darDeBaja}
+                />
+              ) : (
+                botonDeBorrar
+              )}
             </>
           ) : (
-            <Boton
-              variante="secundario"
-              disabled={trabajando}
-              onClick={() => void cambiarEstado()}
-            >
-              {trabajando ? 'Reactivando…' : 'Reactivar'}
-            </Boton>
+            <>
+              <Boton variante="secundario" disabled={trabajando} onClick={reactivar}>
+                {trabajando ? 'Reactivando…' : 'Reactivar'}
+              </Boton>
+              {!persona.con_historia && botonDeBorrar}
+            </>
           )}
         </div>
       )}
       {modo === 'pin' && (
         <FormularioDePin {...p} persona={persona} alTerminar={() => setModo('viendo')} />
       )}
+      {modo === 'reactivando' && (
+        <ReactivarDueno {...p} persona={persona} alTerminar={() => setModo('viendo')} />
+      )}
       {aviso !== null && <Aviso mensaje={aviso} />}
     </li>
+  );
+}
+
+/** El dueño vuelve con su teléfono: se le liberó al darlo de baja. */
+function ReactivarDueno(p: Props & { persona: PersonaDelAdmin; alTerminar: () => void }) {
+  const [telefono, setTelefono] = useState('');
+  const [problema, setProblema] = useState<string | undefined>(undefined);
+  const [enviando, setEnviando] = useState(false);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const id = `reactivar-telefono-${p.persona.id}`;
+
+  const guardar = async () => {
+    if (enviando) return;
+    if (telefono.trim() === '') return setProblema('El dueño entra con su teléfono.');
+    setEnviando(true);
+    setAviso(null);
+    const r = await api.reactivarPersona(p.ficha.id, p.persona.id, telefono.trim());
+    setEnviando(false);
+    if (r.ok) {
+      p.alTerminar();
+      return p.alCambiar();
+    }
+    setAviso(p.fallo(r));
+  };
+
+  return (
+    <form
+      className={estilos.formulario}
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        void guardar();
+      }}
+    >
+      <fieldset className={estilos.sinMarco} disabled={enviando}>
+        <Etiquetado id={id} titulo="Su teléfono" problema={problema}>
+          <input
+            id={id}
+            className={estilos.entrada}
+            inputMode="tel"
+            value={telefono}
+            maxLength={LIMITES_DE_PERSONA.telefono}
+            placeholder="7001 2345"
+            autoComplete="off"
+            onChange={(e) => {
+              setTelefono(e.target.value);
+              setProblema(undefined);
+              setAviso(null);
+            }}
+          />
+        </Etiquetado>
+      </fieldset>
+      <p className={estilos.ayuda}>
+        Al darlo de baja se le liberó el teléfono, para que pudiera usarse en otro
+        negocio.
+      </p>
+      {aviso !== null && <Aviso mensaje={aviso} />}
+      <div className={estilos.acciones}>
+        <Boton type="submit" disabled={enviando}>
+          {enviando ? 'Reactivando…' : 'Reactivar'}
+        </Boton>
+        <Boton variante="texto" disabled={enviando} onClick={p.alTerminar}>
+          Cancelar
+        </Boton>
+      </div>
+    </form>
   );
 }
 

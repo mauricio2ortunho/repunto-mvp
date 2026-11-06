@@ -495,3 +495,8 @@
 .enlaceDeAccion:hover {
   background: var(--c-accion-velo);
 }
+
+/* Las filas de los dados de baja, plegadas: sin la sangria de una lista de texto. */
+.historial .locales {
+  padding-left: 0;
+}
