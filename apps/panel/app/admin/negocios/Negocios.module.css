@@ -143,9 +143,12 @@
   font-weight: var(--peso-fuerte);
 }
 
+/* Arriba: si un campo muestra su error, el de al lado no se estira para
+   igualarlo, y los recuadros quedan a la misma altura. */
 .fila {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  align-items: start;
   gap: var(--espacio-5);
 }
 
