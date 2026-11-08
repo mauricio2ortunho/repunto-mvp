@@ -216,3 +216,36 @@
   color: var(--c-texto-suave);
   font-size: var(--texto-2);
 }
+
+/* Las pestañas: enlaces, la actual marcada con su fondo y aria-current. */
+.pestanas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-2);
+  border-bottom: var(--borde-fino) solid var(--c-borde);
+  padding-bottom: var(--espacio-3);
+}
+
+.pestana {
+  padding: var(--espacio-2) var(--espacio-4);
+  border-radius: var(--radio-pildora);
+  color: var(--c-texto-suave);
+  font-size: var(--texto-3);
+  font-weight: var(--peso-medio);
+  text-decoration: none;
+}
+
+.pestana:hover {
+  color: var(--c-texto);
+}
+
+.pestana[aria-current='page'] {
+  background: var(--c-accion-velo);
+  color: var(--c-texto);
+  font-weight: var(--peso-fuerte);
+}
+
+.pestana:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 var(--ancho-anillo-foco) var(--c-accion-velo);
+}

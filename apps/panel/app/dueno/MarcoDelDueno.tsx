@@ -1,12 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
+import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import type { DuenoActual } from '@repunto/contratos';
 import { Aviso, Boton } from '@repunto/ui';
 
 import * as api from '../../lib/api/dueno';
 import css from './Dueno.module.css';
-import { Resumen } from './Resumen';
 import { useSesionDeDueno } from './usar-sesion';
 
 type Estado =
@@ -14,12 +14,21 @@ type Estado =
   | { tipo: 'listo'; dueno: DuenoActual }
   | { tipo: 'error'; mensaje: string };
 
+/** Las pestañas del panel del dueño, en el orden en que se muestran. */
+const SECCIONES = [
+  { id: 'resumen', ruta: '/dueno', titulo: 'Resumen' },
+  { id: 'promo', ruta: '/dueno/promo', titulo: 'Tu promo' },
+] as const;
+
+export type SeccionDelDueno = (typeof SECCIONES)[number]['id'];
+
 /**
- * La entrada del panel del dueño: quién es, de qué negocio, y el resumen de
- * cómo le va. Sin sesión, o con una que la api ya no acepta, manda a
+ * Lo común a toda pantalla del panel del dueño: quién es, de qué negocio y
+ * las pestañas. La sección se dibuja recién cuando la sesión está
+ * confirmada; sin sesión, o con una que la api ya no acepta, manda a
  * /dueno/entrar.
  */
-export function InicioDelDueno() {
+export function MarcoDelDueno(p: { seccion: SeccionDelDueno; children: ReactNode }) {
   const { aEntrar } = useSesionDeDueno();
   const [estado, setEstado] = useState<Estado>({ tipo: 'cargando' });
 
@@ -78,11 +87,24 @@ export function InicioDelDueno() {
         </Boton>
       </header>
 
+      <nav className={css.pestanas} aria-label="Secciones">
+        {SECCIONES.map((s) => (
+          <Link
+            key={s.id}
+            href={s.ruta}
+            className={css.pestana}
+            aria-current={s.id === p.seccion ? 'page' : undefined}
+          >
+            {s.titulo}
+          </Link>
+        ))}
+      </nav>
+
       {dueno.negocio.estado === 'suspendido' && (
         <Aviso mensaje="Tu negocio está suspendido: tus clientes no pueden juntar sellos ni canjear. Hablá con Repunto." />
       )}
 
-      <Resumen aEntrar={aEntrar} />
+      {p.children}
     </main>
   );
 }

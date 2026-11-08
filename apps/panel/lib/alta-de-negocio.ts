@@ -11,6 +11,7 @@ import {
   esquemaProgramaNuevo,
   iconoDeSelloDe,
   plantillaDeTarjetaDe,
+  type CondicionDelHistorial,
   type CondicionNueva,
   type DatosDelNegocio,
   type FichaDelNegocio,
@@ -18,6 +19,7 @@ import {
   type NegocioNuevo,
   type PlantillaDeTarjeta,
   type ProgramaNuevo,
+  type ProgramaVigente,
   type RubroDeNegocio,
 } from '@repunto/contratos';
 
@@ -203,22 +205,36 @@ export function revisar(b: Borrador): Revision<NegocioNuevo> {
  * defecto, como al dibujarlo.
  */
 export function borradorDesde(f: FichaDelNegocio): Borrador {
-  const condicion = f.condiciones[0];
   return {
+    ...borradorDeLaPromo(f),
     nombre: f.nombre,
     categoria: esRubroDeNegocio(f.categoria) ? f.categoria : 'otro',
     color: f.color_principal,
     icono: iconoDeSelloDe(f.icono_sello),
     plantilla: plantillaDeTarjetaDe(f.plantilla_tarjeta),
     canjeCualquierLocal: f.canje_cualquier_local,
-    sellos: String(f.programa?.sellos_requeridos ?? BORRADOR_INICIAL.sellos),
-    premio: f.programa?.premio ?? '',
-    vence: f.programa === null ? true : f.programa.vigencia_meses !== null,
-    vigenciaMeses: String(f.programa?.vigencia_meses ?? BORRADOR_INICIAL.vigenciaMeses),
+  };
+}
+
+/**
+ * Solo la promo y la condicion vigentes, para quien no cambia nada mas: el
+ * dueño. El resto queda como en un alta y nadie lo manda.
+ */
+export function borradorDeLaPromo(p: {
+  programa: ProgramaVigente | null;
+  condiciones: readonly CondicionDelHistorial[];
+}): Borrador {
+  const condicion = p.condiciones[0];
+  return {
+    ...BORRADOR_INICIAL,
+    sellos: String(p.programa?.sellos_requeridos ?? BORRADOR_INICIAL.sellos),
+    premio: p.programa?.premio ?? '',
+    vence: p.programa === null ? true : p.programa.vigencia_meses !== null,
+    vigenciaMeses: String(p.programa?.vigencia_meses ?? BORRADOR_INICIAL.vigenciaMeses),
     horasEntreSellos: String(
-      f.programa?.horas_entre_sellos ?? BORRADOR_INICIAL.horasEntreSellos,
+      p.programa?.horas_entre_sellos ?? BORRADOR_INICIAL.horasEntreSellos,
     ),
-    pideMonto: f.programa?.pide_monto ?? false,
+    pideMonto: p.programa?.pide_monto ?? false,
     condicion: condicion?.texto ?? '',
     montoMinimo: condicion?.monto_minimo?.replace('.', ',') ?? '',
   };

@@ -12,6 +12,7 @@ import {
   textoDeFrecuencia,
 } from '../../lib/resumen-del-dueno';
 import css from './Dueno.module.css';
+import { useSesionDeDueno } from './usar-sesion';
 
 type Estado =
   | { tipo: 'cargando' }
@@ -22,7 +23,8 @@ type Estado =
  * Cómo le va al negocio: sus clientes, sus visitas, sus premios y sus
  * locales. Se calcula al abrir; "Actualizar" lo vuelve a pedir.
  */
-export function Resumen({ aEntrar }: { aEntrar: () => void }) {
+export function Resumen() {
+  const { aEntrar } = useSesionDeDueno();
   const [estado, setEstado] = useState<Estado>({ tipo: 'cargando' });
   const [actualizando, setActualizando] = useState(false);
 

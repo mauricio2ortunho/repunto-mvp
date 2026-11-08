@@ -1,10 +1,18 @@
 import {
+  type CondicionCambiada,
+  type CondicionNueva,
   type DuenoActual,
   type EntrarComoDuenoPeticion,
   type EntrarComoDuenoRespuesta,
+  type ProgramaCambiado,
+  type ProgramaNuevo,
+  type PromoDelDueno,
   type ResumenDelDueno,
+  esquemaCondicionCambiada,
   esquemaDuenoActual,
   esquemaEntrarComoDuenoRespuesta,
+  esquemaProgramaCambiado,
+  esquemaPromoDelDueno,
   esquemaResumenDelDueno,
 } from '@repunto/contratos';
 
@@ -37,6 +45,48 @@ export function resumen(senal?: AbortSignal): Promise<Respuesta<ResumenDelDueno>
   return pedir(
     { metodo: 'GET', ruta: '/dueno/resumen', senal, token: sesionDeDueno().token() },
     esquemaResumenDelDueno,
+  );
+}
+
+/** La promo vigente y la condición, con su historial. */
+export function promo(senal?: AbortSignal): Promise<Respuesta<PromoDelDueno>> {
+  return pedir(
+    { metodo: 'GET', ruta: '/dueno/promo', senal, token: sesionDeDueno().token() },
+    esquemaPromoDelDueno,
+  );
+}
+
+/** Una versión nueva de la promo, con Idempotency-Key: el doble toque crea una. */
+export function cambiarPrograma(
+  programa: ProgramaNuevo,
+  clave: string,
+): Promise<Respuesta<ProgramaCambiado>> {
+  return pedir(
+    {
+      metodo: 'POST',
+      ruta: '/dueno/promo/programa',
+      cuerpo: programa,
+      claveDeIdempotencia: clave,
+      token: sesionDeDueno().token(),
+    },
+    esquemaProgramaCambiado,
+  );
+}
+
+/** Una condición nueva, desde ahora, firmada por el dueño. */
+export function cambiarCondicion(
+  condicion: CondicionNueva,
+  clave: string,
+): Promise<Respuesta<CondicionCambiada>> {
+  return pedir(
+    {
+      metodo: 'POST',
+      ruta: '/dueno/promo/condicion',
+      cuerpo: condicion,
+      claveDeIdempotencia: clave,
+      token: sesionDeDueno().token(),
+    },
+    esquemaCondicionCambiada,
   );
 }
 

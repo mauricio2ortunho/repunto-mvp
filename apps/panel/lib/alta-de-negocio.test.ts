@@ -5,6 +5,7 @@ import type { FichaDelNegocio } from '@repunto/contratos';
 import {
   BORRADOR_INICIAL,
   type Borrador,
+  borradorDeLaPromo,
   borradorDesde,
   promoEnTexto,
   revisar,
@@ -191,5 +192,47 @@ describe('borradorDesde', () => {
   it('un rubro o un icono que este panel no conoce no rompe el formulario', () => {
     const b = borradorDesde({ ...ficha, categoria: 'nuevo', icono_sello: 'logo' });
     expect([b.categoria, b.icono]).toEqual(['otro', 'estrella']);
+  });
+});
+
+describe('borradorDeLaPromo', () => {
+  it('la promo y la condicion vigentes; lo demas, como en un alta', () => {
+    const b = borradorDeLaPromo({
+      programa: {
+        version: 3,
+        sellos_requeridos: 6,
+        premio: 'Una medialuna',
+        vigencia_meses: 2,
+        horas_entre_sellos: 4,
+        pide_monto: false,
+        desde: '2026-11-04T12:00:00.000Z',
+      },
+      condiciones: [
+        {
+          texto: 'Una torta entera',
+          monto_minimo: '80.00',
+          vigente_desde: '2026-11-04T12:00:00.000Z',
+          autor: { tipo: 'negocio', nombre: 'Lucía' },
+        },
+      ],
+    });
+    expect(b).toEqual({
+      ...BORRADOR_INICIAL,
+      sellos: '6',
+      premio: 'Una medialuna',
+      vence: true,
+      vigenciaMeses: '2',
+      horasEntreSellos: '4',
+      pideMonto: false,
+      condicion: 'Una torta entera',
+      montoMinimo: '80,00',
+    });
+    expect([revisarPrograma(b).ok, revisarCondicion(b).ok]).toEqual([true, true]);
+  });
+
+  it('sin promo ni condicion, los valores del piloto para empezar', () => {
+    expect(borradorDeLaPromo({ programa: null, condiciones: [] })).toEqual(
+      BORRADOR_INICIAL,
+    );
   });
 });

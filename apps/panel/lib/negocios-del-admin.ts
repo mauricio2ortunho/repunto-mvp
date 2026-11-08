@@ -1,4 +1,8 @@
-import type { FichaDelNegocio, NegocioDelAdmin } from '@repunto/contratos';
+import type {
+  CondicionDelHistorial,
+  NegocioDelAdmin,
+  ProgramaVigente,
+} from '@repunto/contratos';
 
 /**
  * Lo que le falta a un negocio para funcionar, dicho para el admin. Cada
@@ -30,11 +34,8 @@ export function localesEnTexto(cantidad: number): string {
   return cantidad === 1 ? '1 local' : `${cantidad} locales`;
 }
 
-type ProgramaDeLaFicha = NonNullable<FichaDelNegocio['programa']>;
-type CondicionDeLaFicha = FichaDelNegocio['condiciones'][number];
-
-/** La promo vigente, en frases cortas, para la ficha. */
-export function describirPrograma(p: ProgramaDeLaFicha): string[] {
+/** La promo vigente, en frases cortas: para la ficha y para el dueño. */
+export function describirPrograma(p: ProgramaVigente): string[] {
   const vence =
     p.vigencia_meses === null
       ? 'La tarjeta no vence'
@@ -62,6 +63,6 @@ export function avisoDeTarjetasEnCurso(enCurso: number): string {
   return `${cuantas} con la promo actual hasta completarse o vencer. ${nuevas}`;
 }
 
-export function autorDe(c: CondicionDeLaFicha): string {
+export function autorDe(c: CondicionDelHistorial): string {
   return c.autor.tipo === 'administracion' ? 'Administración' : c.autor.nombre;
 }
