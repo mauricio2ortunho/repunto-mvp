@@ -23,6 +23,7 @@ import {
   type ProgramaCambiado,
   type ProgramaNuevo,
   type QrCambiado,
+  type TableroDelPiloto,
   type TabletRevocada,
   esquemaAdminActual,
   esquemaCodigoDeVinculacion,
@@ -40,6 +41,7 @@ import {
   esquemaNegociosDelAdmin,
   esquemaProgramaCambiado,
   esquemaQrCambiado,
+  esquemaTableroDelPiloto,
   esquemaTabletRevocada,
 } from '@repunto/contratos';
 
@@ -87,6 +89,14 @@ export function negocios(senal?: AbortSignal): Promise<Respuesta<NegociosDelAdmi
  * El alta. La clave la decide quien llama: la misma mientras no se sepa si el
  * alta paso, para que el reintento no cree dos negocios.
  */
+/** El tablero del piloto: cómo viene cada negocio. */
+export function tablero(senal?: AbortSignal): Promise<Respuesta<TableroDelPiloto>> {
+  return pedir(
+    { metodo: 'GET', ruta: '/admin/tablero', token: sesionDeAdmin().token(), senal },
+    esquemaTableroDelPiloto,
+  );
+}
+
 export function crearNegocio(
   peticion: NegocioNuevo,
   clave: string,

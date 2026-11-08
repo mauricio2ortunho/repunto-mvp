@@ -109,23 +109,13 @@ export function InicioDeAdmin() {
 const SECCIONES: readonly { titulo: string; texto: string; ruta: string | null }[] = [
   {
     titulo: 'Negocios',
-    texto: 'Alta, rubro, colores, logo, promo. Suspender y reactivar.',
+    texto:
+      'Alta, promo y condición. En la ficha de cada uno: locales con su QR y su ubicación, personas y tablets.',
     ruta: '/admin/negocios',
   },
   {
-    titulo: 'Locales',
-    texto: 'Sucursales con su dirección y el QR para imprimir.',
-    ruta: null,
-  },
-  {
-    titulo: 'Personas',
-    texto: 'El dueño, los supervisores y los cajeros, con sus locales.',
-    ruta: null,
-  },
-  { titulo: 'Tablets', texto: 'Vincular y revocar las tablets de caja.', ruta: null },
-  {
     titulo: 'Tablero del piloto',
-    texto: 'Último sello de cada tablet y clientes nuevos por local.',
-    ruta: null,
+    texto: 'Sellos, clientes y premios de cada negocio, y los locales que no sellan.',
+    ruta: '/admin/tablero',
   },
 ];

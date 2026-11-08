@@ -1,0 +1,160 @@
+/* El tablero del piloto: totales, alertas y la tabla por negocio. */
+
+.volver {
+  display: inline-block;
+  margin-bottom: var(--espacio-2);
+  color: var(--c-accion);
+  font-size: var(--texto-2);
+  font-weight: var(--peso-medio);
+  text-decoration: none;
+}
+
+.volver:hover {
+  text-decoration: underline;
+}
+
+.contenido {
+  display: grid;
+  gap: var(--espacio-7);
+}
+
+/* Cuatro cifras; en un telefono, de a dos. */
+.cifras {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--espacio-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* El titulo arriba y la cifra abajo: si un titulo ocupa dos lineas, las
+   cifras quedan igual a la misma altura. */
+.cifra {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: var(--espacio-2);
+  padding: var(--espacio-5);
+  border: var(--borde-fino) solid var(--c-borde);
+  border-radius: var(--radio-3);
+  background: var(--c-superficie);
+}
+
+.tituloDeCifra {
+  color: var(--c-texto-suave);
+  font-size: var(--texto-2);
+  font-weight: var(--peso-medio);
+}
+
+.valor {
+  color: var(--c-texto);
+  font-size: var(--texto-7);
+  font-weight: var(--peso-negro);
+  font-variant-numeric: tabular-nums;
+}
+
+.bloque {
+  display: grid;
+  gap: var(--espacio-3);
+}
+
+.subtitulo {
+  margin: 0;
+  font-size: var(--texto-5);
+  font-weight: var(--peso-fuerte);
+}
+
+/* Cada alerta lleva un signo y el texto: no depende solo del color. */
+.alertas {
+  display: grid;
+  gap: var(--espacio-2);
+  margin: 0;
+  padding: var(--espacio-4);
+  border-radius: var(--radio-2);
+  background: var(--c-alerta-velo);
+  list-style: none;
+}
+
+.alertas li {
+  display: flex;
+  gap: var(--espacio-3);
+  align-items: baseline;
+}
+
+.alertas a {
+  color: var(--c-texto);
+  font-weight: var(--peso-fuerte);
+}
+
+.marcaDeAlerta {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: var(--espacio-5);
+  height: var(--espacio-5);
+  border-radius: var(--radio-pildora);
+  background: var(--c-alerta);
+  color: var(--c-sobre-alerta);
+  font-size: var(--texto-1);
+  font-weight: var(--peso-negro);
+}
+
+/* La tabla se desplaza dentro de su caja en un telefono; la pagina no. */
+.desplazable {
+  overflow-x: auto;
+  border: var(--borde-fino) solid var(--c-borde);
+  border-radius: var(--radio-3);
+  background: var(--c-superficie);
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--texto-2);
+}
+
+.tabla th,
+.tabla td {
+  padding: var(--espacio-3) var(--espacio-4);
+  border-bottom: var(--borde-fino) solid var(--c-borde);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tabla thead th {
+  color: var(--c-texto-suave);
+  font-weight: var(--peso-medio);
+}
+
+.tabla th[scope='row'],
+.tabla thead th:first-child {
+  text-align: left;
+}
+
+.tabla th[scope='row'] a {
+  color: var(--c-texto);
+  font-weight: var(--peso-fuerte);
+}
+
+.tabla td {
+  font-variant-numeric: tabular-nums;
+}
+
+.tabla tbody tr:last-child th,
+.tabla tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tabla tr[data-estado='suspendido'] {
+  color: var(--c-texto-suave);
+}
+
+.suspendido {
+  font-weight: var(--peso-normal);
+}
+
+.nota {
+  margin: 0;
+  color: var(--c-texto-suave);
+  font-size: var(--texto-2);
+}
