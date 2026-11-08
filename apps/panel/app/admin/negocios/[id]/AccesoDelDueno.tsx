@@ -9,8 +9,7 @@ import {
   direccionDeEntrada,
   mensajeDeAcceso,
 } from '../../../../lib/acceso-del-dueno';
-import * as api from '../../../../lib/api/admin';
-import type { Fallo } from '../../../../lib/api/http';
+import type { Fallo, Respuesta } from '../../../../lib/api/http';
 import { crearGestorDeIdempotencia } from '../../../../lib/api/idempotencia';
 import { fechaYHora } from '../../../../lib/fechas';
 import estilos from '../Negocios.module.css';
@@ -21,7 +20,8 @@ import estilos from '../Negocios.module.css';
  * por su cuenta. Generar otro no invalida el anterior; cada uno sirve una vez.
  */
 export function AccesoDelDueno(p: {
-  negocio: string;
+  /** Pide el código de esta persona, con la clave dada. */
+  generar: (clave: string) => Promise<Respuesta<EntradaDelDueno>>;
   persona: PersonaDelAdmin;
   fallo: (f: Fallo) => string | null;
   alTerminar: () => void;
@@ -36,11 +36,7 @@ export function AccesoDelDueno(p: {
 
   const generar = async () => {
     setAviso(null);
-    const r = await api.generarEntradaDelDueno(
-      p.negocio,
-      p.persona.id,
-      idempotencia.current.clavePara(firma),
-    );
+    const r = await p.generar(idempotencia.current.clavePara(firma));
     if (r.ok) {
       idempotencia.current.olvidar(firma);
       return setEntrada(r.datos);

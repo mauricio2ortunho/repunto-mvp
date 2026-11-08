@@ -3,15 +3,17 @@
 import { useRef, useState } from 'react';
 import type {
   CodigoDeVinculacion,
-  FichaDelNegocio,
   LocalDelAdmin,
   TabletDelAdmin,
 } from '@repunto/contratos';
 import { Aviso, Boton, BotonDeDosToques } from '@repunto/ui';
 
-import * as api from '../../../../lib/api/admin';
 import type { Fallo } from '../../../../lib/api/http';
 import { crearGestorDeIdempotencia } from '../../../../lib/api/idempotencia';
+import type {
+  EquipoDelNegocio,
+  OperacionesDelNegocio,
+} from '../../../../lib/api/operaciones';
 import { fechaYHora, hora } from '../../../../lib/fechas';
 import {
   saludDeTablet,
@@ -21,7 +23,8 @@ import {
 import estilos from '../Negocios.module.css';
 
 interface Props {
-  ficha: FichaDelNegocio;
+  negocio: EquipoDelNegocio;
+  ops: OperacionesDelNegocio;
   local: LocalDelAdmin;
   fallo: (f: Fallo) => string | null;
   alCambiar: () => void;
@@ -30,10 +33,10 @@ interface Props {
 /**
  * Las tablets de un local: cada una con su último sello, el código para
  * vincular una nueva y la revocación de una perdida. Es lo que reemplaza a
- * `pnpm tablets` el día de la capacitación.
+ * `pnpm tablets`: el admin el día de la capacitación, el dueño después.
  */
 export function TabletsDelLocal(p: Props) {
-  const { activas, revocadas } = tabletsDelLocal(p.ficha, p.local.id);
+  const { activas, revocadas } = tabletsDelLocal(p.negocio, p.local.id);
   const [codigo, setCodigo] = useState<CodigoDeVinculacion | null>(null);
   const [generando, setGenerando] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -47,8 +50,7 @@ export function TabletsDelLocal(p: Props) {
     const firma = `vinculacion:${p.local.id}`;
     setGenerando(true);
     setAviso(null);
-    const r = await api.generarCodigoDeVinculacion(
-      p.ficha.id,
+    const r = await p.ops.generarCodigoDeVinculacion(
       p.local.id,
       idempotencia.current.clavePara(firma),
     );
@@ -125,7 +127,7 @@ function FilaDeTablet(p: Props & { tablet: TabletDelAdmin; ahora: Date }) {
   const revocar = async () => {
     setRevocando(true);
     setAviso(null);
-    const r = await api.revocarTablet(p.ficha.id, p.tablet.id);
+    const r = await p.ops.revocarTablet(p.tablet.id);
     setRevocando(false);
     if (r.ok) return p.alCambiar();
     setAviso(p.fallo(r));

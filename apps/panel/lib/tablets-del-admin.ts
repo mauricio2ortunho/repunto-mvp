@@ -21,7 +21,7 @@ const DIA = 24 * HORA;
 
 /** Las de un local: las activas, y aparte las revocadas, que solo se miran. */
 export function tabletsDelLocal(
-  ficha: FichaDelNegocio,
+  ficha: Pick<FichaDelNegocio, 'tablets'>,
   localId: string,
 ): { activas: TabletDelAdmin[]; revocadas: TabletDelAdmin[] } {
   const delLocal = ficha.tablets.filter((t) => t.local_id === localId);

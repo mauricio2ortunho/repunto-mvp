@@ -116,7 +116,7 @@ export function revisarLocal(b: BorradorDeLocal): RevisionDeLocal {
  * eso no es obvio desde la fila de un local.
  */
 export function confirmacionDeCierre(
-  ficha: FichaDelNegocio,
+  ficha: Pick<FichaDelNegocio, 'locales'>,
   local: LocalDelAdmin,
 ): string {
   const otrosAbiertos = ficha.locales.filter((l) => l.activo && l.id !== local.id);

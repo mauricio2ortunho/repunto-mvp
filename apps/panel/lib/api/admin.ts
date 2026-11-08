@@ -49,6 +49,7 @@ import {
 
 import { sesionDeAdmin } from '../sesion-de-admin';
 import { type CausaIncierta, type Fallo, type Respuesta, pedir } from './http';
+import type { OperacionesDelNegocio } from './operaciones';
 
 /**
  * Los endpoints del panel de administracion. Cada uno dice que credencial
@@ -407,6 +408,33 @@ export function revocarTablet(
     },
     esquemaTabletRevocada,
   );
+}
+
+/**
+ * Las secciones de locales, personas y tablets, apuntadas al negocio de la
+ * ficha. El admin puede todo: abrir y cerrar locales, y manejar dueños.
+ */
+export function operacionesDelAdmin(negocio: string): OperacionesDelNegocio {
+  return {
+    crearLocal: (datos, clave) => crearLocal(negocio, datos, clave),
+    cambiarEstadoDelLocal: (local, activo) =>
+      cambiarEstadoDelLocal(negocio, local, activo),
+    guardarLocal: (local, datos) => guardarLocal(negocio, local, datos),
+    rutaDelQr: (local) =>
+      `/admin/negocios/${encodeURIComponent(negocio)}/locales/${encodeURIComponent(local)}/qr`,
+    generarCodigoDeVinculacion: (local, clave) =>
+      generarCodigoDeVinculacion(negocio, local, clave),
+    revocarTablet: (tablet) => revocarTablet(negocio, tablet),
+    manejaDuenos: true,
+    generarEntradaDelDueno: (persona, clave) =>
+      generarEntradaDelDueno(negocio, persona, clave),
+    crearPersona: (persona, clave) => crearPersona(negocio, persona, clave),
+    ponerPin: (persona, pin) => ponerPin(negocio, persona, pin),
+    guardarPersona: (persona, datos) => guardarPersona(negocio, persona, datos),
+    darDeBaja: (persona) => darDeBaja(negocio, persona),
+    reactivarPersona: (persona, telefono) => reactivarPersona(negocio, persona, telefono),
+    borrarPersona: (persona) => borrarPersona(negocio, persona),
+  };
 }
 
 /** La api dijo que esta sesion ya no sirve: hay que volver a entrar. */

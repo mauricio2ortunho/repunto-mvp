@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type FichaDelNegocio, tituloDeRubro } from '@repunto/contratos';
 import { Aviso, Boton, BotonDeDosToques } from '@repunto/ui';
 
@@ -51,6 +51,7 @@ export function Ficha() {
   const { id } = useParams<{ id: string }>();
   const { aEntrar } = useSesionDeAdmin();
   const [estado, setEstado] = useState<Estado>({ tipo: 'cargando' });
+  const ops = useMemo(() => api.operacionesDelAdmin(id), [id]);
 
   /** Lo comun a todo pedido que falla: sesion perdida, o un texto. */
   const fallo = useCallback(
@@ -156,8 +157,18 @@ export function Ficha() {
         fallo={fallo}
         alGuardar={() => void cargar()}
       />
-      <SeccionLocales ficha={ficha} fallo={fallo} alCambiar={() => void cargar()} />
-      <SeccionPersonas ficha={ficha} fallo={fallo} alCambiar={() => void cargar()} />
+      <SeccionLocales
+        negocio={ficha}
+        ops={ops}
+        fallo={fallo}
+        alCambiar={() => void cargar()}
+      />
+      <SeccionPersonas
+        negocio={ficha}
+        ops={ops}
+        fallo={fallo}
+        alCambiar={() => void cargar()}
+      />
     </main>
   );
 }

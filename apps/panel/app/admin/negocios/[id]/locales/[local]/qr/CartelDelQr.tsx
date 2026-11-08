@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
-import type { FichaDelNegocio } from '@repunto/contratos';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { LocalDelAdmin, NegocioDelDueno } from '@repunto/contratos';
 import {
   Aviso,
   Boton,
@@ -13,38 +13,83 @@ import {
 } from '@repunto/ui';
 
 import * as api from '../../../../../../../lib/api/admin';
+import type { Fallo, Respuesta } from '../../../../../../../lib/api/http';
 import { urlDeLaAppDelCliente } from '../../../../../../../lib/configuracion';
 import { dibujarQr, direccionDelQr } from '../../../../../../../lib/qr-del-local';
 import css from '../../../../../Admin.module.css';
 import { useSesionDeAdmin } from '../../../../../usar-sesion';
 import estilos from './Cartel.module.css';
 
+/** Lo que el cartel necesita: la marca del negocio y sus locales. */
+export interface DatosDelCartel {
+  marca: NegocioDelDueno['marca'];
+  locales: LocalDelAdmin[];
+}
+
+/** De dónde sale el cartel: la ficha del admin o el panel del dueño. */
+export interface FuenteDelCartel {
+  cargar: (senal?: AbortSignal) => Promise<Respuesta<DatosDelCartel>>;
+  cambiarQr: (local: string) => Promise<Respuesta<unknown>>;
+  /** El texto a mostrar; null si la sesión se perdió y ya se fue a entrar. */
+  fallo: (f: Fallo) => string | null;
+  volver: { href: string; texto: string };
+}
+
 type Estado =
   | { tipo: 'cargando' }
-  | { tipo: 'listo'; ficha: FichaDelNegocio }
+  | { tipo: 'listo'; datos: DatosDelCartel }
   | { tipo: 'error'; mensaje: string };
+
+/** El cartel desde la ficha del admin: /admin/negocios/:id/locales/:local/qr. */
+export function CartelDelAdmin() {
+  const { id, local } = useParams<{ id: string; local: string }>();
+  const { aEntrar } = useSesionDeAdmin();
+  const fuente = useMemo<FuenteDelCartel>(
+    () => ({
+      cargar: async (senal) => {
+        const r = await api.ficha(id, senal);
+        if (!r.ok) return r;
+        const { nombre, color_principal, logo_url, locales } = r.datos;
+        return { ...r, datos: { marca: { nombre, color_principal, logo_url }, locales } };
+      },
+      cambiarQr: (elLocal) => api.cambiarQr(id, elLocal),
+      fallo: (f) => {
+        if (!api.sesionPerdida(f)) return api.mensajeParaElAdmin(f);
+        aEntrar();
+        return null;
+      },
+      volver: { href: `/admin/negocios/${id}`, texto: 'Volver a la ficha' },
+    }),
+    [id, aEntrar],
+  );
+  return <CartelDelQr localId={local} fuente={fuente} />;
+}
 
 /**
  * El cartel del mostrador: el negocio, la sucursal y el QR que lleva al alta.
  * No lleva la promo: el cartel queda pegado meses, y la promo cambia cuando
  * el negocio quiere. El cliente la ve en el telefono, siempre al dia.
  */
-export function CartelDelQr() {
-  const { id, local: localId } = useParams<{ id: string; local: string }>();
-  const { aEntrar } = useSesionDeAdmin();
+export function CartelDelQr({
+  localId,
+  fuente,
+}: {
+  localId: string;
+  fuente: FuenteDelCartel;
+}) {
   const [estado, setEstado] = useState<Estado>({ tipo: 'cargando' });
   const [cambiando, setCambiando] = useState(false);
   const [avisoDelCambio, setAvisoDelCambio] = useState<string | null>(null);
 
   const cargar = useCallback(
     async (senal?: AbortSignal) => {
-      const r = await api.ficha(id, senal);
+      const r = await fuente.cargar(senal);
       if (senal?.aborted === true) return;
-      if (r.ok) return setEstado({ tipo: 'listo', ficha: r.datos });
-      if (api.sesionPerdida(r)) return aEntrar();
-      setEstado({ tipo: 'error', mensaje: api.mensajeParaElAdmin(r) });
+      if (r.ok) return setEstado({ tipo: 'listo', datos: r.datos });
+      const mensaje = fuente.fallo(r);
+      if (mensaje !== null) setEstado({ tipo: 'error', mensaje });
     },
-    [id, aEntrar],
+    [fuente],
   );
 
   useEffect(() => {
@@ -58,7 +103,7 @@ export function CartelDelQr() {
   const cambiarQr = async () => {
     setCambiando(true);
     setAvisoDelCambio(null);
-    const r = await api.cambiarQr(id, localId);
+    const r = await fuente.cambiarQr(localId);
     if (r.ok) {
       await cargar();
       setCambiando(false);
@@ -67,13 +112,12 @@ export function CartelDelQr() {
       );
     }
     setCambiando(false);
-    if (api.sesionPerdida(r)) return aEntrar();
-    setAvisoDelCambio(api.mensajeParaElAdmin(r));
+    setAvisoDelCambio(fuente.fallo(r));
   };
 
   const volver = (
-    <Link href={`/admin/negocios/${id}`} className={estilos.volver}>
-      ‹ Volver a la ficha
+    <Link href={fuente.volver.href} className={estilos.volver}>
+      ‹ {fuente.volver.texto}
     </Link>
   );
 
@@ -94,13 +138,13 @@ export function CartelDelQr() {
     );
   }
 
-  const { ficha } = estado;
-  const local = ficha.locales.find((l) => l.id === localId);
+  const { marca, locales } = estado.datos;
+  const local = locales.find((l) => l.id === localId);
   if (local === undefined) {
     return (
       <main className={css.pantalla}>
         {volver}
-        <Aviso mensaje="Ese local no está en este negocio. Volvé a la ficha." />
+        <Aviso mensaje="Ese local no está en este negocio." />
       </main>
     );
   }
@@ -121,7 +165,7 @@ export function CartelDelQr() {
       <div className={estilos.herramientas}>
         {volver}
         {!local.activo && (
-          <Aviso mensaje="Este local está cerrado: su QR no anota a nadie hasta que lo reabras." />
+          <Aviso mensaje="Este local está cerrado: su QR no anota a nadie hasta que se reabra." />
         )}
         <Boton onClick={() => window.print()}>Imprimir</Boton>
         <p className={css.texto}>
@@ -146,10 +190,10 @@ export function CartelDelQr() {
         <header
           className={estilos.marca}
           data-superficie="marca"
-          style={variablesDeMarca(ficha.color_principal)}
+          style={variablesDeMarca(marca.color_principal)}
         >
-          <LogoDelNegocio nombre={ficha.nombre} url={ficha.logo_url} />
-          <h1>{ficha.nombre}</h1>
+          <LogoDelNegocio nombre={marca.nombre} url={marca.logo_url} />
+          <h1>{marca.nombre}</h1>
         </header>
         <div className={estilos.cuerpo}>
           <p className={estilos.sucursal}>{local.nombre}</p>

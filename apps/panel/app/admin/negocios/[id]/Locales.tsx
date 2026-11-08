@@ -2,13 +2,16 @@
 
 import Link from 'next/link';
 import { useRef, useState } from 'react';
-import type { FichaDelNegocio, LocalDelAdmin } from '@repunto/contratos';
+import type { LocalDelAdmin } from '@repunto/contratos';
 import { LIMITES_DEL_LOCAL, enlaceDelMapa } from '@repunto/contratos';
 import { Aviso, Boton, BotonDeDosToques } from '@repunto/ui';
 
-import * as api from '../../../../lib/api/admin';
 import type { Fallo } from '../../../../lib/api/http';
 import { crearGestorDeIdempotencia } from '../../../../lib/api/idempotencia';
+import type {
+  EquipoDelNegocio,
+  OperacionesDelNegocio,
+} from '../../../../lib/api/operaciones';
 import {
   type BorradorDeLocal,
   LOCAL_VACIO,
@@ -23,37 +26,47 @@ import { TabletsDelLocal } from './Tablets';
 import estilos from '../Negocios.module.css';
 
 interface Props {
-  ficha: FichaDelNegocio;
+  negocio: EquipoDelNegocio;
+  ops: OperacionesDelNegocio;
   fallo: (f: Fallo) => string | null;
-  /** Vuelve a pedir la ficha: cambio algo que se ve en otras partes. */
+  /** Vuelve a pedir todo: cambio algo que se ve en otras partes. */
   alCambiar: () => void;
 }
 
 /**
  * Los locales del negocio: agregar, editar, cerrar y reabrir. Un local
  * cerrado no se borra: deja de sellar y de anotar gente, y su historial queda.
+ * Agregar y cerrar son del admin; el dueño solo edita (`ops`).
  */
 export function SeccionLocales(p: Props) {
-  const [agregando, setAgregando] = useState(p.ficha.locales.length === 0);
+  const { crearLocal } = p.ops;
+  const [agregando, setAgregando] = useState(
+    p.negocio.locales.length === 0 && crearLocal !== null,
+  );
 
   return (
     <section className={estilos.grupo}>
       <h2 className={estilos.tituloDeSeccion}>Locales</h2>
-      {p.ficha.locales.length === 0 ? (
+      {p.negocio.locales.length === 0 ? (
         <p className={estilos.ayuda}>
-          Todavía no tiene locales. Sin un local abierto el negocio no aparece en
-          &quot;Dónde juntar sellos&quot; y no hay dónde sellar.
+          {crearLocal === null
+            ? 'Todavía no tenés locales. Pedile a Repunto que abra el primero.'
+            : 'Todavía no tiene locales. Sin un local abierto el negocio no aparece en "Dónde juntar sellos" y no hay dónde sellar.'}
         </p>
       ) : (
         <ul className={estilos.locales}>
-          {p.ficha.locales.map((l) => (
+          {p.negocio.locales.map((l) => (
             <FilaDeLocal key={`${l.id}-${l.nombre}-${l.direccion}`} {...p} local={l} />
           ))}
         </ul>
       )}
 
-      {agregando ? (
-        <LocalNuevo {...p} alTerminar={() => setAgregando(false)} />
+      {crearLocal === null ? null : agregando ? (
+        <LocalNuevo
+          {...p}
+          crearLocal={crearLocal}
+          alTerminar={() => setAgregando(false)}
+        />
       ) : (
         <Boton
           variante="secundario"
@@ -73,10 +86,12 @@ function FilaDeLocal(p: Props & { local: LocalDelAdmin }) {
   const [trabajando, setTrabajando] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
 
+  const { cambiarEstadoDelLocal } = p.ops;
   const cambiarEstado = async () => {
+    if (cambiarEstadoDelLocal === null) return;
     setTrabajando(true);
     setAviso(null);
-    const r = await api.cambiarEstadoDelLocal(p.ficha.id, local.id, !local.activo);
+    const r = await cambiarEstadoDelLocal(local.id, !local.activo);
     setTrabajando(false);
     if (r.ok) return p.alCambiar();
     setAviso(p.fallo(r));
@@ -91,7 +106,7 @@ function FilaDeLocal(p: Props & { local: LocalDelAdmin }) {
           textoGuardar="Guardar"
           alCancelar={() => setEditando(false)}
           enviar={async (datos) => {
-            const r = await api.guardarLocal(p.ficha.id, local.id, datos);
+            const r = await p.ops.guardarLocal(local.id, datos);
             if (r.ok) {
               setEditando(false);
               p.alCambiar();
@@ -135,29 +150,30 @@ function FilaDeLocal(p: Props & { local: LocalDelAdmin }) {
             >
               Editar
             </Boton>
-            <Link
-              className={estilos.enlaceDeAccion}
-              href={`/admin/negocios/${p.ficha.id}/locales/${local.id}/qr`}
-            >
+            <Link className={estilos.enlaceDeAccion} href={p.ops.rutaDelQr(local.id)}>
               QR para imprimir
             </Link>
-            <BotonDeDosToques
-              texto="Cerrar"
-              confirmar={confirmacionDeCierre(p.ficha, local)}
-              trabajando={trabajando}
-              textoTrabajando="Cerrando…"
-              disabled={trabajando}
-              alConfirmar={() => void cambiarEstado()}
-            />
+            {cambiarEstadoDelLocal !== null && (
+              <BotonDeDosToques
+                texto="Cerrar"
+                confirmar={confirmacionDeCierre(p.negocio, local)}
+                trabajando={trabajando}
+                textoTrabajando="Cerrando…"
+                disabled={trabajando}
+                alConfirmar={() => void cambiarEstado()}
+              />
+            )}
           </>
         ) : (
-          <Boton
-            variante="secundario"
-            disabled={trabajando}
-            onClick={() => void cambiarEstado()}
-          >
-            {trabajando ? 'Reabriendo…' : 'Reabrir'}
-          </Boton>
+          cambiarEstadoDelLocal !== null && (
+            <Boton
+              variante="secundario"
+              disabled={trabajando}
+              onClick={() => void cambiarEstado()}
+            >
+              {trabajando ? 'Reabriendo…' : 'Reabrir'}
+            </Boton>
+          )
         )}
       </div>
       {aviso !== null && <Aviso mensaje={aviso} />}
@@ -166,7 +182,12 @@ function FilaDeLocal(p: Props & { local: LocalDelAdmin }) {
   );
 }
 
-function LocalNuevo(p: Props & { alTerminar: () => void }) {
+function LocalNuevo(
+  p: Props & {
+    crearLocal: NonNullable<OperacionesDelNegocio['crearLocal']>;
+    alTerminar: () => void;
+  },
+) {
   // Una clave por local: si la respuesta no llega y se vuelve a tocar, viaja
   // la misma y la api no crea dos.
   const idempotencia = useRef(crearGestorDeIdempotencia());
@@ -177,14 +198,10 @@ function LocalNuevo(p: Props & { alTerminar: () => void }) {
         id="nuevo"
         inicial={LOCAL_VACIO}
         textoGuardar="Agregar"
-        alCancelar={p.ficha.locales.length > 0 ? p.alTerminar : undefined}
+        alCancelar={p.negocio.locales.length > 0 ? p.alTerminar : undefined}
         enviar={async (datos) => {
-          const firma = `local:${p.ficha.id}:${JSON.stringify(datos)}`;
-          const r = await api.crearLocal(
-            p.ficha.id,
-            datos,
-            idempotencia.current.clavePara(firma),
-          );
+          const firma = `local:${JSON.stringify(datos)}`;
+          const r = await p.crearLocal(datos, idempotencia.current.clavePara(firma));
           if (r.ok) {
             idempotencia.current.olvidar(firma);
             p.alTerminar();

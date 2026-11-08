@@ -18,6 +18,8 @@ type Estado =
 const SECCIONES = [
   { id: 'resumen', ruta: '/dueno', titulo: 'Resumen' },
   { id: 'promo', ruta: '/dueno/promo', titulo: 'Tu promo' },
+  { id: 'locales', ruta: '/dueno/locales', titulo: 'Locales' },
+  { id: 'equipo', ruta: '/dueno/equipo', titulo: 'Equipo' },
 ] as const;
 
 export type SeccionDelDueno = (typeof SECCIONES)[number]['id'];

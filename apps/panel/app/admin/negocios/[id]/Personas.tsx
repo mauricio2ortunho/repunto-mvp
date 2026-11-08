@@ -1,16 +1,15 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import {
-  type FichaDelNegocio,
-  LIMITES_DE_PERSONA,
-  type PersonaDelAdmin,
-} from '@repunto/contratos';
+import { LIMITES_DE_PERSONA, type PersonaDelAdmin } from '@repunto/contratos';
 import { Aviso, Boton, BotonDeDosToques } from '@repunto/ui';
 
-import * as api from '../../../../lib/api/admin';
 import type { Fallo } from '../../../../lib/api/http';
 import { crearGestorDeIdempotencia } from '../../../../lib/api/idempotencia';
+import type {
+  EquipoDelNegocio,
+  OperacionesDelNegocio,
+} from '../../../../lib/api/operaciones';
 import {
   type BorradorDePersona,
   type CampoDePersona,
@@ -32,23 +31,25 @@ import { AccesoDelDueno } from './AccesoDelDueno';
 import estilos from '../Negocios.module.css';
 
 interface Props {
-  ficha: FichaDelNegocio;
+  negocio: EquipoDelNegocio;
+  ops: OperacionesDelNegocio;
   fallo: (f: Fallo) => string | null;
-  /** Vuelve a pedir la ficha. */
+  /** Vuelve a pedir todo. */
   alCambiar: () => void;
 }
 
 /**
  * Dueño, supervisores y cajeros. Quien atiende la caja aparece en la tablet
  * de sus locales con su nombre y abre turno con su PIN; el PIN lo escribe la
- * persona, y no se muestra nunca más.
+ * persona, y no se muestra nunca más. Al dueño, en su panel, los dueños se le
+ * muestran sin acciones (`ops.manejaDuenos`).
  */
 export function SeccionPersonas(p: Props) {
   const [agregando, setAgregando] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
   // Los dados de baja, plegados al final: no se borran, pero no molestan.
-  const activas = p.ficha.personas.filter((x) => x.activo);
-  const deBaja = p.ficha.personas.filter((x) => !x.activo);
+  const activas = p.negocio.personas.filter((x) => x.activo);
+  const deBaja = p.negocio.personas.filter((x) => !x.activo);
 
   return (
     <section className={estilos.grupo}>
@@ -116,8 +117,11 @@ function FilaDePersona(p: Props & { persona: PersonaDelAdmin }) {
   const detalle = [
     TITULOS_DE_ROL[persona.rol],
     ...(persona.telefono === null ? [] : [telefonoParaVer(persona.telefono)]),
-    localesDe(persona, p.ficha),
+    localesDe(persona, p.negocio),
   ].join(' · ');
+  // Al dueño lo maneja el admin: en el panel del dueño, se ve y no se toca.
+  const intocable = persona.rol === 'dueno' && !p.ops.manejaDuenos;
+  const { generarEntradaDelDueno } = p.ops;
 
   /** Lo comun a baja, reactivacion y borrado: un pedido y volver a la ficha. */
   const hacer = async (pedido: () => Promise<{ ok: true } | Fallo>) => {
@@ -128,13 +132,13 @@ function FilaDePersona(p: Props & { persona: PersonaDelAdmin }) {
     if (r.ok) return p.alCambiar();
     setAviso(p.fallo(r));
   };
-  const darDeBaja = () => void hacer(() => api.darDeBaja(p.ficha.id, persona.id));
-  const borrar = () => void hacer(() => api.borrarPersona(p.ficha.id, persona.id));
+  const darDeBaja = () => void hacer(() => p.ops.darDeBaja(persona.id));
+  const borrar = () => void hacer(() => p.ops.borrarPersona(persona.id));
   // Al dueño se le liberó el teléfono al darlo de baja: reactivarlo lo pide.
   const reactivar = () =>
     persona.rol === 'dueno'
       ? setModo('reactivando')
-      : void hacer(() => api.reactivarPersona(p.ficha.id, persona.id, null));
+      : void hacer(() => p.ops.reactivarPersona(persona.id, null));
 
   // Sin historia, cargado por error: se borra. Con historia, solo se da de
   // baja, para no dejar sin firma lo que hizo.
@@ -166,8 +170,11 @@ function FilaDePersona(p: Props & { persona: PersonaDelAdmin }) {
         </div>
         <span className={estilos.detalle}>{detalle}</span>
         {falta !== null && <span className={estilos.error}>{falta}</span>}
+        {intocable && (
+          <span className={estilos.ayuda}>A los dueños los maneja Repunto.</span>
+        )}
       </div>
-      {modo === 'viendo' && (
+      {modo === 'viendo' && !intocable && (
         <div className={estilos.acciones}>
           {persona.activo ? (
             <>
@@ -185,7 +192,7 @@ function FilaDePersona(p: Props & { persona: PersonaDelAdmin }) {
               >
                 {persona.tiene_pin ? 'Cambiar PIN' : 'Poner PIN'}
               </Boton>
-              {persona.rol === 'dueno' && (
+              {persona.rol === 'dueno' && generarEntradaDelDueno !== null && (
                 <Boton
                   variante="secundario"
                   disabled={trabajando}
@@ -220,9 +227,9 @@ function FilaDePersona(p: Props & { persona: PersonaDelAdmin }) {
       {modo === 'pin' && (
         <FormularioDePin {...p} persona={persona} alTerminar={() => setModo('viendo')} />
       )}
-      {modo === 'acceso' && (
+      {modo === 'acceso' && generarEntradaDelDueno !== null && (
         <AccesoDelDueno
-          negocio={p.ficha.id}
+          generar={(clave) => generarEntradaDelDueno(persona.id, clave)}
           persona={persona}
           fallo={p.fallo}
           alTerminar={() => setModo('viendo')}
@@ -249,7 +256,7 @@ function ReactivarDueno(p: Props & { persona: PersonaDelAdmin; alTerminar: () =>
     if (telefono.trim() === '') return setProblema('El dueño entra con su teléfono.');
     setEnviando(true);
     setAviso(null);
-    const r = await api.reactivarPersona(p.ficha.id, p.persona.id, telefono.trim());
+    const r = await p.ops.reactivarPersona(p.persona.id, telefono.trim());
     setEnviando(false);
     if (r.ok) {
       p.alTerminar();
@@ -318,7 +325,7 @@ function FormularioDePin(
     }
     setEnviando(true);
     setAviso(null);
-    const r = await api.ponerPin(p.ficha.id, p.persona.id, revision.pin);
+    const r = await p.ops.ponerPin(p.persona.id, revision.pin);
     setEnviando(false);
     if (r.ok) {
       p.alTerminar();
@@ -398,9 +405,8 @@ function PersonaNueva(p: Props & { alTerminar: (aviso: string | null) => void })
     setEnviando(true);
     f.setAviso(null);
 
-    const firma = `persona:${p.ficha.id}:${JSON.stringify(revision.peticion)}`;
-    const creada = await api.crearPersona(
-      p.ficha.id,
+    const firma = `persona:${JSON.stringify(revision.peticion)}`;
+    const creada = await p.ops.crearPersona(
       revision.peticion,
       idempotencia.current.clavePara(firma),
     );
@@ -415,7 +421,7 @@ function PersonaNueva(p: Props & { alTerminar: (aviso: string | null) => void })
 
     let resultado: string | null = null;
     if (revision.pin !== null) {
-      const pin = await api.ponerPin(p.ficha.id, creada.datos.id, revision.pin);
+      const pin = await p.ops.ponerPin(creada.datos.id, revision.pin);
       if (!pin.ok) {
         resultado = `${revision.peticion.nombre} quedó cargado, pero el PIN no se guardó: tocá "Poner PIN" en su fila.`;
       }
@@ -438,7 +444,8 @@ function PersonaNueva(p: Props & { alTerminar: (aviso: string | null) => void })
         <fieldset className={estilos.sinMarco} disabled={enviando}>
           <CamposDePersona
             id="nueva"
-            ficha={p.ficha}
+            negocio={p.negocio}
+            ops={p.ops}
             persona={null}
             b={f.b}
             problemas={f.problemas}
@@ -481,7 +488,7 @@ function EditarPersona(p: Props & { persona: PersonaDelAdmin; alTerminar: () => 
     if (!revision.ok) return f.setProblemas(revision.problemas);
     setEnviando(true);
     f.setAviso(null);
-    const r = await api.guardarPersona(p.ficha.id, p.persona.id, revision.peticion);
+    const r = await p.ops.guardarPersona(p.persona.id, revision.peticion);
     setEnviando(false);
     if (r.ok) {
       p.alTerminar();
@@ -502,7 +509,8 @@ function EditarPersona(p: Props & { persona: PersonaDelAdmin; alTerminar: () => 
       <fieldset className={estilos.sinMarco} disabled={enviando}>
         <CamposDePersona
           id={p.persona.id}
-          ficha={p.ficha}
+          negocio={p.negocio}
+          ops={p.ops}
           persona={p.persona}
           b={f.b}
           problemas={f.problemas}
@@ -529,7 +537,8 @@ function EditarPersona(p: Props & { persona: PersonaDelAdmin; alTerminar: () => 
 /** `persona`: null en el alta; al editar, quien se esta editando. */
 function CamposDePersona(p: {
   id: string;
-  ficha: FichaDelNegocio;
+  negocio: EquipoDelNegocio;
+  ops: OperacionesDelNegocio;
   persona: PersonaDelAdmin | null;
   b: BorradorDePersona;
   problemas: Problemas;
@@ -537,8 +546,8 @@ function CamposDePersona(p: {
 }) {
   const { b, problemas, poner } = p;
   const esDueno = b.rol === 'dueno';
-  const roles = rolesPosibles(p.persona);
-  const locales = localesParaElegir(p.ficha, p.persona?.locales ?? []);
+  const roles = rolesPosibles(p.persona, p.ops.manejaDuenos);
+  const locales = localesParaElegir(p.negocio, p.persona?.locales ?? []);
 
   return (
     <>
@@ -605,7 +614,9 @@ function CamposDePersona(p: {
         </span>
         {locales.length === 0 ? (
           <p className={estilos.ayuda}>
-            No hay locales abiertos: agregá uno arriba para poder asignarlo.
+            {p.ops.crearLocal === null
+              ? 'No hay locales abiertos: pedile a Repunto que abra uno.'
+              : 'No hay locales abiertos: agregá uno arriba para poder asignarlo.'}
           </p>
         ) : (
           <div className={estilos.opciones}>

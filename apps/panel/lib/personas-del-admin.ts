@@ -126,7 +126,10 @@ export function telefonoParaVer(telefono: string): string {
 }
 
 /** Los nombres de sus locales, en el orden de la ficha. */
-export function localesDe(persona: PersonaDelAdmin, ficha: FichaDelNegocio): string {
+export function localesDe(
+  persona: PersonaDelAdmin,
+  ficha: Pick<FichaDelNegocio, 'locales'>,
+): string {
   const nombres = ficha.locales
     .filter((l) => persona.locales.includes(l.id))
     .map((l) => (l.activo ? l.nombre : `${l.nombre} (cerrado)`));
@@ -136,12 +139,14 @@ export function localesDe(persona: PersonaDelAdmin, ficha: FichaDelNegocio): str
 /**
  * Lo que le falta para usar la tablet, dicho como consecuencia: la tablet no
  * explica por qué alguien no está en la lista. Null si no le falta nada, o si
- * es un dueño que no atiende la caja.
+ * es un dueño.
+ *
+ * Al dueño no se le avisa nunca: atender la caja es opcional para él, y
+ * tener locales no quiere decir que la atienda, porque vincular una tablet
+ * desde su panel lo asigna a ese local (la firma del código lo exige).
  */
 export function avisoDePersona(persona: PersonaDelAdmin): string | null {
-  if (!persona.activo) return null;
-  const atiende = persona.rol !== 'dueno' || persona.locales.length > 0;
-  if (!atiende) return null;
+  if (!persona.activo || persona.rol === 'dueno') return null;
   if (persona.locales.length === 0) return 'Sin local: no aparece en ninguna tablet.';
   if (!persona.tiene_pin) return 'Sin PIN: no aparece en la tablet.';
   return null;
@@ -159,12 +164,17 @@ export function borradorDesdePersona(p: PersonaDelAdmin): BorradorDePersona {
 }
 
 /**
- * Los roles que se le pueden elegir. Al alta, todos. Al editar, el dueño
- * sigue siendo dueño y los demás van entre supervisor y cajero
- * (ROL_NO_CAMBIABLE).
+ * Los roles que se le pueden elegir. Al alta, todos, menos dueño para quien
+ * no maneja dueños (el dueño, en su panel). Al editar, el dueño sigue siendo
+ * dueño y los demás van entre supervisor y cajero (ROL_NO_CAMBIABLE).
  */
-export function rolesPosibles(p: PersonaDelAdmin | null): readonly RolDePersona[] {
-  if (p === null) return ROLES_DE_PERSONA;
+export function rolesPosibles(
+  p: PersonaDelAdmin | null,
+  manejaDuenos = true,
+): readonly RolDePersona[] {
+  if (p === null) {
+    return manejaDuenos ? ROLES_DE_PERSONA : ['supervisor', 'cajero'];
+  }
   return p.rol === 'dueno' ? ['dueno'] : ['supervisor', 'cajero'];
 }
 
@@ -173,7 +183,7 @@ export function rolesPosibles(p: PersonaDelAdmin | null): readonly RolDePersona[
  * que guardar no se los saque sin que nadie lo haya pedido.
  */
 export function localesParaElegir(
-  ficha: FichaDelNegocio,
+  ficha: Pick<FichaDelNegocio, 'locales'>,
   tiene: readonly string[],
 ): FichaDelNegocio['locales'] {
   return ficha.locales.filter((l) => l.activo || tiene.includes(l.id));

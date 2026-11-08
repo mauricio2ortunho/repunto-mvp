@@ -235,6 +235,18 @@
   text-decoration: none;
 }
 
+/* En el celular, las cuatro pestañas en una sola fila. */
+@media (max-width: 599px) {
+  .pestanas {
+    gap: var(--espacio-1);
+  }
+
+  .pestana {
+    padding-inline: var(--espacio-2);
+    font-size: var(--texto-2);
+  }
+}
+
 .pestana:hover {
   color: var(--c-texto);
 }

@@ -129,6 +129,8 @@ describe('cómo se muestra', () => {
     expect(
       avisoDePersona(persona({ rol: 'dueno', locales: [], tiene_pin: false })),
     ).toBeNull();
+    // Ni aunque tenga un local: vincular una tablet desde su panel lo asigna.
+    expect(avisoDePersona(persona({ rol: 'dueno', tiene_pin: false }))).toBeNull();
     expect(avisoDePersona(persona({ activo: false, tiene_pin: false }))).toBeNull();
   });
 });
@@ -158,6 +160,11 @@ describe('editar', () => {
     expect(rolesPosibles(null)).toEqual(['dueno', 'supervisor', 'cajero']);
     expect(rolesPosibles(ana)).toEqual(['supervisor', 'cajero']);
     expect(rolesPosibles({ ...ana, rol: 'dueno' })).toEqual(['dueno']);
+  });
+
+  it('al dueño, en su panel, no le ofrece cargar dueños', () => {
+    expect(rolesPosibles(null, false)).toEqual(['supervisor', 'cajero']);
+    expect(rolesPosibles(ana, false)).toEqual(['supervisor', 'cajero']);
   });
 
   it('ofrece los abiertos y los cerrados que ya tiene', () => {
