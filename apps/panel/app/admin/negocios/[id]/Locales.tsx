@@ -18,6 +18,7 @@ import {
   revisarLocal,
 } from '../../../../lib/locales-del-admin';
 import { Etiquetado } from '../Campos';
+import { TabletsDelLocal } from './Tablets';
 import estilos from '../Negocios.module.css';
 
 interface Props {
@@ -146,6 +147,7 @@ function FilaDeLocal(p: Props & { local: LocalDelAdmin }) {
         )}
       </div>
       {aviso !== null && <Aviso mensaje={aviso} />}
+      <TabletsDelLocal {...p} local={local} />
     </li>
   );
 }

@@ -18,3 +18,15 @@ const FECHA_Y_HORA = new Intl.DateTimeFormat('es-BO', {
 export function fechaYHora(iso: string): string {
   return FECHA_Y_HORA.format(new Date(iso));
 }
+
+const SOLO_HORA = new Intl.DateTimeFormat('es-BO', {
+  timeZone: ZONA,
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
+
+/** "08:15". */
+export function hora(iso: string): string {
+  return SOLO_HORA.format(new Date(iso));
+}

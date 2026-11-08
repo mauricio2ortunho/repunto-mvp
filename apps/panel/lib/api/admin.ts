@@ -2,6 +2,7 @@ import {
   type AdminActual,
   type EntrarComoAdminPeticion,
   type EntrarComoAdminRespuesta,
+  type CodigoDeVinculacion,
   type CondicionCambiada,
   type CondicionNueva,
   type DatosDelLocal,
@@ -21,7 +22,9 @@ import {
   type NegociosDelAdmin,
   type ProgramaCambiado,
   type ProgramaNuevo,
+  type TabletRevocada,
   esquemaAdminActual,
+  esquemaCodigoDeVinculacion,
   esquemaCondicionCambiada,
   esquemaEntrarComoAdminRespuesta,
   esquemaEstadoDelLocal,
@@ -35,6 +38,7 @@ import {
   esquemaNegocioCreado,
   esquemaNegociosDelAdmin,
   esquemaProgramaCambiado,
+  esquemaTabletRevocada,
 } from '@repunto/contratos';
 
 import { sesionDeAdmin } from '../sesion-de-admin';
@@ -321,6 +325,38 @@ export function borrarPersona(
       token: sesionDeAdmin().token(),
     },
     esquemaPersonaBorrada,
+  );
+}
+
+/** El codigo para vincular una tablet nueva a ese local. Vence a los 15 minutos. */
+export function generarCodigoDeVinculacion(
+  negocio: string,
+  local: string,
+  clave: string,
+): Promise<Respuesta<CodigoDeVinculacion>> {
+  return pedir(
+    {
+      metodo: 'POST',
+      ruta: `/admin/negocios/${encodeURIComponent(negocio)}/locales/${encodeURIComponent(local)}/vinculacion`,
+      claveDeIdempotencia: clave,
+      token: sesionDeAdmin().token(),
+    },
+    esquemaCodigoDeVinculacion,
+  );
+}
+
+/** Sin clave: revocar dos veces deja lo mismo. */
+export function revocarTablet(
+  negocio: string,
+  tablet: string,
+): Promise<Respuesta<TabletRevocada>> {
+  return pedir(
+    {
+      metodo: 'POST',
+      ruta: `/admin/negocios/${encodeURIComponent(negocio)}/tablets/${encodeURIComponent(tablet)}/revocacion`,
+      token: sesionDeAdmin().token(),
+    },
+    esquemaTabletRevocada,
   );
 }
 
