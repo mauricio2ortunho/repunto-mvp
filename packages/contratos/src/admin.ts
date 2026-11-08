@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { ICONOS_DE_SELLO, PLANTILLAS_DE_TARJETA, RUBROS_DE_NEGOCIO } from './diseno';
 import { FORMATO_DEL_PIN } from './turno';
+import { esquemaUbicacion } from './ubicacion';
 
 /**
  * El panel de administracion (apps/panel, /admin). Lo usa el admin de
@@ -168,6 +169,11 @@ export const LIMITES_DEL_LOCAL = {
 export const esquemaDatosDelLocal = z.object({
   nombre: texto(LIMITES_DEL_LOCAL.nombre),
   direccion: texto(LIMITES_DEL_LOCAL.direccion),
+  /**
+   * Donde esta en el mapa. El cuerpo reemplaza todo: sin `ubicacion`, o con
+   * null, el local queda sin marcar.
+   */
+  ubicacion: esquemaUbicacion.nullable().default(null),
 });
 
 export type DatosDelLocal = z.infer<typeof esquemaDatosDelLocal>;
@@ -186,6 +192,7 @@ export const esquemaLocalDelAdmin = z.object({
   direccion: z.string(),
   activo: z.boolean(),
   qr_slug: z.string(),
+  ubicacion: esquemaUbicacion.nullable(),
 });
 
 export type LocalDelAdmin = z.infer<typeof esquemaLocalDelAdmin>;

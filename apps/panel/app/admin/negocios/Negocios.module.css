@@ -545,3 +545,10 @@
 .codigoDeVinculacion p {
   margin: 0;
 }
+
+/* Un enlace dentro de un texto: lleva afuera, a Google Maps. */
+.enlaceSimple {
+  justify-self: start;
+  color: var(--c-accion);
+  font-weight: var(--peso-medio);
+}

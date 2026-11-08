@@ -25,7 +25,11 @@ export class NegociosService {
              -- la caja responde PROMO_NO_CONFIGURADA: el negocio no se ofrece.
              p.premio, p.sellos_requeridos,
              jsonb_agg(
-               jsonb_build_object('nombre', l.nombre, 'direccion', l.direccion)
+               jsonb_build_object(
+                 'nombre', l.nombre, 'direccion', l.direccion,
+                 'ubicacion', CASE WHEN l.latitud IS NULL THEN NULL
+                   ELSE jsonb_build_object('latitud', l.latitud::float8,
+                                           'longitud', l.longitud::float8) END)
                ORDER BY l.nombre
              ) AS locales
       FROM negocio n

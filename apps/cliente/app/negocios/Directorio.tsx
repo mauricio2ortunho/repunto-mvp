@@ -2,7 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { esquemaDirectorio, esquemaMisTarjetas } from '@repunto/contratos';
+import {
+  enlaceParaLlegar,
+  esquemaDirectorio,
+  esquemaMisTarjetas,
+} from '@repunto/contratos';
 import { Aviso, Boton, LogoDelNegocio, variablesDeMarca } from '@repunto/ui';
 
 import { negocios } from '../../lib/api/cliente';
@@ -86,8 +90,20 @@ function Negocio({ item }: { item: NegocioEnElDirectorio }) {
         <p className={css.promo}>{promoDe(negocio)}</p>
         <ul className={css.locales}>
           {negocio.locales.map((local) => (
-            <li key={`${local.nombre}|${local.direccion}`}>
-              <strong>{local.nombre}</strong> · {local.direccion}
+            <li key={`${local.nombre}|${local.direccion}`} className={css.local}>
+              <span>
+                <strong>{local.nombre}</strong> · {local.direccion}
+              </span>
+              {/* Abre Google Maps con el recorrido: en la app, si el
+                  telefono la tiene. Sin clave ni costo. */}
+              <a
+                className={css.comoLlegar}
+                href={enlaceParaLlegar(local)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Cómo llegar
+              </a>
             </li>
           ))}
         </ul>

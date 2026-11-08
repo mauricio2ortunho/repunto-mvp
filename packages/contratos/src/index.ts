@@ -188,3 +188,12 @@ export {
   tacharDatos,
 } from './privacidad';
 export type { EventoDeError, MigaDeError } from './privacidad';
+
+export {
+  enlaceDelMapa,
+  enlaceParaLlegar,
+  esquemaUbicacion,
+  leerUbicacion,
+  textoDeUbicacion,
+} from './ubicacion';
+export type { LecturaDeUbicacion, Ubicacion } from './ubicacion';

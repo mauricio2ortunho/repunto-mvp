@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRef, useState } from 'react';
 import type { FichaDelNegocio, LocalDelAdmin } from '@repunto/contratos';
-import { LIMITES_DEL_LOCAL } from '@repunto/contratos';
+import { LIMITES_DEL_LOCAL, enlaceDelMapa } from '@repunto/contratos';
 import { Aviso, Boton, BotonDeDosToques } from '@repunto/ui';
 
 import * as api from '../../../../lib/api/admin';
@@ -18,6 +18,7 @@ import {
   revisarLocal,
 } from '../../../../lib/locales-del-admin';
 import { Etiquetado } from '../Campos';
+import { CampoDeUbicacion } from './CampoDeUbicacion';
 import { TabletsDelLocal } from './Tablets';
 import estilos from '../Negocios.module.css';
 
@@ -92,6 +93,7 @@ function FilaDeLocal(p: Props & { local: LocalDelAdmin }) {
           enviar={async (datos) => {
             const r = await api.guardarLocal(p.ficha.id, local.id, datos);
             if (r.ok) {
+              setEditando(false);
               p.alCambiar();
               return null;
             }
@@ -110,6 +112,18 @@ function FilaDeLocal(p: Props & { local: LocalDelAdmin }) {
           {!local.activo && <span className={estilos.suspendido}>Cerrado</span>}
         </div>
         <span className={estilos.detalle}>{local.direccion}</span>
+        {local.ubicacion === null ? (
+          <span className={estilos.ayuda}>Sin ubicación en el mapa</span>
+        ) : (
+          <a
+            className={estilos.enlaceSimple}
+            href={enlaceDelMapa(local.ubicacion)}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Ver en el mapa
+          </a>
+        )}
       </div>
       <div className={estilos.acciones}>
         {local.activo ? (
@@ -267,6 +281,12 @@ function FormularioDeLocal(p: {
             />
           </Etiquetado>
         </div>
+        <CampoDeUbicacion
+          id={p.id}
+          valor={b.ubicacion}
+          problema={problemas.ubicacion}
+          alCambiar={(valor) => poner('ubicacion', valor)}
+        />
       </fieldset>
       {aviso !== null && <Aviso mensaje={aviso} />}
       <div className={estilos.acciones}>

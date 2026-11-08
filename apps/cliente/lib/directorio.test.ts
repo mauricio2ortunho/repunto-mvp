@@ -15,7 +15,7 @@ function negocio(id: string, categoria: string): NegocioDelDirectorio {
     icono_sello: 'cafe',
     premio: 'Un cafe',
     sellos_requeridos: 10,
-    locales: [{ nombre: 'Centro', direccion: 'Calle Sucre 45' }],
+    locales: [{ nombre: 'Centro', direccion: 'Calle Sucre 45', ubicacion: null }],
   };
 }
 

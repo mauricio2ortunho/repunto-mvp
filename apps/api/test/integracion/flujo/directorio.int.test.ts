@@ -45,8 +45,12 @@ describe('GET /negocios', () => {
         premio: 'Un cafe',
         sellos_requeridos: 10,
         locales: [
-          { nombre: 'Centro', direccion: 'Santa Cruz de la Sierra' },
-          { nombre: 'Equipetrol', direccion: 'Santa Cruz de la Sierra' },
+          { nombre: 'Centro', direccion: 'Santa Cruz de la Sierra', ubicacion: null },
+          {
+            nombre: 'Equipetrol',
+            direccion: 'Santa Cruz de la Sierra',
+            ubicacion: null,
+          },
         ],
       },
     ]);

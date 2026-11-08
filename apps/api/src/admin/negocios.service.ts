@@ -76,6 +76,8 @@ interface FilaDeLocal {
   direccion: string;
   activo: boolean;
   qr_slug: string;
+  latitud: number | null;
+  longitud: number | null;
 }
 
 interface FilaDePersona {
@@ -225,7 +227,9 @@ export class NegociosDeAdminService {
       LIMIT ${CONDICIONES_EN_LA_FICHA}`;
 
     const locales = await this.prisma.$queryRaw<FilaDeLocal[]>`
-      SELECT id, nombre, direccion, activo, qr_slug FROM local
+      SELECT id, nombre, direccion, activo, qr_slug,
+             latitud::float8 AS latitud, longitud::float8 AS longitud
+      FROM local
       WHERE negocio_id = ${id}::uuid
       ORDER BY activo DESC, creado_el, id`;
 
@@ -279,7 +283,10 @@ export class NegociosDeAdminService {
       creado_el: f.creado_el.toISOString(),
       locales_activos: f.locales_activos,
       tarjetas_en_curso: f.tarjetas_en_curso,
-      locales,
+      locales: locales.map(({ latitud, longitud, ...l }) => ({
+        ...l,
+        ubicacion: latitud === null || longitud === null ? null : { latitud, longitud },
+      })),
       personas,
       tablets: tablets.map((t) => ({
         id: t.id,
@@ -468,8 +475,10 @@ export class NegociosDeAdminService {
       // local_qr_slug_key lo rechaza y el admin vuelve a tocar.
       const qr = qrDelLocalDesde(randomBytes(LARGO_QR_DEL_LOCAL));
       const filas = await tx.$queryRaw<{ id: string }[]>`
-        INSERT INTO local (negocio_id, nombre, direccion, qr_slug)
-        VALUES (${negocioId}::uuid, ${datos.nombre}, ${datos.direccion}, ${qr})
+        INSERT INTO local (negocio_id, nombre, direccion, qr_slug, latitud, longitud)
+        VALUES (${negocioId}::uuid, ${datos.nombre}, ${datos.direccion}, ${qr},
+                ${datos.ubicacion?.latitud ?? null}::numeric,
+                ${datos.ubicacion?.longitud ?? null}::numeric)
         RETURNING id`;
 
       const respuesta = esquemaLocalCreado.parse({ id: filas[0]?.id });
@@ -479,8 +488,8 @@ export class NegociosDeAdminService {
   }
 
   /**
-   * `POST /admin/negocios/:id/locales/:local/datos`. Nombre y direccion, al
-   * instante; el QR impreso sigue valiendo.
+   * `POST /admin/negocios/:id/locales/:local/datos`. Nombre, direccion y
+   * ubicacion, al instante; el QR impreso sigue valiendo.
    */
   async actualizarLocal(
     negocioId: string,
@@ -488,7 +497,9 @@ export class NegociosDeAdminService {
     datos: DatosDelLocal,
   ): Promise<FichaDelNegocio> {
     const cambiadas = await this.prisma.$executeRaw`
-      UPDATE local SET nombre = ${datos.nombre}, direccion = ${datos.direccion}
+      UPDATE local SET nombre = ${datos.nombre}, direccion = ${datos.direccion},
+        latitud = ${datos.ubicacion?.latitud ?? null}::numeric,
+        longitud = ${datos.ubicacion?.longitud ?? null}::numeric
       WHERE id = ${localId}::uuid AND negocio_id = ${negocioId}::uuid`;
     if (cambiadas === 0) throw await this.localNoEncontrado(negocioId);
     return this.ficha(negocioId);

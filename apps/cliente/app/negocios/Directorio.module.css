@@ -87,6 +87,23 @@
   color: var(--c-texto-suave);
 }
 
+/* La direccion a la izquierda, que se parte en lineas si hace falta, y
+   "Como llegar" siempre a la derecha, a la misma altura en cada local. */
+.local {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--espacio-3);
+  align-items: center;
+}
+
+.comoLlegar {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--toque-minimo);
+  color: var(--c-accion);
+  font-weight: var(--peso-fuerte);
+}
+
 .comoSumarse,
 .yaTiene {
   margin: 0;

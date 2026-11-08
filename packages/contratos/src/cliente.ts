@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import type { CodigoDeErrorDeApi, CodigoDeErrorDeCaja } from './caja';
+import { esquemaUbicacion } from './ubicacion';
 
 /**
  * Contrato de `GET /mi/codigo`.
@@ -158,7 +159,19 @@ export const esquemaNegocioDelDirectorio = esquemaMarcaDelNegocio.extend({
   premio: z.string(),
   sellos_requeridos: z.int().positive(),
   /** Solo los abiertos. Un negocio sin ninguno no aparece. */
-  locales: z.array(z.object({ nombre: z.string(), direccion: z.string() })).min(1),
+  locales: z
+    .array(
+      z.object({
+        nombre: z.string(),
+        direccion: z.string(),
+        /**
+         * Donde esta, si el admin lo marco. Con default: el directorio
+         * guardado en el telefono antes de que existiera no la trae.
+         */
+        ubicacion: esquemaUbicacion.nullable().default(null),
+      }),
+    )
+    .min(1),
 });
 
 export type NegocioDelDirectorio = z.infer<typeof esquemaNegocioDelDirectorio>;

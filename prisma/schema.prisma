@@ -209,6 +209,10 @@ model Local {
   qr_slug    String   @unique
   /// Un local cerrado deja de sellar y conserva su historial.
   activo     Boolean  @default(true)
+  /// Donde esta en el mapa, para "Como llegar". Las dos o ninguna
+  /// (local_ubicacion_valida_chk).
+  latitud    Decimal? @db.Decimal(9, 6)
+  longitud   Decimal? @db.Decimal(9, 6)
   creado_el  DateTime @default(now()) @db.Timestamptz(3)
 
   negocio      Negocio             @relation(fields: [negocio_id], references: [id], onDelete: Restrict, onUpdate: Restrict)

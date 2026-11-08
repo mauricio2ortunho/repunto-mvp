@@ -81,7 +81,7 @@ describe('POST /admin/negocios/:id/locales · agregar un local', () => {
       negocios: { id: string; locales: { nombre: string; direccion: string }[] }[];
     };
     const delNegocio = directorio.negocios.find((n) => n.id === negocio.id);
-    expect(delNegocio?.locales).toContainEqual(CENTRO);
+    expect(delNegocio?.locales).toContainEqual({ ...CENTRO, ubicacion: null });
   });
 
   test('el reintento con la misma clave no crea dos', async ({ api, db }) => {
@@ -306,5 +306,82 @@ describe('/admin/negocios/:id/locales · solo con la sesion del admin', () => {
     );
     expect(await contar(db, 'local')).toBe(antes);
     expect(await contar(db, 'local', 'activo')).toBe(antes);
+  });
+});
+
+describe('La ubicacion de un local en el mapa', () => {
+  const PLAZA = { latitud: -17.783312, longitud: -63.182104 };
+
+  test('se marca al agregarlo y la ven el admin y el directorio', async ({ api, db }) => {
+    const token = await entrar(api, db);
+    const negocio = await crearNegocio(db);
+
+    const creado = await api.crearLocal(token, negocio.id, {
+      ...CENTRO,
+      ubicacion: PLAZA,
+    });
+
+    expect(creado.estado).toBe(201);
+    const id = String(creado.cuerpo['id']);
+    const local = (await localesDe(api, token, negocio.id)).find((l) => l.id === id);
+    expect(local?.ubicacion).toEqual(PLAZA);
+    const directorio = (await api.negocios()).cuerpo['negocios'] as {
+      id: string;
+      locales: { direccion: string; ubicacion: unknown }[];
+    }[];
+    const delNegocio = directorio.find((n) => n.id === negocio.id);
+    expect(delNegocio?.locales.find((l) => l.direccion === CENTRO.direccion)).toEqual({
+      ...CENTRO,
+      ubicacion: PLAZA,
+    });
+  });
+
+  test('sin ubicacion, el local queda sin marcar', async ({ api, db }) => {
+    const token = await entrar(api, db);
+    const negocio = await crearNegocio(db);
+
+    const id = String((await api.crearLocal(token, negocio.id, CENTRO)).cuerpo['id']);
+
+    const local = (await localesDe(api, token, negocio.id)).find((l) => l.id === id);
+    expect(local?.ubicacion).toBeNull();
+  });
+
+  test('editar la cambia, y con null la quita', async ({ api, db }) => {
+    const token = await entrar(api, db);
+    const negocio = await crearNegocio(db);
+    const otra = { latitud: -17.7601, longitud: -63.1979 };
+
+    await api.datosDelLocal(token, negocio.id, negocio.local, {
+      ...CENTRO,
+      ubicacion: PLAZA,
+    });
+    const cambiada = await api.datosDelLocal(token, negocio.id, negocio.local, {
+      ...CENTRO,
+      ubicacion: otra,
+    });
+    const ubicacionDe = (r: typeof cambiada) =>
+      (r.cuerpo['locales'] as LocalDelAdmin[]).find((l) => l.id === negocio.local)
+        ?.ubicacion;
+    expect(ubicacionDe(cambiada)).toEqual(otra);
+
+    const quitada = await api.datosDelLocal(token, negocio.id, negocio.local, {
+      ...CENTRO,
+      ubicacion: null,
+    });
+    expect(ubicacionDe(quitada)).toBeNull();
+  });
+
+  test('una coordenada fuera del planeta no entra', async ({ api, db }) => {
+    const token = await entrar(api, db);
+    const negocio = await crearNegocio(db);
+
+    const respuesta = await api.crearLocal(token, negocio.id, {
+      ...CENTRO,
+      ubicacion: { latitud: -117.7, longitud: -63.1 },
+    });
+
+    expect(respuesta.estado).toBe(422);
+    expect(respuesta.cuerpo['codigo']).toBe('PETICION_INVALIDA');
+    expect(await contar(db, 'local', `direccion = '${CENTRO.direccion}'`)).toBe(0);
   });
 });

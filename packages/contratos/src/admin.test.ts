@@ -100,7 +100,7 @@ describe('esquemaDatosDelLocal', () => {
   it('acepta nombre y dirección, sin espacios de más', () => {
     expect(
       esquemaDatosDelLocal.parse({ nombre: ' Centro ', direccion: local.direccion }),
-    ).toEqual({ nombre: 'Centro', direccion: local.direccion });
+    ).toEqual({ nombre: 'Centro', direccion: local.direccion, ubicacion: null });
   });
 
   it('pide los dos, no vacíos ni más largos que el límite', () => {
@@ -116,7 +116,10 @@ describe('esquemaDatosDelLocal', () => {
   });
 
   it('el QR no viaja: lo pone la api', () => {
-    expect(esquemaDatosDelLocal.parse({ ...local, qr_slug: 'elegido' })).toEqual(local);
+    expect(esquemaDatosDelLocal.parse({ ...local, qr_slug: 'elegido' })).toEqual({
+      ...local,
+      ubicacion: null,
+    });
   });
 });
 

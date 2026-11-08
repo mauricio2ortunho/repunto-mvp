@@ -258,6 +258,42 @@ describe('Cordura y unicidad operativa', () => {
     );
   });
 
+  test('Cordura · rechaza un local con una sola coordenada', async ({ db }) => {
+    const a = await crearNegocio(db);
+    await esperarRechazo(
+      db,
+      'local_ubicacion_valida_chk',
+      `UPDATE local SET latitud = -17.78 WHERE id = $1`,
+      [a.local],
+    );
+  });
+
+  test('Cordura · rechaza un local fuera del planeta', async ({ db }) => {
+    const a = await crearNegocio(db);
+    await esperarRechazo(
+      db,
+      'local_ubicacion_valida_chk',
+      `UPDATE local SET latitud = -117.78, longitud = -63.18 WHERE id = $1`,
+      [a.local],
+    );
+  });
+
+  test('Cordura · acepta un local con las dos coordenadas, y sin ninguna', async ({
+    db,
+  }) => {
+    const a = await crearNegocio(db);
+    await esperarAceptacion(
+      db,
+      `UPDATE local SET latitud = -17.783312, longitud = -63.182104 WHERE id = $1`,
+      [a.local],
+    );
+    await esperarAceptacion(
+      db,
+      `UPDATE local SET latitud = NULL, longitud = NULL WHERE id = $1`,
+      [a.local],
+    );
+  });
+
   test('Modelo · rechaza dos locales con el mismo QR', async ({ db }) => {
     const a = await crearNegocio(db);
     const slug = unico('qr');
