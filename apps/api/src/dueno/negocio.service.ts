@@ -30,9 +30,17 @@ export class NegocioDelDuenoService {
 
   /** `GET /dueno/negocio`. */
   async negocio(negocioId: string): Promise<NegocioDelDueno> {
-    return esquemaNegocioDelDueno.parse(
-      await localesPersonasYTablets(this.prisma, negocioId),
-    );
+    const marcas = await this.prisma.$queryRaw<
+      { nombre: string; color_principal: string; logo_url: string | null }[]
+    >`
+      SELECT nombre, color_principal, logo_url FROM negocio
+      WHERE id = ${negocioId}::uuid`;
+    const marca = marcas[0];
+    if (marca === undefined) throw new Error('El negocio de la sesión no existe.');
+    return esquemaNegocioDelDueno.parse({
+      marca,
+      ...(await localesPersonasYTablets(this.prisma, negocioId)),
+    });
   }
 
   /** `POST /dueno/locales/:local/datos`. */

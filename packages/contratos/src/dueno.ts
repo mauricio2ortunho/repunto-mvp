@@ -86,6 +86,12 @@ export type PromoDelDueno = z.infer<typeof esquemaPromoDelDueno>;
  * igual de la sesión, y la api rechaza lo que no sea de él.
  */
 export const esquemaNegocioDelDueno = z.object({
+  /** Lo que lleva el cartel del QR. Cambiarlo es del admin. */
+  marca: z.object({
+    nombre: z.string(),
+    color_principal: z.string(),
+    logo_url: z.string().nullable(),
+  }),
   /** Los abiertos primero. El dueño los edita; abrir y cerrar, el admin. */
   locales: z.array(esquemaLocalDelAdmin),
   /** Los dueños también, para que se vea quién es quién; no los edita. */

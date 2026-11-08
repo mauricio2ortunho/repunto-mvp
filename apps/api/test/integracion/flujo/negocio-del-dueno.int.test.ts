@@ -59,6 +59,11 @@ describe('GET /dueno/negocio', () => {
 
     const visto = await negocioDe(api, token);
 
+    expect(visto.marca).toEqual({
+      nombre: 'Negocio de prueba',
+      color_principal: '#1A2B3C',
+      logo_url: null,
+    });
     expect(visto.locales.map((l) => l.id).sort()).toEqual(
       [negocio.local, negocio.otroLocal].sort(),
     );
