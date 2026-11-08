@@ -156,6 +156,10 @@ export class Api {
     return this.pedir('GET', '/admin/negocios', { token });
   }
 
+  tableroDelAdmin(token: string | undefined): Promise<Respuesta> {
+    return this.pedir('GET', '/admin/tablero', { token });
+  }
+
   fichaDelNegocio(token: string | undefined, id: string): Promise<Respuesta> {
     return this.pedir('GET', `/admin/negocios/${id}`, { token });
   }

@@ -7,15 +7,22 @@ import { PersonasDeAdminService } from './personas.service';
 import { TabletsDeAdminService } from './tablets.service';
 import { SesionDeAdminController } from './sesion.controller';
 import { SesionDeAdminService } from './sesion.service';
+import { TableroDeAdminController } from './tablero.controller';
+import { TableroDeAdminService } from './tablero.service';
 
 /** El panel de administracion: lo usa el admin de plataforma. */
 @Module({
-  controllers: [SesionDeAdminController, NegociosDeAdminController],
+  controllers: [
+    SesionDeAdminController,
+    NegociosDeAdminController,
+    TableroDeAdminController,
+  ],
   providers: [
     SesionDeAdminService,
     NegociosDeAdminService,
     PersonasDeAdminService,
     TabletsDeAdminService,
+    TableroDeAdminService,
     GuardDeAdmin,
   ],
 })

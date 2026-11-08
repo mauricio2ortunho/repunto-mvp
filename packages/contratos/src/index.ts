@@ -199,3 +199,10 @@ export {
   textoDeUbicacion,
 } from './ubicacion';
 export type { LecturaDeUbicacion, Ubicacion } from './ubicacion';
+
+export {
+  esquemaLocalEnElTablero,
+  esquemaNegocioEnElTablero,
+  esquemaTableroDelPiloto,
+} from './tablero';
+export type { LocalEnElTablero, NegocioEnElTablero, TableroDelPiloto } from './tablero';

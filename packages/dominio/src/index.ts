@@ -33,6 +33,13 @@ export {
   sumarMesesCalendario,
 } from './tiempo';
 export type { DiaEnLaPaz } from './tiempo';
+export {
+  DIAS_DE_CLIENTE_ACTIVO,
+  DIAS_DE_LA_SEMANA_QUE_PASO,
+  DIAS_DE_LOCAL_SIN_SELLOS,
+  DIAS_DEL_MES_QUE_PASO,
+  inicioDelMesEnLaPaz,
+} from './metricas';
 
 export {
   ALFABETO_CODIGO_PUBLICO,
