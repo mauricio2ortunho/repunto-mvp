@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mensajeParaElCajero } from '@repunto/contratos';
 import type { CodigoDeError } from '../../lib/api/http';
-import { sePuedeVincular, tonoDeBloqueo } from './bloqueo';
+import { crearBloqueo, sePuedeVincular, tonoDeBloqueo, turnoEnLaBanda } from './bloqueo';
 
 /** Lo que puede llegar como impedimento, mas la tablet sin vincular (un 401). */
 const POSIBLES: CodigoDeError[] = [
@@ -52,6 +52,29 @@ describe('el tono de una caja bloqueada', () => {
     for (const codigo of POSIBLES) {
       const mandaAlDueno = /avis[aá] al due[nñ]o/i.test(mensajeParaElCajero(codigo));
       expect(tonoDeBloqueo(codigo) === 'alarma', codigo).toBe(mandaAlDueno);
+    }
+  });
+});
+
+describe('turnoEnLaBanda', () => {
+  const marta = { usuario: 'Marta' };
+
+  it('con la caja andando, el turno abierto', () => {
+    expect(turnoEnLaBanda(marta, null)).toBe('Marta');
+  });
+
+  it('sin turno, nada', () => {
+    expect(turnoEnLaBanda(null, null)).toBeNull();
+    expect(turnoEnLaBanda(undefined, null)).toBeNull();
+  });
+
+  it('con la tablet revocada no muestra el turno viejo ni ofrece cerrarlo', () => {
+    expect(turnoEnLaBanda(marta, crearBloqueo('DISPOSITIVO_REVOCADO'))).toBeNull();
+  });
+
+  it('con cualquier bloqueo, tampoco', () => {
+    for (const codigo of POSIBLES) {
+      expect(turnoEnLaBanda(marta, crearBloqueo(codigo)), codigo).toBeNull();
     }
   });
 });

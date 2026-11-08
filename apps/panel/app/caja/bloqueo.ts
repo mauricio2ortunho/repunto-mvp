@@ -48,6 +48,20 @@ export function tonoDeBloqueo(codigo: CodigoDeError): TonoDeBloqueo {
   return SE_RESUELVEN_EN_EL_MOSTRADOR.has(codigo) ? 'instruccion' : 'alarma';
 }
 
+/**
+ * De quien es el turno que muestra la banda, o null si no hay que mostrarlo.
+ * Con la caja bloqueada no se muestra: una tablet revocada guarda el ultimo
+ * estado que leyo, con su turno, y la banda seguia diciendo "Turno de Marta"
+ * y ofreciendo cerrarlo, sobre una alarma que dice que la tablet no sirve.
+ */
+export function turnoEnLaBanda(
+  turno: { usuario: string } | null | undefined,
+  bloqueo: Bloqueo | null,
+): string | null {
+  if (bloqueo !== null || turno === null || turno === undefined) return null;
+  return turno.usuario;
+}
+
 /** `mensaje` es el que mando la API; si no hay, el de contratos para ese codigo. */
 export function crearBloqueo(codigo: CodigoDeError, mensaje?: string): Bloqueo {
   return {

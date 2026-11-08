@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { RegistroEnCaja } from '@repunto/contratos';
 import { AparienciaDeTarjeta, DefinicionesDeTinta, variablesDeMarca } from '@repunto/ui';
+import { turnoEnLaBanda } from '../bloqueo';
 import { useCaja } from '../usar-caja';
 import { useEstadoDeCaja } from '../usar-estado';
 import { useAhora, useRegistrosPendientes } from '../usar-registros';
@@ -81,6 +82,7 @@ export function VistaDeCaja() {
 
         <Banda
           datos={caja.datos}
+          turno={turnoEnLaBanda(caja.datos?.turno, caja.bloqueo)}
           conexion={pendientes.conexion}
           cerrando={caja.cerrando}
           puedeCerrar={!ocupado}

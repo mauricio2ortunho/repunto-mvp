@@ -16,12 +16,15 @@ const TEXTO_DE_CONEXION: Record<Conexion, string> = {
  */
 export function Banda({
   datos,
+  turno,
   conexion,
   cerrando,
   puedeCerrar,
   alCerrarTurno,
 }: {
   datos: EstadoDeCaja | null;
+  /** De quien es el turno, o null para no mostrarlo (ver `turnoEnLaBanda`). */
+  turno: string | null;
   conexion: Conexion;
   cerrando: boolean;
   /** Con una accion en curso no se cierra: el sello que viaja es de este turno. */
@@ -50,9 +53,9 @@ export function Banda({
         </div>
       </div>
       <div className={css.derecha}>
-        {datos?.turno != null && (
+        {turno !== null && (
           <>
-            <span className={css.turno}>Turno de {datos.turno.usuario}</span>
+            <span className={css.turno}>Turno de {turno}</span>
             {/* Un toque: cerrarlo por error solo cuesta volver a escribir el PIN. */}
             <Boton
               variante="texto"
