@@ -212,6 +212,8 @@ export class PersonasDeAdminService {
       }
       await tx.$executeRaw`DELETE FROM sesion_dueno WHERE usuario_id = ${personaId}::uuid`;
       await tx.$executeRaw`DELETE FROM entrada_dueno WHERE usuario_id = ${personaId}::uuid`;
+      await tx.$executeRaw`
+        DELETE FROM peticion_idempotente_dueno WHERE usuario_id = ${personaId}::uuid`;
       await tx.$executeRaw`DELETE FROM usuario_local WHERE usuario_id = ${personaId}::uuid`;
       await tx.$executeRaw`DELETE FROM usuario_negocio WHERE id = ${personaId}::uuid`;
     });

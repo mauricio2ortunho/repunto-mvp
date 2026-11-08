@@ -16,6 +16,10 @@ const ABRIR = `
   INSERT INTO sesion_dueno (usuario_id, token_hash, entrada_id, ultimo_acceso)
   VALUES ($1, $2, $3, now())`;
 
+const PETICION = `
+  INSERT INTO peticion_idempotente_dueno (usuario_id, endpoint, clave, huella_peticion)
+  VALUES ($1, 'POST /dueno/promo/programa', $2, 'huella')`;
+
 describe('Panel del dueno', () => {
   test('Seccion 5 · el codigo del dueno lo puede recibir el dueno', async ({ db }) => {
     const negocio = await crearNegocio(db);
@@ -164,5 +168,34 @@ describe('Panel del dueno', () => {
       'sesion_dueno_revocada_posterior_chk',
       `UPDATE sesion_dueno SET revocada_el = creado_el - interval '1 second'`,
     );
+  });
+
+  test('Seccion 9 · dos reintentos guardados con la misma clave se rechazan', async ({
+    db,
+  }) => {
+    const negocio = await crearNegocio(db);
+    const clave = unico('clave-larga');
+    await esperarAceptacion(db, PETICION, [negocio.dueno, clave]);
+    await esperarRechazo(db, 'peticion_idempotente_dueno_pkey', PETICION, [
+      negocio.dueno,
+      clave,
+    ]);
+  });
+
+  test('Seccion 9 · una clave de idempotencia corta se rechaza', async ({ db }) => {
+    const negocio = await crearNegocio(db);
+    await esperarRechazo(db, 'peticion_idempotente_dueno_clave_razonable_chk', PETICION, [
+      negocio.dueno,
+      'corta',
+    ]);
+  });
+
+  test('Seccion 9 · el reintento de un dueno que no existe se rechaza', async ({
+    db,
+  }) => {
+    await esperarRechazo(db, 'peticion_idempotente_dueno_usuario_id_fkey', PETICION, [
+      '00000000-0000-4000-8000-000000000000',
+      unico('clave-larga'),
+    ]);
   });
 });

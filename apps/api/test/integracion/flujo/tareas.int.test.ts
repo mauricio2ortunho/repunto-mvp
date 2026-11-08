@@ -101,6 +101,7 @@ describe('Tarea nocturna · vencer tarjetas', () => {
         codigo_usado: 0,
         peticion_idempotente: 0,
         peticion_idempotente_admin: 0,
+        peticion_idempotente_dueno: 0,
         tope_peticion: 0,
         intento_caja: 0,
       },
@@ -194,6 +195,13 @@ describe('Tarea nocturna · purgar', () => {
         [admin, `clave-de-hace-${horas}-horas`, horas],
       );
       await db.query(
+        `INSERT INTO peticion_idempotente_dueno
+           (usuario_id, clave, endpoint, huella_peticion, respuesta, creado_el)
+         VALUES ($1, $2, 'POST /dueno/promo/programa', 'huella', '{}',
+                 now() - make_interval(hours => $3::int))`,
+        [negocio.dueno, `clave-de-hace-${horas}-horas`, horas],
+      );
+      await db.query(
         `INSERT INTO tope_peticion (clave, ventana, cuenta)
          VALUES ($1, date_trunc('hour', now()) - make_interval(hours => $2::int), 1)`,
         [`tope-de-hace-${horas}-horas`, horas],
@@ -220,6 +228,7 @@ describe('Tarea nocturna · purgar', () => {
         codigo_usado: 1,
         peticion_idempotente: 1,
         peticion_idempotente_admin: 1,
+        peticion_idempotente_dueno: 1,
         tope_peticion: 1,
         intento_caja: 1,
       },
@@ -233,6 +242,8 @@ describe('Tarea nocturna · purgar', () => {
     expect(await contar(db, 'peticion_idempotente')).toBe(1);
     expect(await contar(db, 'peticion_idempotente_admin', "clave like '%-23-%'")).toBe(1);
     expect(await contar(db, 'peticion_idempotente_admin')).toBe(1);
+    expect(await contar(db, 'peticion_idempotente_dueno', "clave like '%-23-%'")).toBe(1);
+    expect(await contar(db, 'peticion_idempotente_dueno')).toBe(1);
     expect(await contar(db, 'tope_peticion')).toBe(1);
   });
 });

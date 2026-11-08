@@ -31,6 +31,7 @@ export type ResultadoDeLaNoche =
         codigo_usado: number;
         peticion_idempotente: number;
         peticion_idempotente_admin: number;
+        peticion_idempotente_dueno: number;
         tope_peticion: number;
         intento_caja: number;
       };
@@ -86,6 +87,8 @@ export class TareasService {
           DELETE FROM peticion_idempotente WHERE creado_el < ${corte}`;
         const peticionIdempotenteAdmin = await tx.$executeRaw`
           DELETE FROM peticion_idempotente_admin WHERE creado_el < ${corte}`;
+        const peticionIdempotenteDueno = await tx.$executeRaw`
+          DELETE FROM peticion_idempotente_dueno WHERE creado_el < ${corte}`;
         // Por ventana y no por creado_el: la fila se crea al primer pedido
         // de la hora y se sigue sumando hasta que la ventana termina.
         const topePeticion = await tx.$executeRaw`
@@ -103,6 +106,7 @@ export class TareasService {
             codigo_usado: codigoUsado,
             peticion_idempotente: peticionIdempotente,
             peticion_idempotente_admin: peticionIdempotenteAdmin,
+            peticion_idempotente_dueno: peticionIdempotenteDueno,
             tope_peticion: topePeticion,
             intento_caja: intentoCaja,
           },

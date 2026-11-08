@@ -359,6 +359,36 @@ export class Api {
     return this.pedir('GET', `/dueno/resumen${query}`, { token });
   }
 
+  promoDelDueno(token?: string): Promise<Respuesta> {
+    return this.pedir('GET', '/dueno/promo', { token });
+  }
+
+  /** Sin `clave`, una nueva; con null, sin Idempotency-Key. */
+  cambiarProgramaComoDueno(
+    token: string | undefined,
+    cuerpo: unknown,
+    clave: string | null = randomUUID(),
+  ): Promise<Respuesta> {
+    return this.pedir('POST', '/dueno/promo/programa', {
+      token,
+      cuerpo,
+      clave: clave ?? undefined,
+    });
+  }
+
+  /** Sin `clave`, una nueva; con null, sin Idempotency-Key. */
+  cambiarCondicionComoDueno(
+    token: string | undefined,
+    cuerpo: unknown,
+    clave: string | null = randomUUID(),
+  ): Promise<Respuesta> {
+    return this.pedir('POST', '/dueno/promo/condicion', {
+      token,
+      cuerpo,
+      clave: clave ?? undefined,
+    });
+  }
+
   cerrarSesionDeDueno(token?: string): Promise<Respuesta> {
     return this.pedir('POST', '/dueno/sesion/cierre', { token });
   }

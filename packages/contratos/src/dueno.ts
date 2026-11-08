@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { esquemaCondicionDelHistorial, esquemaProgramaVigente } from './admin';
+
 /**
  * El panel del dueño (apps/panel, /dueno). Entra desde su celular con un
  * código de un solo uso; todo lo demás sale de su sesión, nunca del pedido
@@ -52,3 +54,20 @@ export const esquemaEntradaDelDueno = z.object({
 });
 
 export type EntradaDelDueno = z.infer<typeof esquemaEntradaDelDueno>;
+
+/**
+ * `GET /dueno/promo`: la promo vigente y la condición del sello, con lo que
+ * hace falta para cambiarlas sabiendo qué pasa. Cambiarlas usa los mismos
+ * cuerpos que el admin (`esquemaProgramaNuevo`, `esquemaCondicionNueva`),
+ * sin el negocio: sale de la sesión.
+ */
+export const esquemaPromoDelDueno = z.object({
+  /** null si todavía no tiene: la caja no sella hasta que la haya. */
+  programa: esquemaProgramaVigente.nullable(),
+  /** Siguen con la versión con la que empezaron (INV-6). */
+  tarjetas_en_curso: z.int().nonnegative(),
+  /** La vigente primero, y las últimas anteriores. */
+  condiciones: z.array(esquemaCondicionDelHistorial),
+});
+
+export type PromoDelDueno = z.infer<typeof esquemaPromoDelDueno>;

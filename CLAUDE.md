@@ -306,7 +306,7 @@ como mucho un día de filas de más.
 | Tarea | Frecuencia | Estado |
 |---|---|---|
 | Vencer tarjetas cuyo `vence_el` ya pasó | Diaria, 00:15 hora La Paz | Corre |
-| Purgar `codigo_usado`, `peticion_idempotente`, `peticion_idempotente_admin` y `tope_peticion` con más de 24 horas, e `intento_caja` con más de 90 días | Diaria, con la anterior | Corre |
+| Purgar `codigo_usado`, las tres `peticion_idempotente*` y `tope_peticion` con más de 24 horas, e `intento_caja` con más de 90 días | Diaria, con la anterior | Corre |
 | Avisar al cliente con sellos en curso y pocos días restantes | Diaria | Espera a WhatsApp |
 | Recalcular clientes enfriados por negocio | Diaria | No hace falta: el dueño los ve en `/dueno`, calculados al abrirlo; avisarles espera a WhatsApp |
 | Alerta de local sin sellos en 7 días | Diaria | El admin la ve en el tablero del piloto y el dueño en su resumen, al abrirlos; el aviso por mensaje espera a WhatsApp |
@@ -410,6 +410,8 @@ credencial, y por eso se le exigen 32 caracteres en lugar de 8.
 Lo que crea el panel de administración tampoco tiene tablet: su clave va a
 `peticion_idempotente_admin`, la misma mecánica con el admin en lugar del
 dispositivo.
+Lo que crea el panel del dueño —una versión de la promo, una condición— va a
+`peticion_idempotente_dueno`, con el dueño en lugar del admin.
 
 **Migraciones.** Siempre por Prisma, versionadas, reversibles, nunca editar una ya
 aplicada. Las restricciones de unicidad de los invariantes viven en la base, no
@@ -630,8 +632,8 @@ queda deshabilitado.
 historial colgando se puede borrar. Pero una fila hoja (`sello`, `canje`) no
 tiene hijos y la base permite su `DELETE`. Cerrarlo requiere revocar `DELETE` al
 rol de aplicación en Postgres; pendiente para cuando exista ese rol.
-`codigo_usado`, `peticion_idempotente`, `peticion_idempotente_admin` y
-`tope_peticion` se purgan
+`codigo_usado`, `peticion_idempotente`, `peticion_idempotente_admin`,
+`peticion_idempotente_dueno` y `tope_peticion` se purgan
 físicamente, por diseño (sección 7): no son historial, son candados de corta
 vida. `intento_caja` también, a los 90 días: es una bitácora, no historial, y
 por eso tampoco tiene FK.

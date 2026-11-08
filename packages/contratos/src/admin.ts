@@ -407,6 +407,36 @@ export const esquemaTabletRevocada = z.object({
 export type TabletRevocada = z.infer<typeof esquemaTabletRevocada>;
 
 /**
+ * La version vigente de la promo, como la ven el admin en la ficha y el
+ * dueño en su panel.
+ */
+export const esquemaProgramaVigente = z.object({
+  version: z.int().positive(),
+  sellos_requeridos: z.int().positive(),
+  premio: z.string(),
+  vigencia_meses: z.int().positive().nullable(),
+  horas_entre_sellos: z.int().nonnegative(),
+  pide_monto: z.boolean(),
+  desde: z.iso.datetime(),
+});
+
+export type ProgramaVigente = z.infer<typeof esquemaProgramaVigente>;
+
+/** Una condicion del historial, con quien la escribio. */
+export const esquemaCondicionDelHistorial = z.object({
+  texto: z.string(),
+  monto_minimo: z.string().nullable(),
+  vigente_desde: z.iso.datetime(),
+  /** Quien la escribio: alguien del negocio, o nosotros en el alta. */
+  autor: z.discriminatedUnion('tipo', [
+    z.object({ tipo: z.literal('administracion') }),
+    z.object({ tipo: z.literal('negocio'), nombre: z.string() }),
+  ]),
+});
+
+export type CondicionDelHistorial = z.infer<typeof esquemaCondicionDelHistorial>;
+
+/**
  * `GET /admin/negocios/:id`: la ficha. Todo lo que el admin puede cambiar, con
  * lo que hace falta para decidir: cuantas tarjetas siguen con la promo
  * actual, y quien cambio la condicion y cuando.
@@ -416,17 +446,7 @@ export const esquemaFichaDelNegocio = esquemaNegocioDelAdmin
   .extend({
     canje_cualquier_local: z.boolean(),
     /** La version vigente. */
-    programa: z
-      .object({
-        version: z.int().positive(),
-        sellos_requeridos: z.int().positive(),
-        premio: z.string(),
-        vigencia_meses: z.int().positive().nullable(),
-        horas_entre_sellos: z.int().nonnegative(),
-        pide_monto: z.boolean(),
-        desde: z.iso.datetime(),
-      })
-      .nullable(),
+    programa: esquemaProgramaVigente.nullable(),
     /**
      * Tarjetas activas: terminan con la version con la que empezaron
      * (INV-6), asi que un cambio de promo no las toca.
@@ -439,18 +459,7 @@ export const esquemaFichaDelNegocio = esquemaNegocioDelAdmin
     /** Las activas primero, de todos los locales; las revocadas tambien. */
     tablets: z.array(esquemaTabletDelAdmin),
     /** La vigente primero. Las ultimas, no todas. */
-    condiciones: z.array(
-      z.object({
-        texto: z.string(),
-        monto_minimo: z.string().nullable(),
-        vigente_desde: z.iso.datetime(),
-        /** Quien la escribio: alguien del negocio, o nosotros en el alta. */
-        autor: z.discriminatedUnion('tipo', [
-          z.object({ tipo: z.literal('administracion') }),
-          z.object({ tipo: z.literal('negocio'), nombre: z.string() }),
-        ]),
-      }),
-    ),
+    condiciones: z.array(esquemaCondicionDelHistorial),
   });
 
 export type FichaDelNegocio = z.infer<typeof esquemaFichaDelNegocio>;

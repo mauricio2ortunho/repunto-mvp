@@ -251,11 +251,12 @@ model UsuarioNegocio {
   activo     Boolean    @default(true)
   creado_el  DateTime   @default(now()) @db.Timestamptz(3)
 
-  negocio     Negocio          @relation(fields: [negocio_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  negocio     Negocio                    @relation(fields: [negocio_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
   locales     UsuarioLocal[]
   condiciones CondicionSello[]
   entradas    EntradaDueno[]
   sesiones    SesionDueno[]
+  peticiones  PeticionIdempotenteDueno[]
 
   /// Destino de FK compuesta, no una restriccion de negocio. Existe para que
   /// usuario_local y condicion_sello puedan exigir que el usuario sea del
@@ -490,14 +491,14 @@ model Programa {
 /// Que habilita un sello hoy. Cambia seguido y por eso vive aparte del
 /// programa. A nivel marca, nunca por sucursal (INV-8).
 model CondicionSello {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  negocio_id    String   @db.Uuid
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  negocio_id          String   @db.Uuid
   /// Lo que ve el cliente y lo que el panel le recuerda al cajero.
-  texto         String
+  texto               String
   /// Referencia para el cajero. El sistema no puede verificarlo.
-  monto_minimo  Decimal? @db.Decimal(12, 2)
+  monto_minimo        Decimal? @db.Decimal(12, 2)
   /// La vigente es la ultima. Aplica hacia adelante, nunca retroactivo (INV-7).
-  vigente_desde DateTime @db.Timestamptz(3)
+  vigente_desde       DateTime @db.Timestamptz(3)
   /// Quien la cambio. Sirve cuando un cliente reclama. Autor 1: alguien del
   /// negocio, por la FK compuesta (usuario_id, negocio_id), asi que nadie
   /// escribe la condicion de otra marca.
@@ -804,6 +805,26 @@ model PeticionIdempotenteAdmin {
   @@id([admin_id, endpoint, clave])
   @@index([creado_el])
   @@map("peticion_idempotente_admin")
+}
+
+/// Idempotency-Key de lo que crea el panel del dueño: la misma mecánica que
+/// peticion_idempotente_admin, con el dueño en lugar del admin.
+model PeticionIdempotenteDueno {
+  usuario_id      String   @db.Uuid
+  /// Lo que el panel manda en la cabecera Idempotency-Key.
+  clave           String
+  endpoint        String
+  /// SHA-256 del cuerpo, con el mismo criterio que peticion_idempotente.
+  huella_peticion String
+  respuesta       Json?    @db.JsonB
+  /// El cron la purga a las 24 horas, como peticion_idempotente.
+  creado_el       DateTime @default(now()) @db.Timestamptz(3)
+
+  usuario UsuarioNegocio @relation(fields: [usuario_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([usuario_id, endpoint, clave])
+  @@index([creado_el])
+  @@map("peticion_idempotente_dueno")
 }
 
 /// La bitacora de la caja: una fila por cada sello, canje, anulacion,

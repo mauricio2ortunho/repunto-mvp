@@ -2,7 +2,6 @@ import { randomBytes } from 'node:crypto';
 
 import { Inject, Injectable } from '@nestjs/common';
 import {
-  CONDICIONES_EN_LA_FICHA,
   type CondicionCambiada,
   type CondicionNueva,
   type DatosDelLocal,
@@ -33,6 +32,11 @@ import { LARGO_QR_DEL_LOCAL, qrDelLocalDesde, rechazo } from '@repunto/dominio';
 import { errorDeRechazo } from '../caja/errores-http';
 import type { Transaccion } from '../caja/lectura';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  condicionNueva,
+  condicionesRecientes,
+  versionNuevaDelPrograma,
+} from '../promo/promo';
 import { guardarRespuestaDeAdmin, reservarIdempotenciaDeAdmin } from './idempotencia';
 
 interface FilaDeNegocio {
@@ -102,13 +106,6 @@ interface FilaDeTablet {
   ultimo_sello: Date | null;
   ultimo_intento: Date | null;
   ultimo_rechazo: string | null;
-}
-
-interface FilaDeCondicion {
-  texto: string;
-  monto_minimo: string | null;
-  vigente_desde: Date;
-  autor_del_negocio: string | null;
 }
 
 /**
@@ -218,15 +215,7 @@ export class NegociosDeAdminService {
     const f = filas[0];
     if (f === undefined) throw negocioNoEncontrado();
 
-    // La misma eleccion de vigente que la caja (ctePromoYTarjeta).
-    const condiciones = await this.prisma.$queryRaw<FilaDeCondicion[]>`
-      SELECT c.texto, c.monto_minimo::text AS monto_minimo, c.vigente_desde,
-             u.nombre AS autor_del_negocio
-      FROM condicion_sello c
-      LEFT JOIN usuario_negocio u ON u.id = c.usuario_id
-      WHERE c.negocio_id = ${id}::uuid AND c.vigente_desde <= now()
-      ORDER BY c.vigente_desde DESC, c.creado_el DESC
-      LIMIT ${CONDICIONES_EN_LA_FICHA}`;
+    const condiciones = await condicionesRecientes(this.prisma, id);
 
     const locales = await this.prisma.$queryRaw<FilaDeLocal[]>`
       SELECT id, nombre, direccion, activo, qr_slug,
@@ -312,15 +301,7 @@ export class NegociosDeAdminService {
               pide_monto: f.pide_monto,
               desde: f.programa_desde?.toISOString(),
             },
-      condiciones: condiciones.map((c) => ({
-        texto: c.texto,
-        monto_minimo: c.monto_minimo,
-        vigente_desde: c.vigente_desde.toISOString(),
-        autor:
-          c.autor_del_negocio === null
-            ? { tipo: 'administracion' }
-            : { tipo: 'negocio', nombre: c.autor_del_negocio },
-      })),
+      condiciones,
     });
   }
 
@@ -372,25 +353,7 @@ export class NegociosDeAdminService {
       // segundo ve la version que dejo el primero.
       await bloquearNegocio(tx, id);
 
-      await tx.$executeRaw`
-        UPDATE programa SET vigente = false
-        WHERE negocio_id = ${id}::uuid AND vigente`;
-      const versiones = await tx.$queryRaw<{ version: number }[]>`
-        INSERT INTO programa (negocio_id, version, sellos_requeridos, premio,
-                              vigencia_meses, horas_entre_sellos, pide_monto, vigente)
-        SELECT ${id}::uuid, COALESCE(max(version), 0) + 1, ${programa.sellos_requeridos},
-               ${programa.premio}, ${programa.vigencia_meses},
-               ${programa.horas_entre_sellos}, ${programa.pide_monto}, true
-        FROM programa WHERE negocio_id = ${id}::uuid
-        RETURNING version`;
-      const enCurso = await tx.$queryRaw<{ cuantas: number }[]>`
-        SELECT count(*)::int AS cuantas FROM tarjeta
-        WHERE negocio_id = ${id}::uuid AND estado = 'activa'`;
-
-      const respuesta = esquemaProgramaCambiado.parse({
-        version: versiones[0]?.version,
-        tarjetas_en_curso: enCurso[0]?.cuantas,
-      });
+      const respuesta = await versionNuevaDelPrograma(tx, id, programa);
       await guardarRespuestaDeAdmin(tx, peticion, respuesta);
       return respuesta;
     });
@@ -418,15 +381,9 @@ export class NegociosDeAdminService {
       if (guardada !== null) return esquemaCondicionCambiada.parse(guardada);
 
       await bloquearNegocio(tx, id);
-      const filas = await tx.$queryRaw<{ vigente_desde: Date }[]>`
-        INSERT INTO condicion_sello (negocio_id, texto, monto_minimo, vigente_desde,
-                                     creado_por_admin_id)
-        VALUES (${id}::uuid, ${condicion.texto}, ${condicion.monto_minimo}::numeric,
-                now(), ${adminId}::uuid)
-        RETURNING vigente_desde`;
-
-      const respuesta = esquemaCondicionCambiada.parse({
-        vigente_desde: filas[0]?.vigente_desde.toISOString(),
+      const respuesta = await condicionNueva(tx, id, condicion, {
+        tipo: 'administracion',
+        admin_id: adminId,
       });
       await guardarRespuestaDeAdmin(tx, peticion, respuesta);
       return respuesta;

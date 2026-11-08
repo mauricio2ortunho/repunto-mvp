@@ -56,6 +56,8 @@ export {
   LIMITES_DEL_NEGOCIO,
   esquemaAdminActual,
   esquemaCondicionCambiada,
+  esquemaCondicionDelHistorial,
+  esquemaProgramaVigente,
   esquemaCondicionNueva,
   LIMITES_DEL_LOCAL,
   LIMITES_DE_PERSONA,
@@ -92,6 +94,8 @@ export {
 export type {
   AdminActual,
   CondicionCambiada,
+  CondicionDelHistorial,
+  ProgramaVigente,
   CondicionNueva,
   DatosDelLocal,
   DatosDePersona,
@@ -212,12 +216,14 @@ export {
   esquemaEntradaDelDueno,
   esquemaEntrarComoDuenoPeticion,
   esquemaEntrarComoDuenoRespuesta,
+  esquemaPromoDelDueno,
 } from './dueno';
 export type {
   DuenoActual,
   EntradaDelDueno,
   EntrarComoDuenoPeticion,
   EntrarComoDuenoRespuesta,
+  PromoDelDueno,
 } from './dueno';
 
 export { esquemaLocalEnElResumen, esquemaResumenDelDueno } from './resumen';
