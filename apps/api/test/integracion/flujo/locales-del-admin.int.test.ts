@@ -385,3 +385,64 @@ describe('La ubicacion de un local en el mapa', () => {
     expect(await contar(db, 'local', `direccion = '${CENTRO.direccion}'`)).toBe(0);
   });
 });
+
+describe('POST .../locales/:local/qr · cambiar el QR', () => {
+  test('el QR nuevo anota y el viejo ya no', async ({ api, db }) => {
+    const token = await entrar(api, db);
+    const negocio = await crearNegocio(db);
+    const viejo = (await localesDe(api, token, negocio.id)).find(
+      (l) => l.id === negocio.local,
+    )?.qr_slug;
+
+    const cambiado = await api.cambiarQr(token, negocio.id, negocio.local);
+
+    expect(cambiado.estado).toBe(200);
+    const nuevo = String(cambiado.cuerpo['qr_slug']);
+    expect(nuevo).toMatch(/^[abcdefghjkmnpqrtuvwxyz2346789]{10}$/);
+    expect(nuevo).not.toBe(viejo);
+    const enLaFicha = (await localesDe(api, token, negocio.id)).find(
+      (l) => l.id === negocio.local,
+    );
+    expect(enLaFicha?.qr_slug).toBe(nuevo);
+
+    await api.registrar({ qr_slug: viejo, telefono: '70124521', nombre: 'Ana' });
+    expect(await contar(db, 'registro_pendiente')).toBe(0);
+    const conElNuevo = await api.registrar({
+      qr_slug: nuevo,
+      telefono: '70124521',
+      nombre: 'Ana',
+    });
+    expect(conElNuevo.estado).toBe(202);
+    expect(await contar(db, 'registro_pendiente', `local_id = '${negocio.local}'`)).toBe(
+      1,
+    );
+  });
+
+  test('un local de otro negocio no esta, y no se toca', async ({ api, db }) => {
+    const token = await entrar(api, db);
+    const uno = await crearNegocio(db, 'Uno');
+    const otro = await crearNegocio(db, 'Otro');
+    const antes = await db.query<{ qr_slug: string }>(
+      'SELECT qr_slug FROM local WHERE id = $1',
+      [otro.local],
+    );
+
+    const cambiado = await api.cambiarQr(token, uno.id, otro.local);
+
+    expect(cambiado.estado).toBe(404);
+    expect(cambiado.cuerpo['codigo']).toBe('LOCAL_NO_ENCONTRADO');
+    const despues = await db.query<{ qr_slug: string }>(
+      'SELECT qr_slug FROM local WHERE id = $1',
+      [otro.local],
+    );
+    expect(despues.rows[0]?.qr_slug).toBe(antes.rows[0]?.qr_slug);
+  });
+
+  test('sin sesion de admin no cambia nada', async ({ api, db }) => {
+    const negocio = await crearNegocio(db);
+
+    const cambiado = await api.cambiarQr(undefined, negocio.id, negocio.local);
+
+    expect(cambiado.estado).toBe(401);
+  });
+});

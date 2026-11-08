@@ -24,6 +24,7 @@ import {
   type NegocioCreado,
   type NegociosDelAdmin,
   type ProgramaCambiado,
+  type QrCambiado,
   type TabletRevocada,
   esquemaCondicionNueva,
   esquemaDatosDelLocal,
@@ -159,6 +160,13 @@ export class NegociosDeAdminController {
     const datos = esquemaDatosDelLocal.safeParse(cuerpo);
     if (!datos.success) throw errorDeApi('PETICION_INVALIDA');
     return this.negocios.actualizarLocal(negocio, elLocal, datos.data);
+  }
+
+  /** Sin clave: cada toque es un QR nuevo, y el ultimo es el que vale. */
+  @Post(':id/locales/:local/qr')
+  @HttpCode(HttpStatus.OK)
+  cambiarQr(@Param('id') id: string, @Param('local') local: string): Promise<QrCambiado> {
+    return this.negocios.cambiarQrDelLocal(idEnLaRuta(id), idEnLaRuta(local));
   }
 
   @Post(':id/locales/:local/cierre')

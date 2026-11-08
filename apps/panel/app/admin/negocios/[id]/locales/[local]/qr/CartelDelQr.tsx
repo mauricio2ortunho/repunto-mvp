@@ -4,7 +4,13 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import type { FichaDelNegocio } from '@repunto/contratos';
-import { Aviso, Boton, LogoDelNegocio, variablesDeMarca } from '@repunto/ui';
+import {
+  Aviso,
+  Boton,
+  BotonDeDosToques,
+  LogoDelNegocio,
+  variablesDeMarca,
+} from '@repunto/ui';
 
 import * as api from '../../../../../../../lib/api/admin';
 import { urlDeLaAppDelCliente } from '../../../../../../../lib/configuracion';
@@ -27,6 +33,8 @@ export function CartelDelQr() {
   const { id, local: localId } = useParams<{ id: string; local: string }>();
   const { aEntrar } = useSesionDeAdmin();
   const [estado, setEstado] = useState<Estado>({ tipo: 'cargando' });
+  const [cambiando, setCambiando] = useState(false);
+  const [avisoDelCambio, setAvisoDelCambio] = useState<string | null>(null);
 
   const cargar = useCallback(
     async (senal?: AbortSignal) => {
@@ -44,6 +52,24 @@ export function CartelDelQr() {
     void cargar(control.signal);
     return () => control.abort();
   }, [cargar]);
+
+  // Si una foto del QR anda circulando, la gente se anota desde la casa: un
+  // QR nuevo deja sin efecto el cartel pegado, y hay que imprimir este.
+  const cambiarQr = async () => {
+    setCambiando(true);
+    setAvisoDelCambio(null);
+    const r = await api.cambiarQr(id, localId);
+    if (r.ok) {
+      await cargar();
+      setCambiando(false);
+      return setAvisoDelCambio(
+        'Listo: QR nuevo. Imprimilo y reemplazá el cartel pegado.',
+      );
+    }
+    setCambiando(false);
+    if (api.sesionPerdida(r)) return aEntrar();
+    setAvisoDelCambio(api.mensajeParaElAdmin(r));
+  };
 
   const volver = (
     <Link href={`/admin/negocios/${id}`} className={estilos.volver}>
@@ -101,6 +127,19 @@ export function CartelDelQr() {
         <p className={css.texto}>
           Se imprime solo el cartel. Pegalo cerca de la caja, a la altura de los ojos.
         </p>
+        <p className={css.texto}>
+          ¿Una foto de este QR anda circulando? Cambialo: el cartel pegado deja de anotar
+          gente y hay que imprimir el nuevo.
+        </p>
+        <BotonDeDosToques
+          texto="Cambiar el QR"
+          confirmar="Tocá de nuevo: el cartel pegado deja de servir"
+          trabajando={cambiando}
+          textoTrabajando="Cambiando…"
+          disabled={cambiando}
+          alConfirmar={() => void cambiarQr()}
+        />
+        {avisoDelCambio !== null && <p className={css.texto}>{avisoDelCambio}</p>}
       </div>
 
       <article className={estilos.cartel}>

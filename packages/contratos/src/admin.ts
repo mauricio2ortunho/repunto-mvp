@@ -197,6 +197,15 @@ export const esquemaLocalDelAdmin = z.object({
 
 export type LocalDelAdmin = z.infer<typeof esquemaLocalDelAdmin>;
 
+/**
+ * `POST .../locales/:local/qr`: un QR nuevo, al azar. El cartel pegado deja
+ * de anotar gente al instante: es para cuando una foto del QR anda
+ * circulando y la gente se anota desde la casa.
+ */
+export const esquemaQrCambiado = z.object({ qr_slug: z.string() });
+
+export type QrCambiado = z.infer<typeof esquemaQrCambiado>;
+
 /** `POST .../locales/:local/cierre` y `/reapertura`. */
 export const esquemaEstadoDelLocal = z.object({
   activo: z.boolean(),

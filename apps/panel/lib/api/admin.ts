@@ -22,6 +22,7 @@ import {
   type NegociosDelAdmin,
   type ProgramaCambiado,
   type ProgramaNuevo,
+  type QrCambiado,
   type TabletRevocada,
   esquemaAdminActual,
   esquemaCodigoDeVinculacion,
@@ -38,6 +39,7 @@ import {
   esquemaNegocioCreado,
   esquemaNegociosDelAdmin,
   esquemaProgramaCambiado,
+  esquemaQrCambiado,
   esquemaTabletRevocada,
 } from '@repunto/contratos';
 
@@ -212,6 +214,21 @@ export function guardarLocal(
       token: sesionDeAdmin().token(),
     },
     esquemaFichaDelNegocio,
+  );
+}
+
+/** Un QR nuevo al azar: el cartel pegado deja de servir. Sin clave. */
+export function cambiarQr(
+  negocio: string,
+  local: string,
+): Promise<Respuesta<QrCambiado>> {
+  return pedir(
+    {
+      metodo: 'POST',
+      ruta: `/admin/negocios/${encodeURIComponent(negocio)}/locales/${encodeURIComponent(local)}/qr`,
+      token: sesionDeAdmin().token(),
+    },
+    esquemaQrCambiado,
   );
 }
 

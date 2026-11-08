@@ -221,6 +221,16 @@ export class Api {
     });
   }
 
+  cambiarQr(
+    token: string | undefined,
+    negocio: string,
+    local: string,
+  ): Promise<Respuesta> {
+    return this.pedir('POST', `/admin/negocios/${negocio}/locales/${local}/qr`, {
+      token,
+    });
+  }
+
   cerrarLocal(token: string, negocio: string, local: string): Promise<Respuesta> {
     return this.pedir('POST', `/admin/negocios/${negocio}/locales/${local}/cierre`, {
       token,

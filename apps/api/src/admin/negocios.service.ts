@@ -16,6 +16,7 @@ import {
   type NegociosDelAdmin,
   type ProgramaCambiado,
   type ProgramaNuevo,
+  type QrCambiado,
   esquemaCondicionCambiada,
   esquemaEstadoDelLocal,
   esquemaEstadoDelNegocio,
@@ -24,6 +25,7 @@ import {
   esquemaNegocioCreado,
   esquemaNegociosDelAdmin,
   esquemaProgramaCambiado,
+  esquemaQrCambiado,
 } from '@repunto/contratos';
 
 import { LARGO_QR_DEL_LOCAL, qrDelLocalDesde, rechazo } from '@repunto/dominio';
@@ -520,6 +522,23 @@ export class NegociosDeAdminService {
       WHERE id = ${localId}::uuid AND negocio_id = ${negocioId}::uuid`;
     if (cambiadas === 0) throw await this.localNoEncontrado(negocioId);
     return esquemaEstadoDelLocal.parse({ activo });
+  }
+
+  /**
+   * `POST /admin/negocios/:id/locales/:local/qr`: un QR nuevo al azar. El
+   * viejo deja de anotar en el pedido siguiente, porque el alta busca el
+   * local por su QR. Los registros que ya estaban esperando siguen: apuntan
+   * al local, no al QR.
+   */
+  async cambiarQrDelLocal(negocioId: string, localId: string): Promise<QrCambiado> {
+    const qr = qrDelLocalDesde(randomBytes(LARGO_QR_DEL_LOCAL));
+    const filas = await this.prisma.$queryRaw<{ qr_slug: string }[]>`
+      UPDATE local SET qr_slug = ${qr}
+      WHERE id = ${localId}::uuid AND negocio_id = ${negocioId}::uuid
+      RETURNING qr_slug`;
+    const fila = filas[0];
+    if (fila === undefined) throw await this.localNoEncontrado(negocioId);
+    return esquemaQrCambiado.parse(fila);
   }
 
   /**
