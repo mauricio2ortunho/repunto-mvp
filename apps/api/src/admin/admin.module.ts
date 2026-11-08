@@ -4,6 +4,7 @@ import { GuardDeAdmin } from './admin.guard';
 import { NegociosDeAdminController } from './negocios.controller';
 import { NegociosDeAdminService } from './negocios.service';
 import { PersonasDeAdminService } from './personas.service';
+import { TabletsDeAdminService } from './tablets.service';
 import { SesionDeAdminController } from './sesion.controller';
 import { SesionDeAdminService } from './sesion.service';
 
@@ -14,6 +15,7 @@ import { SesionDeAdminService } from './sesion.service';
     SesionDeAdminService,
     NegociosDeAdminService,
     PersonasDeAdminService,
+    TabletsDeAdminService,
     GuardDeAdmin,
   ],
 })

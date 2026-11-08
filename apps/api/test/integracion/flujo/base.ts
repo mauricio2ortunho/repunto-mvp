@@ -308,6 +308,29 @@ export class Api {
     });
   }
 
+  /** El codigo para vincular una tablet. Con `clave` null, sin Idempotency-Key. */
+  codigoDeVinculacionComoAdmin(
+    token: string | undefined,
+    negocio: string,
+    local: string,
+    clave: string | null = randomUUID(),
+  ): Promise<Respuesta> {
+    return this.pedir('POST', `/admin/negocios/${negocio}/locales/${local}/vinculacion`, {
+      token,
+      clave: clave ?? undefined,
+    });
+  }
+
+  revocarTablet(
+    token: string | undefined,
+    negocio: string,
+    tablet: string,
+  ): Promise<Respuesta> {
+    return this.pedir('POST', `/admin/negocios/${negocio}/tablets/${tablet}/revocacion`, {
+      token,
+    });
+  }
+
   /** Sin `clave`, el pedido sale sin Idempotency-Key. */
   crearNegocioComoAdmin(
     token: string | undefined,

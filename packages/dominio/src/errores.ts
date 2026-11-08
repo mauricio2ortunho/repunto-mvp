@@ -116,6 +116,10 @@ export const CODIGOS_DE_ERROR = [
    * queda firmado con su nombre, y borrarla lo dejaria sin firma (INV-17).
    * Se da de baja. */
   'PERSONA_CON_HISTORIA',
+  /** La tablet de la ruta no existe, o es de otro negocio. */
+  'TABLET_NO_ENCONTRADA',
+  /** El local esta cerrado: no se le vinculan tablets hasta reabrirlo. */
+  'LOCAL_CERRADO',
 ] as const;
 
 export type CodigoDeError = (typeof CODIGOS_DE_ERROR)[number];

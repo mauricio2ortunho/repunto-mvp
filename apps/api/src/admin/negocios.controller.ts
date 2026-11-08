@@ -11,6 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  type CodigoDeVinculacion,
   type CondicionCambiada,
   type EstadoDelLocal,
   type EstadoDelNegocio,
@@ -23,6 +24,7 @@ import {
   type NegocioCreado,
   type NegociosDelAdmin,
   type ProgramaCambiado,
+  type TabletRevocada,
   esquemaCondicionNueva,
   esquemaDatosDelLocal,
   esquemaDatosDePersona,
@@ -39,6 +41,7 @@ import { claveDeIdempotencia, idEnLaRuta } from '../caja/peticion';
 import { GuardDeAdmin, type PeticionDeAdmin } from './admin.guard';
 import { NegociosDeAdminService } from './negocios.service';
 import { PersonasDeAdminService } from './personas.service';
+import { TabletsDeAdminService } from './tablets.service';
 
 @Controller('admin/negocios')
 @UseGuards(GuardDeAdmin)
@@ -46,6 +49,7 @@ export class NegociosDeAdminController {
   constructor(
     @Inject(NegociosDeAdminService) private readonly negocios: NegociosDeAdminService,
     @Inject(PersonasDeAdminService) private readonly personas: PersonasDeAdminService,
+    @Inject(TabletsDeAdminService) private readonly tablets: TabletsDeAdminService,
   ) {}
 
   @Get()
@@ -173,6 +177,29 @@ export class NegociosDeAdminController {
     @Param('local') local: string,
   ): Promise<EstadoDelLocal> {
     return this.negocios.cambiarEstadoDelLocal(idEnLaRuta(id), idEnLaRuta(local), true);
+  }
+
+  /** El codigo para vincular una tablet nueva a ese local. */
+  @Post(':id/locales/:local/vinculacion')
+  @HttpCode(HttpStatus.CREATED)
+  codigoDeVinculacion(
+    @Req() peticion: PeticionDeAdmin,
+    @Param('id') id: string,
+    @Param('local') local: string,
+  ): Promise<CodigoDeVinculacion> {
+    const negocio = idEnLaRuta(id);
+    const elLocal = idEnLaRuta(local);
+    const clave = claveDeIdempotencia(peticion);
+    return this.tablets.generarCodigo(peticion.admin.id, negocio, elLocal, clave);
+  }
+
+  @Post(':id/tablets/:tablet/revocacion')
+  @HttpCode(HttpStatus.OK)
+  revocarTablet(
+    @Param('id') id: string,
+    @Param('tablet') tablet: string,
+  ): Promise<TabletRevocada> {
+    return this.tablets.revocar(idEnLaRuta(id), idEnLaRuta(tablet));
   }
 
   @Post(':id/personas')

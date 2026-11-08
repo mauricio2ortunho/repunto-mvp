@@ -342,6 +342,54 @@ export const esquemaPersonaDelAdmin = z.object({
 
 export type PersonaDelAdmin = z.infer<typeof esquemaPersonaDelAdmin>;
 
+// ---------------------------------------------------------------------------
+// Tablets
+
+/**
+ * Una tablet de la caja en la ficha, con su salud: cuando sello por ultima
+ * vez y cuando intento algo, segun la bitacora (CLAUDE.md, seccion 8). Un
+ * local que no sella es un local donde el sistema se abandono; si intenta y
+ * no sella, algo lo rechaza, y `ultimo_rechazo` dice que.
+ */
+export const esquemaTabletDelAdmin = z.object({
+  id: z.uuid(),
+  local_id: z.uuid(),
+  /** Caja 1, Caja 2...: el nombre con que se vinculo. */
+  nombre: z.string(),
+  vinculada_el: z.iso.datetime(),
+  revocada_el: z.iso.datetime().nullable(),
+  ultimo_sello: z.iso.datetime().nullable(),
+  ultimo_intento: z.iso.datetime().nullable(),
+  /** El codigo del ultimo intento rechazado, si hubo alguno. */
+  ultimo_rechazo: z.string().nullable(),
+});
+
+export type TabletDelAdmin = z.infer<typeof esquemaTabletDelAdmin>;
+
+/**
+ * `POST /admin/negocios/:id/locales/:local/vinculacion`, con
+ * Idempotency-Key: el codigo para vincular una tablet nueva a ese local. Se
+ * dicta o se tipea en la tablet, en /vincular. Sirve una vez y vence.
+ */
+export const esquemaCodigoDeVinculacion = z.object({
+  /** Ya formateado para leerlo en voz alta: ABCD-EFGH. */
+  codigo: z.string(),
+  expira_el: z.iso.datetime(),
+});
+
+export type CodigoDeVinculacion = z.infer<typeof esquemaCodigoDeVinculacion>;
+
+/**
+ * `POST /admin/negocios/:id/tablets/:tablet/revocacion`. Deja de servir en el
+ * pedido siguiente; la fila queda, porque sus turnos y sellos la nombran
+ * (INV-17). Revocar una ya revocada devuelve la fecha de entonces.
+ */
+export const esquemaTabletRevocada = z.object({
+  revocada_el: z.iso.datetime(),
+});
+
+export type TabletRevocada = z.infer<typeof esquemaTabletRevocada>;
+
 /**
  * `GET /admin/negocios/:id`: la ficha. Todo lo que el admin puede cambiar, con
  * lo que hace falta para decidir: cuantas tarjetas siguen con la promo
@@ -372,6 +420,8 @@ export const esquemaFichaDelNegocio = esquemaNegocioDelAdmin
     locales: z.array(esquemaLocalDelAdmin),
     /** Los activos primero, por rol y por nombre; los dados de baja tambien. */
     personas: z.array(esquemaPersonaDelAdmin),
+    /** Las activas primero, de todos los locales; las revocadas tambien. */
+    tablets: z.array(esquemaTabletDelAdmin),
     /** La vigente primero. Las ultimas, no todas. */
     condiciones: z.array(
       z.object({

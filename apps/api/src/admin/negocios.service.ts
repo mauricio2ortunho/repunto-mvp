@@ -89,6 +89,17 @@ interface FilaDePersona {
   con_historia: boolean;
 }
 
+interface FilaDeTablet {
+  id: string;
+  local_id: string;
+  nombre: string;
+  vinculado_el: Date;
+  revocado_el: Date | null;
+  ultimo_sello: Date | null;
+  ultimo_intento: Date | null;
+  ultimo_rechazo: string | null;
+}
+
 interface FilaDeCondicion {
   texto: string;
   monto_minimo: string | null;
@@ -236,6 +247,25 @@ export class NegociosDeAdminService {
                array_position(ARRAY['dueno', 'supervisor', 'cajero'], u.rol::text),
                lower(u.nombre), u.id`;
 
+    // La salud de cada tablet (CLAUDE.md, seccion 8), lo mismo que
+    // `pnpm tablets salud`: el ultimo sello sale de los turnos de la tablet;
+    // el ultimo intento y el ultimo rechazo, de la bitacora.
+    const tablets = await this.prisma.$queryRaw<FilaDeTablet[]>`
+      SELECT d.id, d.local_id, d.nombre, d.vinculado_el, d.revocado_el,
+             (SELECT max(s.creado_el) FROM sello s
+                JOIN turno_caja t ON t.id = s.turno_id
+               WHERE t.dispositivo_id = d.id) AS ultimo_sello,
+             (SELECT max(i.creado_el) FROM intento_caja i
+               WHERE i.dispositivo_id = d.id) AS ultimo_intento,
+             (SELECT i.resultado FROM intento_caja i
+               WHERE i.dispositivo_id = d.id AND i.resultado <> 'ok'
+               ORDER BY i.creado_el DESC LIMIT 1) AS ultimo_rechazo
+      FROM dispositivo_caja d
+      JOIN local l ON l.id = d.local_id
+      WHERE l.negocio_id = ${id}::uuid
+      ORDER BY d.revocado_el IS NOT NULL, d.vinculado_el, d.id`;
+    const iso = (fecha: Date | null) => fecha?.toISOString() ?? null;
+
     return esquemaFichaDelNegocio.parse({
       id: f.id,
       nombre: f.nombre,
@@ -251,6 +281,16 @@ export class NegociosDeAdminService {
       tarjetas_en_curso: f.tarjetas_en_curso,
       locales,
       personas,
+      tablets: tablets.map((t) => ({
+        id: t.id,
+        local_id: t.local_id,
+        nombre: t.nombre,
+        vinculada_el: t.vinculado_el.toISOString(),
+        revocada_el: iso(t.revocado_el),
+        ultimo_sello: iso(t.ultimo_sello),
+        ultimo_intento: iso(t.ultimo_intento),
+        ultimo_rechazo: t.ultimo_rechazo,
+      })),
       programa:
         f.version === null
           ? null
