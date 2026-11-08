@@ -60,6 +60,7 @@ const ESTADO_DE_CAJA: Record<CodigoDeError, number> = {
   PERSONA_CON_HISTORIA: 409,
   TABLET_NO_ENCONTRADA: 404,
   LOCAL_CERRADO: 409,
+  PANEL_SOLO_DEL_DUENO: 409,
 };
 
 const ESTADO_DE_API: Record<CodigoDeErrorDeApi, number> = {

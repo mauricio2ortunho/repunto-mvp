@@ -193,7 +193,7 @@ preguntar.
 | Rol | Alcance | Cómo entra |
 |---|---|---|
 | `admin_plataforma` | Crea negocios, locales y usuarios. Suspende negocios, exporta, ve señales de fraude entre negocios. | Teléfono + código. Hasta que haya correo o SMS, el código lo da `pnpm admin entrar`; la sesión vence a los 7 días sin uso |
-| `dueno` | Su negocio: programa, condición, locales, usuarios, dispositivos, métricas, clientes propios. | Teléfono + código |
+| `dueno` | Su negocio: programa, condición, locales, usuarios, dispositivos, métricas, clientes propios. | Teléfono + código, en `/dueno`. Hasta que haya WhatsApp, el código lo genera el admin desde la ficha (vence a las 24 horas) y se lo pasa; la sesión vence a los 30 días sin uso |
 | `supervisor` | Su local: canjear, anular sellos de cualquier cajero del local, gestionar PIN de su equipo, métricas de su sucursal, editar la condición. **No toca el programa.** | PIN sobre dispositivo vinculado |
 | `cajero` | Sellar, canjear, anular su último sello, confirmar registros. Solo en sus locales. | PIN sobre dispositivo vinculado |
 | `cliente` | Sus propias tarjetas. | Teléfono + código, o confirmación presencial |

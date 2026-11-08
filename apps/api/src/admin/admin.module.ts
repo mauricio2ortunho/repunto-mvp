@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { GuardDeAdmin } from './admin.guard';
+import { EntradaDelDuenoService } from './entrada-del-dueno.service';
 import { NegociosDeAdminController } from './negocios.controller';
 import { NegociosDeAdminService } from './negocios.service';
 import { PersonasDeAdminService } from './personas.service';
@@ -23,6 +24,7 @@ import { TableroDeAdminService } from './tablero.service';
     PersonasDeAdminService,
     TabletsDeAdminService,
     TableroDeAdminService,
+    EntradaDelDuenoService,
     GuardDeAdmin,
   ],
 })

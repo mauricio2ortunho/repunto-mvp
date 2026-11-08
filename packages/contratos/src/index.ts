@@ -206,3 +206,16 @@ export {
   esquemaTableroDelPiloto,
 } from './tablero';
 export type { LocalEnElTablero, NegocioEnElTablero, TableroDelPiloto } from './tablero';
+
+export {
+  esquemaDuenoActual,
+  esquemaEntradaDelDueno,
+  esquemaEntrarComoDuenoPeticion,
+  esquemaEntrarComoDuenoRespuesta,
+} from './dueno';
+export type {
+  DuenoActual,
+  EntradaDelDueno,
+  EntrarComoDuenoPeticion,
+  EntrarComoDuenoRespuesta,
+} from './dueno';

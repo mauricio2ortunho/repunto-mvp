@@ -100,6 +100,7 @@ model AdminPlataforma {
   vinculaciones_creadas VinculacionPendiente[]
   entradas              EntradaAdmin[]
   sesiones              SesionAdmin[]
+  entradas_de_duenos    EntradaDueno[]
   condiciones_escritas  CondicionSello[]
   peticiones            PeticionIdempotenteAdmin[]
 
@@ -253,13 +254,73 @@ model UsuarioNegocio {
   negocio     Negocio          @relation(fields: [negocio_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
   locales     UsuarioLocal[]
   condiciones CondicionSello[]
+  entradas    EntradaDueno[]
+  sesiones    SesionDueno[]
 
   /// Destino de FK compuesta, no una restriccion de negocio. Existe para que
   /// usuario_local y condicion_sello puedan exigir que el usuario sea del
   /// mismo negocio (CLAUDE.md, seccion 14). No borrar.
   @@unique([id, negocio_id], map: "usuario_negocio_id_negocio_id_key")
+  /// Destino de FK compuesta, no una restriccion de negocio. Existe para que
+  /// entrada_dueno pueda exigir que el usuario sea el dueno (CLAUDE.md,
+  /// seccion 14). No borrar.
+  @@unique([id, rol], map: "usuario_negocio_id_rol_key")
   @@index([negocio_id, rol, activo])
   @@map("usuario_negocio")
+}
+
+/// El codigo con que el dueno entra a su panel. Mientras no haya WhatsApp, lo
+/// genera el admin desde la ficha y se lo pasa (CLAUDE.md, seccion 5).
+model EntradaDueno {
+  id                  String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id          String     @db.Uuid
+  /// Siempre 'dueno' (CHECK entrada_dueno_solo_dueno_chk). Existe para la FK
+  /// compuesta a usuario_negocio(id, rol): solo el dueno recibe un codigo.
+  rol                 RolUsuario @default(dueno)
+  /// Lo que se escribe en /dueno/entrar. Nunca al log.
+  codigo              String     @unique
+  /// CHECK entrada_dueno_expira_posterior_chk y
+  /// entrada_dueno_uso_antes_de_expirar_chk, como la entrada del admin.
+  expira_el           DateTime   @db.Timestamptz(3)
+  usado_el            DateTime?  @db.Timestamptz(3)
+  /// Quien lo genero. Obligatorio mientras el unico origen sea el admin.
+  creado_por_admin_id String     @db.Uuid
+  creado_el           DateTime   @default(now()) @db.Timestamptz(3)
+
+  usuario          UsuarioNegocio  @relation(fields: [usuario_id, rol], references: [id, rol], onDelete: Restrict, onUpdate: Restrict, map: "entrada_dueno_usuario_es_dueno_fkey")
+  creado_por_admin AdminPlataforma @relation(fields: [creado_por_admin_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sesion           SesionDueno?
+
+  /// Destino de FK compuesta, no una restriccion de negocio. Existe para que
+  /// sesion_dueno no pueda ser de otro usuario que el del codigo con que se
+  /// abrio (CLAUDE.md, seccion 14). No borrar.
+  @@unique([id, usuario_id], map: "entrada_dueno_id_usuario_id_key")
+  @@index([usuario_id, creado_el])
+  @@map("entrada_dueno")
+}
+
+/// La sesion del dueno en su celular. Vence a los DIAS_DE_SESION_DE_DUENO sin
+/// usarse; dar de baja al dueno la revoca.
+model SesionDueno {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id    String    @db.Uuid
+  token_hash    String    @unique
+  /// Un codigo, una sesion (UNIQUE sesion_dueno_entrada_id_key).
+  entrada_id    String    @unique @db.Uuid
+  /// Se mueve en cada pedido. Es lo que mide el vencimiento.
+  ultimo_acceso DateTime  @db.Timestamptz(3)
+  /// CHECK sesion_dueno_revocada_posterior_chk.
+  revocada_el   DateTime? @db.Timestamptz(3)
+  creado_el     DateTime  @default(now()) @db.Timestamptz(3)
+
+  usuario UsuarioNegocio @relation(fields: [usuario_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  entrada EntradaDueno   @relation(fields: [entrada_id, usuario_id], references: [id, usuario_id], onDelete: Restrict, onUpdate: Restrict, map: "sesion_dueno_entrada_mismo_usuario_fkey")
+
+  /// Prisma lo exige para declarar 1:1 sobre una FK compuesta. La garantia
+  /// real es sesion_dueno_entrada_id_key.
+  @@unique([entrada_id, usuario_id], map: "sesion_dueno_entrada_id_usuario_id_key")
+  @@index([usuario_id, creado_el])
+  @@map("sesion_dueno")
 }
 
 /// Tabla puente. Un cajero solo opera en los locales que tiene asignados.

@@ -284,6 +284,27 @@ export async function crearEntradaDeAdmin(
   return { id, codigo, admin: quien };
 }
 
+/**
+ * Un codigo de entrada al panel del dueno, generado por un admin. `horas`
+ * negativas lo crean ya vencido: nacio hace dos dias.
+ */
+export async function crearEntradaDeDueno(
+  db: Db,
+  dueno: string,
+  { horas = 24 }: { horas?: number } = {},
+): Promise<{ id: string; codigo: string }> {
+  const admin = await crearAdmin(db);
+  const codigo = codigoDeVinculacionDesde(randomBytes(LARGO_CODIGO_DE_VINCULACION));
+  const { id } = await una<{ id: string }>(
+    db,
+    `INSERT INTO entrada_dueno (usuario_id, codigo, creado_por_admin_id, creado_el, expira_el)
+     VALUES ($1, $2, $3, now() - interval '2 days', now() + make_interval(hours => $4::int))
+     RETURNING id`,
+    [dueno, codigo, admin, horas],
+  );
+  return { id, codigo };
+}
+
 export async function crearAdmin(db: Db): Promise<string> {
   return insertar(
     db,

@@ -119,6 +119,14 @@ export {
 } from './admin';
 export type { DecisionDeEntradaDeAdmin, EntradaDeAdmin, SesionDeAdmin } from './admin';
 
+export {
+  DIAS_DE_SESION_DE_DUENO,
+  HORAS_DE_ENTRADA_DE_DUENO,
+  decidirEntradaDeDueno,
+  sesionDeDuenoVigente,
+} from './dueno';
+export type { DecisionDeEntradaDeDueno, EntradaDeDueno, SesionDeDueno } from './dueno';
+
 export { decidirSello, planDeSellado } from './sellado';
 export type {
   DecisionDeSellado,

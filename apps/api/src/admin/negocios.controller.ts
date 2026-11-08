@@ -13,6 +13,7 @@ import {
 import {
   type CodigoDeVinculacion,
   type CondicionCambiada,
+  type EntradaDelDueno,
   type EstadoDelLocal,
   type EstadoDelNegocio,
   type FichaDelNegocio,
@@ -40,6 +41,7 @@ import {
 import { errorDeApi } from '../caja/errores-http';
 import { claveDeIdempotencia, idEnLaRuta } from '../caja/peticion';
 import { GuardDeAdmin, type PeticionDeAdmin } from './admin.guard';
+import { EntradaDelDuenoService } from './entrada-del-dueno.service';
 import { NegociosDeAdminService } from './negocios.service';
 import { PersonasDeAdminService } from './personas.service';
 import { TabletsDeAdminService } from './tablets.service';
@@ -50,6 +52,8 @@ export class NegociosDeAdminController {
   constructor(
     @Inject(NegociosDeAdminService) private readonly negocios: NegociosDeAdminService,
     @Inject(PersonasDeAdminService) private readonly personas: PersonasDeAdminService,
+    @Inject(EntradaDelDuenoService)
+    private readonly entradas: EntradaDelDuenoService,
     @Inject(TabletsDeAdminService) private readonly tablets: TabletsDeAdminService,
   ) {}
 
@@ -276,6 +280,20 @@ export class NegociosDeAdminController {
     const reactivacion = esquemaReactivacionDePersona.safeParse(cuerpo ?? {});
     if (!reactivacion.success) throw errorDeApi('PETICION_INVALIDA');
     return this.personas.reactivar(negocio, laPersona, reactivacion.data.telefono);
+  }
+
+  /** El codigo para que el dueno entre a su panel. Solo para el dueno activo. */
+  @Post(':id/personas/:persona/entrada')
+  @HttpCode(HttpStatus.CREATED)
+  entradaDelDueno(
+    @Req() peticion: PeticionDeAdmin,
+    @Param('id') id: string,
+    @Param('persona') persona: string,
+  ): Promise<EntradaDelDueno> {
+    const negocio = idEnLaRuta(id);
+    const laPersona = idEnLaRuta(persona);
+    const clave = claveDeIdempotencia(peticion);
+    return this.entradas.generar(peticion.admin.id, negocio, laPersona, clave);
   }
 
   /** Solo a quien no tiene historia: lo cargado por error. */

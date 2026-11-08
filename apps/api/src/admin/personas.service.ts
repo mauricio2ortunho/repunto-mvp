@@ -144,6 +144,10 @@ export class PersonasDeAdminService {
    * antes siguen firmados con su nombre. Al dueno se le borra el telefono:
    * es unico en la plataforma, y de baja no lo usa
    * (usuario_negocio_dueno_con_telefono_chk solo lo exige al activo).
+   *
+   * Al dueno tambien se le cierran las sesiones del panel y se le vencen los
+   * codigos sin usar. El guard ya lo frena por estar de baja; esto es para
+   * que reactivarlo no le devuelva una sesion vieja ni un codigo olvidado.
    */
   async darDeBaja(negocioId: string, personaId: string): Promise<EstadoDePersona> {
     await this.prisma.$transaction(async (tx) => {
@@ -154,6 +158,13 @@ export class PersonasDeAdminService {
         SET activo = false,
             telefono = CASE WHEN rol = 'dueno' THEN NULL ELSE telefono END
         WHERE id = ${personaId}::uuid`;
+      await tx.$executeRaw`
+        UPDATE sesion_dueno SET revocada_el = now()
+        WHERE usuario_id = ${personaId}::uuid AND revocada_el IS NULL`;
+      await tx.$executeRaw`
+        UPDATE entrada_dueno SET expira_el = now()
+        WHERE usuario_id = ${personaId}::uuid AND usado_el IS NULL
+          AND expira_el > now()`;
     });
     return esquemaEstadoDePersona.parse({ activo: false });
   }
@@ -190,6 +201,7 @@ export class PersonasDeAdminService {
    * su nombre y borrarlo lo dejaria sin firma (INV-17). Las FK RESTRICT lo
    * impedirian igual; revisarlo antes deja contestar PERSONA_CON_HISTORIA.
    * Sus asignaciones a locales se van con ella: sin turnos, no son historia.
+   * Tambien sus codigos y sesiones del panel: son credenciales, no historia.
    */
   async borrar(negocioId: string, personaId: string): Promise<PersonaBorrada> {
     await this.prisma.$transaction(async (tx) => {
@@ -198,6 +210,8 @@ export class PersonasDeAdminService {
       if (await tieneHistoria(tx, personaId)) {
         throw errorDeRechazo(rechazo('PERSONA_CON_HISTORIA'), null);
       }
+      await tx.$executeRaw`DELETE FROM sesion_dueno WHERE usuario_id = ${personaId}::uuid`;
+      await tx.$executeRaw`DELETE FROM entrada_dueno WHERE usuario_id = ${personaId}::uuid`;
       await tx.$executeRaw`DELETE FROM usuario_local WHERE usuario_id = ${personaId}::uuid`;
       await tx.$executeRaw`DELETE FROM usuario_negocio WHERE id = ${personaId}::uuid`;
     });

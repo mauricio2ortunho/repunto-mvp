@@ -335,6 +335,30 @@ export class Api {
     });
   }
 
+  entradaDelDuenoComoAdmin(
+    token: string | undefined,
+    negocio: string,
+    persona: string,
+    clave: string | null = randomUUID(),
+  ): Promise<Respuesta> {
+    return this.pedir('POST', `/admin/negocios/${negocio}/personas/${persona}/entrada`, {
+      token,
+      clave: clave ?? undefined,
+    });
+  }
+
+  entrarComoDueno(cuerpo: unknown): Promise<Respuesta> {
+    return this.pedir('POST', '/dueno/sesion', { cuerpo });
+  }
+
+  duenoActual(token?: string): Promise<Respuesta> {
+    return this.pedir('GET', '/dueno/yo', { token });
+  }
+
+  cerrarSesionDeDueno(token?: string): Promise<Respuesta> {
+    return this.pedir('POST', '/dueno/sesion/cierre', { token });
+  }
+
   revocarTablet(
     token: string | undefined,
     negocio: string,

@@ -402,6 +402,10 @@ export function mensajeParaElAdmin(fallo: Fallo): string {
   if (fallo.codigo === 'TELEFONO_INVALIDO') {
     return 'Ese teléfono no es válido: si es boliviano, son ocho números.';
   }
+  // El de todos dice "pedí uno nuevo"; el admin se lo genera solo.
+  if (fallo.codigo === 'ENTRADA_INVALIDA') {
+    return 'Ese código no sirve: ya se usó, venció o está mal escrito. Generá uno nuevo con pnpm admin entrar.';
+  }
   if (fallo.codigo === 'TOPE_SUPERADO') {
     return 'Demasiados intentos desde esta conexión. Probá de nuevo en una hora.';
   }

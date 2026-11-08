@@ -4,6 +4,7 @@ import { AdminModule } from './admin/admin.module';
 import { AltaModule } from './alta/alta.module';
 import { CajaModule } from './caja/caja.module';
 import { ClienteModule } from './cliente/cliente.module';
+import { DuenoModule } from './dueno/dueno.module';
 import { ObservabilidadModule } from './observabilidad/observabilidad.module';
 import { PedidoMiddleware } from './observabilidad/pedido.middleware';
 import { PrismaModule } from './prisma/prisma.module';
@@ -21,6 +22,7 @@ import { TareasModule } from './tareas/tareas.module';
     ClienteModule,
     AltaModule,
     AdminModule,
+    DuenoModule,
     TareasModule,
   ],
 })

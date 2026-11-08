@@ -90,9 +90,10 @@ export const CODIGOS_DE_ERROR = [
    * cuales existen. */
   'VINCULACION_INVALIDA',
 
-  // Panel de administracion.
-  /** El codigo de entrada no existe, ya se uso, vencio, o su admin ya no
-   * esta activo. Uno solo para todo, por lo mismo que la vinculacion. */
+  // Panel de administracion y panel del dueno.
+  /** El codigo de entrada no existe, ya se uso, vencio, o su admin (o su
+   * dueno) ya no esta activo. Uno solo para todo, por lo mismo que la
+   * vinculacion. */
   'ENTRADA_INVALIDA',
 
   // Panel de administracion.
@@ -120,6 +121,9 @@ export const CODIGOS_DE_ERROR = [
   'TABLET_NO_ENCONTRADA',
   /** El local esta cerrado: no se le vinculan tablets hasta reabrirlo. */
   'LOCAL_CERRADO',
+  /** Se pidio un codigo de entrada al panel para alguien que no es el dueno
+   * activo: supervisores y cajeros entran por PIN en la tablet. */
+  'PANEL_SOLO_DEL_DUENO',
 ] as const;
 
 export type CodigoDeError = (typeof CODIGOS_DE_ERROR)[number];

@@ -147,6 +147,25 @@ crea lleva su propia tabla de idempotencia, porque no tiene tablet.
 | `sesion_admin_revocada_posterior_chk`            | `sesion_admin`               | CHECK  | `revocada_el` nulo, o posterior a `creado_el`          | Cordura    | Revocar una sesión antes de que exista.                                              |
 | `peticion_idempotente_admin_clave_razonable_chk` | `peticion_idempotente_admin` | CHECK  | `char_length(clave)` entre 8 y 200                     | Sección 9  | Una clave de idempotencia de un caracter, como en la caja.                           |
 
+## Panel del dueño
+
+El dueño entra igual que el admin, con un código de un solo uso que se canjea
+por una sesión de su celular. El código solo lo recibe un dueño: la entrada
+lleva el rol y apunta con `(usuario_id, rol)` a `usuario_negocio`, con el rol
+fijo en `dueno`. Mientras no haya WhatsApp, lo firma el admin que lo generó.
+
+| Restricción                               | Tabla           | Tipo   | Definición                                                 | Invariante | Qué impide                                                                                                      |
+| ----------------------------------------- | --------------- | ------ | ---------------------------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------- |
+| `entrada_dueno_usuario_es_dueno_fkey`     | `entrada_dueno` | FK     | `(usuario_id, rol) → usuario_negocio(id, rol)`             | Sección 14 | Un código de entrada al panel para un cajero o un supervisor, o pasar a supervisor a un dueño que ya tiene uno. |
+| `entrada_dueno_solo_dueno_chk`            | `entrada_dueno` | CHECK  | `rol = 'dueno'`                                            | Sección 14 | Que la FK de arriba acepte a otro rol: sin esto, con el rol del cajero, la FK compuesta pasaría.                |
+| `entrada_dueno_codigo_key`                | `entrada_dueno` | UNIQUE | `(codigo)`                                                 | Sección 5  | Dos entradas con el mismo código: el código es lo único que se escribe.                                         |
+| `entrada_dueno_expira_posterior_chk`      | `entrada_dueno` | CHECK  | `expira_el > creado_el`                                    | Sección 5  | Un código que nace vencido.                                                                                     |
+| `entrada_dueno_uso_antes_de_expirar_chk`  | `entrada_dueno` | CHECK  | `usado_el` nulo, o entre `creado_el` y `expira_el`         | Sección 5  | Marcar un código como usado después de vencido.                                                                 |
+| `sesion_dueno_token_hash_key`             | `sesion_dueno`  | UNIQUE | `(token_hash)`                                             | Sección 5  | Dos sesiones de dueño con el mismo token.                                                                       |
+| `sesion_dueno_entrada_id_key`             | `sesion_dueno`  | UNIQUE | `(entrada_id)`                                             | Sección 5  | Un código de entrada usado para abrir dos sesiones. Un solo uso, también en la base.                            |
+| `sesion_dueno_entrada_mismo_usuario_fkey` | `sesion_dueno`  | FK     | `(entrada_id, usuario_id) → entrada_dueno(id, usuario_id)` | Sección 14 | Una sesión a nombre de otro usuario que el del código con que se abrió.                                         |
+| `sesion_dueno_revocada_posterior_chk`     | `sesion_dueno`  | CHECK  | `revocada_el` nulo, o posterior a `creado_el`              | Cordura    | Revocar una sesión antes de que exista.                                                                         |
+
 ## Alta del cliente
 
 El registro ocurre en el mostrador: el cliente escanea el QR y el cajero lo
@@ -207,6 +226,9 @@ borrar: sin ellas, esas FK no se pueden crear.
 | `dispositivo_caja_vinculacion_id_local_id_key` | `dispositivo_caja`      | UNIQUE | `(vinculacion_id, local_id)` | Prisma     | Prisma lo exige para declarar 1:1 sobre una FK compuesta. La garantía real es `dispositivo_caja_vinculacion_id_key`. |
 | `entrada_admin_id_admin_id_key`                | `entrada_admin`         | UNIQUE | `(id, admin_id)`             | Sección 14 | Destino de la FK de `sesion_admin`.                                                                                  |
 | `sesion_admin_entrada_id_admin_id_key`         | `sesion_admin`          | UNIQUE | `(entrada_id, admin_id)`     | Prisma     | Prisma lo exige para declarar 1:1 sobre una FK compuesta. La garantía real es `sesion_admin_entrada_id_key`.         |
+| `usuario_negocio_id_rol_key`                   | `usuario_negocio`       | UNIQUE | `(id, rol)`                  | Sección 14 | Destino de la FK de `entrada_dueno`.                                                                                 |
+| `entrada_dueno_id_usuario_id_key`              | `entrada_dueno`         | UNIQUE | `(id, usuario_id)`           | Sección 14 | Destino de la FK de `sesion_dueno`.                                                                                  |
+| `sesion_dueno_entrada_id_usuario_id_key`       | `sesion_dueno`          | UNIQUE | `(entrada_id, usuario_id)`   | Prisma     | Prisma lo exige para declarar 1:1 sobre una FK compuesta. La garantía real es `sesion_dueno_entrada_id_key`.         |
 
 ### Claves primarias
 
@@ -233,6 +255,8 @@ borrar: sin ellas, esas FK no se pueden crear.
 | `intento_caja_pkey`               | `intento_caja`               | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
 | `entrada_admin_pkey`              | `entrada_admin`              | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
 | `sesion_admin_pkey`               | `sesion_admin`               | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
+| `entrada_dueno_pkey`              | `entrada_dueno`              | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
+| `sesion_dueno_pkey`               | `sesion_dueno`               | PK   | `(id)`                              | Modelo     | Filas sin identidad.                                                                                                                       |
 | `peticion_idempotente_admin_pkey` | `peticion_idempotente_admin` | PK   | `(admin_id, endpoint, clave)`       | Sección 9  | Dos respuestas guardadas para el mismo reintento del panel de administración. Cada admin tiene su propio espacio de claves.                |
 
 ### FK simples
@@ -246,6 +270,8 @@ Todas `RESTRICT`: no se puede borrar un padre con hijos (INV-17).
 | `vinculacion_pendiente_creado_por_admin_id_fkey` | `vinculacion_pendiente`      | FK   | `(creado_por_admin_id) → admin_plataforma(id)` | Sección 5  | Atribuir una vinculación a un admin que no existe. Es el otro origen posible del código: el admin vincula las tablets en la capacitación del primer día. |
 | `entrada_admin_admin_id_fkey`                    | `entrada_admin`              | FK   | `(admin_id) → admin_plataforma(id)`            | Sección 5  | Un código de entrada de un admin que no existe.                                                                                                          |
 | `sesion_admin_admin_id_fkey`                     | `sesion_admin`               | FK   | `(admin_id) → admin_plataforma(id)`            | Sección 5  | Una sesión de un admin que no existe.                                                                                                                    |
+| `entrada_dueno_creado_por_admin_id_fkey`         | `entrada_dueno`              | FK   | `(creado_por_admin_id) → admin_plataforma(id)` | Sección 5  | Atribuir un código de entrada del dueño a un admin que no existe. Siempre queda quién le dio acceso.                                                     |
+| `sesion_dueno_usuario_id_fkey`                   | `sesion_dueno`               | FK   | `(usuario_id) → usuario_negocio(id)`           | Sección 5  | Una sesión de un dueño que no existe.                                                                                                                    |
 | `condicion_sello_creado_por_admin_id_fkey`       | `condicion_sello`            | FK   | `(creado_por_admin_id) → admin_plataforma(id)` | Sección 4  | Atribuir una condición a un admin que no existe. Es el otro autor posible: el admin escribe la primera en el alta del negocio.                           |
 | `peticion_idempotente_admin_admin_id_fkey`       | `peticion_idempotente_admin` | FK   | `(admin_id) → admin_plataforma(id)`            | Sección 9  | Guardar el reintento de un admin que no existe.                                                                                                          |
 | `dispositivo_caja_local_id_fkey`                 | `dispositivo_caja`           | FK   | `(local_id) → local(id)`                       | INV-17     | Una tablet de un local que no existe.                                                                                                                    |

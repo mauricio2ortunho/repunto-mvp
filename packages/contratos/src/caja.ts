@@ -55,6 +55,7 @@ export const CODIGOS_DE_ERROR_DE_CAJA = [
   'PERSONA_CON_HISTORIA',
   'TABLET_NO_ENCONTRADA',
   'LOCAL_CERRADO',
+  'PANEL_SOLO_DEL_DUENO',
 ] as const;
 
 export type CodigoDeErrorDeCaja = (typeof CODIGOS_DE_ERROR_DE_CAJA)[number];
@@ -149,7 +150,7 @@ export function mensajeParaElCajero(
     case 'VINCULACION_INVALIDA':
       return 'Ese código no sirve: ya se usó, venció o está mal escrito. Pedí uno nuevo.';
     case 'ENTRADA_INVALIDA':
-      return 'Ese código no sirve: ya se usó, venció o está mal escrito. Generá uno nuevo con pnpm admin entrar.';
+      return 'Ese código no sirve: ya se usó, venció o está mal escrito. Pedí uno nuevo.';
     case 'TELEFONO_INVALIDO':
       return 'Ese número no es válido. Revisalo con el cliente: si es boliviano, son ocho dígitos.';
     case 'REGISTRO_NO_ENCONTRADO':
@@ -178,6 +179,8 @@ export function mensajeParaElCajero(
       return 'Esa tablet no está en este negocio. Volvé a la ficha.';
     case 'LOCAL_CERRADO':
       return 'Ese local está cerrado. Reabrilo para vincularle una tablet.';
+    case 'PANEL_SOLO_DEL_DUENO':
+      return 'Solo el dueño activo entra al panel. Supervisores y cajeros entran con su PIN en la tablet.';
     case 'ROL_NO_CAMBIABLE':
       return 'El dueño no pasa a supervisor ni a cajero, ni al revés. Si te equivocaste, dalo de baja y cargalo de nuevo.';
     case 'TELEFONO_EN_USO':
