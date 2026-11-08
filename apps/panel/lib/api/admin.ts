@@ -6,6 +6,7 @@ import {
   type CondicionCambiada,
   type CondicionNueva,
   type DatosDelLocal,
+  type EntradaDelDueno,
   type DatosDelNegocio,
   type EstadoDelLocal,
   type EstadoDelNegocio,
@@ -29,6 +30,7 @@ import {
   esquemaCodigoDeVinculacion,
   esquemaCondicionCambiada,
   esquemaEntrarComoAdminRespuesta,
+  esquemaEntradaDelDueno,
   esquemaEstadoDelLocal,
   esquemaEstadoDelNegocio,
   esquemaFichaDelNegocio,
@@ -89,6 +91,26 @@ export function negocios(senal?: AbortSignal): Promise<Respuesta<NegociosDelAdmi
  * El alta. La clave la decide quien llama: la misma mientras no se sepa si el
  * alta paso, para que el reintento no cree dos negocios.
  */
+/**
+ * El código para que el dueño entre a su panel. La clave la decide quien
+ * llama: la misma mientras no se sepa si llegó, para no dejar dos códigos.
+ */
+export function generarEntradaDelDueno(
+  negocio: string,
+  persona: string,
+  clave: string,
+): Promise<Respuesta<EntradaDelDueno>> {
+  return pedir(
+    {
+      metodo: 'POST',
+      ruta: `/admin/negocios/${encodeURIComponent(negocio)}/personas/${encodeURIComponent(persona)}/entrada`,
+      claveDeIdempotencia: clave,
+      token: sesionDeAdmin().token(),
+    },
+    esquemaEntradaDelDueno,
+  );
+}
+
 /** El tablero del piloto: cómo viene cada negocio. */
 export function tablero(senal?: AbortSignal): Promise<Respuesta<TableroDelPiloto>> {
   return pedir(

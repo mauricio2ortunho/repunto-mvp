@@ -469,7 +469,8 @@
   background: var(--c-fondo);
 }
 
-.local > form {
+.local > form,
+.local > .codigoDeVinculacion {
   flex: 1 1 100%;
 }
 
@@ -544,6 +545,19 @@
 
 .codigoDeVinculacion p {
   margin: 0;
+}
+
+/* El mensaje para el dueño: se ve entero y se selecciona con un toque. */
+.mensajeParaCopiar {
+  width: 100%;
+  padding: var(--espacio-3);
+  border: var(--borde-fino) solid var(--c-borde-fuerte);
+  border-radius: var(--radio-2);
+  background: var(--c-superficie);
+  color: var(--c-texto);
+  font: inherit;
+  font-size: var(--texto-2);
+  resize: vertical;
 }
 
 /* Un enlace dentro de un texto: lleva afuera, a Google Maps. */

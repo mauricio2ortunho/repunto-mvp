@@ -1,0 +1,110 @@
+/* El panel del dueño se usa sobre todo en el celular: una columna, márgenes
+   cortos, y en una computadora no se estira de más. */
+
+.pantalla {
+  display: grid;
+  align-content: start;
+  gap: var(--espacio-6);
+  width: 100%;
+  max-width: 720px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: var(--espacio-6) var(--espacio-4);
+  background: var(--c-fondo);
+}
+
+.centrada {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: var(--espacio-6) var(--espacio-4);
+  background: var(--c-fondo);
+}
+
+.tarjeta {
+  display: grid;
+  justify-items: stretch;
+  gap: var(--espacio-5);
+  width: 100%;
+  max-width: 440px;
+  padding: var(--espacio-6) var(--espacio-5);
+  border: var(--borde-fino) solid var(--c-borde);
+  border-radius: var(--radio-3);
+  background: var(--c-superficie);
+}
+
+.encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-3);
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.marca {
+  margin: 0;
+  color: var(--c-acento);
+  font-size: var(--texto-3);
+  font-weight: var(--peso-negro);
+}
+
+.titulo {
+  margin: 0;
+  font-size: var(--texto-7);
+  font-weight: var(--peso-fuerte);
+  line-height: var(--interlineado-titulo);
+}
+
+.texto {
+  margin: 0;
+  color: var(--c-texto-suave);
+  font-size: var(--texto-3);
+}
+
+.etiqueta {
+  color: var(--c-texto-suave);
+  font-size: var(--texto-3);
+  font-weight: var(--peso-medio);
+}
+
+.campo {
+  width: 100%;
+  height: var(--alto-control-grande);
+  padding: 0 var(--espacio-4);
+  border: var(--borde-grueso) solid var(--c-borde-fuerte);
+  border-radius: var(--radio-2);
+  background: var(--c-superficie);
+  color: var(--c-texto);
+  font-family: var(--f-codigo);
+  font-size: var(--texto-7);
+  font-weight: var(--peso-medio);
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.campo:focus {
+  outline: none;
+  border-color: var(--c-accion);
+  box-shadow: 0 0 0 var(--ancho-anillo-foco) var(--c-accion-velo);
+}
+
+.seccion {
+  display: grid;
+  gap: var(--espacio-2);
+  padding: var(--espacio-5);
+  border: var(--borde-fino) solid var(--c-borde);
+  border-radius: var(--radio-3);
+  background: var(--c-superficie);
+}
+
+.seccion h2 {
+  margin: 0;
+  font-size: var(--texto-5);
+  font-weight: var(--peso-fuerte);
+}
+
+.seccion p {
+  margin: 0;
+  color: var(--c-texto-suave);
+}

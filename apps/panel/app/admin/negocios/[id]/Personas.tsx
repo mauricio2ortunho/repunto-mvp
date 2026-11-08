@@ -28,6 +28,7 @@ import {
 } from '../../../../lib/personas-del-admin';
 import css from '../../Admin.module.css';
 import { Etiquetado } from '../Campos';
+import { AccesoDelDueno } from './AccesoDelDueno';
 import estilos from '../Negocios.module.css';
 
 interface Props {
@@ -104,7 +105,7 @@ function claveDeFila(x: PersonaDelAdmin): string {
   return `${x.id}-${x.activo}-${x.nombre}-${x.rol}-${x.telefono ?? ''}-${x.locales.join()}`;
 }
 
-type Modo = 'viendo' | 'editando' | 'pin' | 'reactivando';
+type Modo = 'viendo' | 'editando' | 'pin' | 'reactivando' | 'acceso';
 
 function FilaDePersona(p: Props & { persona: PersonaDelAdmin }) {
   const { persona } = p;
@@ -184,6 +185,15 @@ function FilaDePersona(p: Props & { persona: PersonaDelAdmin }) {
               >
                 {persona.tiene_pin ? 'Cambiar PIN' : 'Poner PIN'}
               </Boton>
+              {persona.rol === 'dueno' && (
+                <Boton
+                  variante="secundario"
+                  disabled={trabajando}
+                  onClick={() => setModo('acceso')}
+                >
+                  Darle acceso al panel
+                </Boton>
+              )}
               {persona.con_historia ? (
                 <BotonDeDosToques
                   texto="Dar de baja"
@@ -209,6 +219,14 @@ function FilaDePersona(p: Props & { persona: PersonaDelAdmin }) {
       )}
       {modo === 'pin' && (
         <FormularioDePin {...p} persona={persona} alTerminar={() => setModo('viendo')} />
+      )}
+      {modo === 'acceso' && (
+        <AccesoDelDueno
+          negocio={p.ficha.id}
+          persona={persona}
+          fallo={p.fallo}
+          alTerminar={() => setModo('viendo')}
+        />
       )}
       {modo === 'reactivando' && (
         <ReactivarDueno {...p} persona={persona} alTerminar={() => setModo('viendo')} />

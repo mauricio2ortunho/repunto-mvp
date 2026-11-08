@@ -27,11 +27,22 @@ export interface SesionDeAdmin {
  * datos bloqueados). Ahi la sesion vive en memoria hasta cerrar la pagina.
  */
 export function crearSesionDeAdmin(almacen: AlmacenDeSesion | null): SesionDeAdmin {
+  return crearSesionGuardada(almacen, CLAVE);
+}
+
+/**
+ * Una sesion guardada bajo su propia clave. La del dueño usa la misma
+ * mecanica con otra clave: cada panel queda con lo suyo en el mismo equipo.
+ */
+export function crearSesionGuardada(
+  almacen: AlmacenDeSesion | null,
+  clave: string,
+): SesionDeAdmin {
   let enMemoria: string | null = null;
   return {
     token() {
       try {
-        return almacen?.getItem(CLAVE) || enMemoria;
+        return almacen?.getItem(clave) || enMemoria;
       } catch {
         return enMemoria;
       }
@@ -39,7 +50,7 @@ export function crearSesionDeAdmin(almacen: AlmacenDeSesion | null): SesionDeAdm
     guardar(token) {
       enMemoria = token;
       try {
-        almacen?.setItem(CLAVE, token);
+        almacen?.setItem(clave, token);
       } catch {
         // Queda en memoria.
       }
@@ -47,7 +58,7 @@ export function crearSesionDeAdmin(almacen: AlmacenDeSesion | null): SesionDeAdm
     olvidar() {
       enMemoria = null;
       try {
-        almacen?.removeItem(CLAVE);
+        almacen?.removeItem(clave);
       } catch {
         // No habia nada que borrar.
       }
@@ -55,7 +66,7 @@ export function crearSesionDeAdmin(almacen: AlmacenDeSesion | null): SesionDeAdm
   };
 }
 
-function almacenDelNavegador(): AlmacenDeSesion | null {
+export function almacenDelNavegador(): AlmacenDeSesion | null {
   try {
     return typeof window === 'undefined' ? null : window.localStorage;
   } catch {
