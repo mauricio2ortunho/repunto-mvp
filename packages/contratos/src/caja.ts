@@ -56,6 +56,7 @@ export const CODIGOS_DE_ERROR_DE_CAJA = [
   'TABLET_NO_ENCONTRADA',
   'LOCAL_CERRADO',
   'PANEL_SOLO_DEL_DUENO',
+  'DUENO_NO_EDITABLE',
 ] as const;
 
 export type CodigoDeErrorDeCaja = (typeof CODIGOS_DE_ERROR_DE_CAJA)[number];
@@ -181,6 +182,8 @@ export function mensajeParaElCajero(
       return 'Ese local está cerrado. Reabrilo para vincularle una tablet.';
     case 'PANEL_SOLO_DEL_DUENO':
       return 'Solo el dueño activo entra al panel. Supervisores y cajeros entran con su PIN en la tablet.';
+    case 'DUENO_NO_EDITABLE':
+      return 'A los dueños los maneja Repunto. Escribinos si hay que cambiar algo.';
     case 'ROL_NO_CAMBIABLE':
       return 'El dueño no pasa a supervisor ni a cajero, ni al revés. Si te equivocaste, dalo de baja y cargalo de nuevo.';
     case 'TELEFONO_EN_USO':

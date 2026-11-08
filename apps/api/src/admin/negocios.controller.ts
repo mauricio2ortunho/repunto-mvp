@@ -39,22 +39,24 @@ import {
 } from '@repunto/contratos';
 
 import { errorDeApi } from '../caja/errores-http';
+import { PersonasDelNegocioService } from '../negocio/personas.service';
+import { TabletsDelNegocioService } from '../negocio/tablets.service';
 import { claveDeIdempotencia, idEnLaRuta } from '../caja/peticion';
+import { type Firmante } from '../negocio/firmante';
 import { GuardDeAdmin, type PeticionDeAdmin } from './admin.guard';
 import { EntradaDelDuenoService } from './entrada-del-dueno.service';
 import { NegociosDeAdminService } from './negocios.service';
-import { PersonasDeAdminService } from './personas.service';
-import { TabletsDeAdminService } from './tablets.service';
 
 @Controller('admin/negocios')
 @UseGuards(GuardDeAdmin)
 export class NegociosDeAdminController {
   constructor(
     @Inject(NegociosDeAdminService) private readonly negocios: NegociosDeAdminService,
-    @Inject(PersonasDeAdminService) private readonly personas: PersonasDeAdminService,
+    @Inject(PersonasDelNegocioService)
+    private readonly personas: PersonasDelNegocioService,
     @Inject(EntradaDelDuenoService)
     private readonly entradas: EntradaDelDuenoService,
-    @Inject(TabletsDeAdminService) private readonly tablets: TabletsDeAdminService,
+    @Inject(TabletsDelNegocioService) private readonly tablets: TabletsDelNegocioService,
   ) {}
 
   @Get()
@@ -202,7 +204,7 @@ export class NegociosDeAdminController {
     const negocio = idEnLaRuta(id);
     const elLocal = idEnLaRuta(local);
     const clave = claveDeIdempotencia(peticion);
-    return this.tablets.generarCodigo(peticion.admin.id, negocio, elLocal, clave);
+    return this.tablets.generarCodigo(firmaDe(peticion), negocio, elLocal, clave);
   }
 
   @Post(':id/tablets/:tablet/revocacion')
@@ -225,7 +227,7 @@ export class NegociosDeAdminController {
     const clave = claveDeIdempotencia(peticion);
     const persona = esquemaPersonaNueva.safeParse(cuerpo);
     if (!persona.success) throw errorDeApi('PETICION_INVALIDA');
-    return this.personas.crear(peticion.admin.id, negocio, clave, persona.data);
+    return this.personas.crear(firmaDe(peticion), negocio, clave, persona.data);
   }
 
   /** Sin Idempotency-Key: la huella del cuerpo dejaria el PIN a la vista. */
@@ -305,4 +307,8 @@ export class NegociosDeAdminController {
   ): Promise<PersonaBorrada> {
     return this.personas.borrar(idEnLaRuta(id), idEnLaRuta(persona));
   }
+}
+
+function firmaDe(peticion: PeticionDeAdmin): Firmante {
+  return { tipo: 'administracion', admin_id: peticion.admin.id };
 }

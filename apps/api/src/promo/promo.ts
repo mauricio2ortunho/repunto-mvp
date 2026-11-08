@@ -11,6 +11,7 @@ import {
 } from '@repunto/contratos';
 
 import type { Transaccion } from '../caja/lectura';
+import type { Firmante } from '../negocio/firmante';
 
 /**
  * La promo y la condición del sello de un negocio: lo que hacen igual el
@@ -54,8 +55,7 @@ export async function versionNuevaDelPrograma(
 }
 
 /** Quién firma la condición: un admin, o alguien del negocio. */
-export type AutorDeCondicion =
-  { tipo: 'administracion'; admin_id: string } | { tipo: 'negocio'; usuario_id: string };
+export type AutorDeCondicion = Firmante;
 
 /**
  * Una condición nueva, desde ahora (INV-7). Nunca invalida un sello ya dado.

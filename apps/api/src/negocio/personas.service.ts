@@ -17,12 +17,14 @@ import { errorDeApi, errorDeRechazo } from '../caja/errores-http';
 import type { Transaccion } from '../caja/lectura';
 import { PrismaService } from '../prisma/prisma.service';
 import { hashDePin } from '../seguridad/pin';
-import { guardarRespuestaDeAdmin, reservarIdempotenciaDeAdmin } from './idempotencia';
-import { bloquearNegocio, negocioNoEncontrado } from './negocios.service';
+import { bloquearNegocio, negocioNoEncontrado } from '../admin/negocios.service';
+import { type Firmante, guardarRespuesta, reservarIdempotencia } from './firmante';
 
 /**
- * Las personas de un negocio, desde la ficha del admin: dueno, supervisores y
- * cajeros, en que locales trabajan y su PIN.
+ * Las personas de un negocio: dueno, supervisores y cajeros, en que locales
+ * trabajan y su PIN. Lo usan la ficha del admin y el panel del dueno; lo que
+ * el dueno no puede tocar (a otro dueno) lo frena su lado, antes de llegar
+ * aca (dueno/equipo.service.ts).
  *
  * Lo que la base garantiza igual se revisa antes, para contestar con un
  * codigo que el panel sepa explicar: el nombre repetido entre los activos
@@ -33,26 +35,32 @@ import { bloquearNegocio, negocioNoEncontrado } from './negocios.service';
  * alguna vez se cruzan dos altas, la base rechaza la segunda.
  */
 @Injectable()
-export class PersonasDeAdminService {
+export class PersonasDelNegocioService {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  /** `POST /admin/negocios/:id/personas`. Sin PIN: va en su propio pedido. */
+  /**
+   * `POST /admin/negocios/:id/personas` y `POST /dueno/personas`. Sin PIN: va
+   * en su propio pedido.
+   */
   async crear(
-    adminId: string,
+    firmante: Firmante,
     negocioId: string,
     clave: string,
     persona: PersonaNueva,
   ): Promise<PersonaCreada> {
     const telefono = telefonoNormalizado(persona.telefono);
     const peticion = {
-      admin_id: adminId,
-      endpoint: 'POST /admin/negocios/:id/personas',
+      firmante,
+      endpoint:
+        firmante.tipo === 'administracion'
+          ? 'POST /admin/negocios/:id/personas'
+          : 'POST /dueno/personas',
       clave,
       cuerpo: { negocio_id: negocioId, ...persona, telefono },
     };
 
     return this.prisma.$transaction(async (tx) => {
-      const guardada = await reservarIdempotenciaDeAdmin(tx, peticion);
+      const guardada = await reservarIdempotencia(tx, peticion);
       if (guardada !== null) return esquemaPersonaCreada.parse(guardada);
 
       await bloquearNegocio(tx, negocioId);
@@ -76,7 +84,7 @@ export class PersonasDeAdminService {
       }
 
       const respuesta = esquemaPersonaCreada.parse({ id });
-      await guardarRespuestaDeAdmin(tx, peticion, respuesta);
+      await guardarRespuesta(tx, peticion, respuesta);
       return respuesta;
     });
   }

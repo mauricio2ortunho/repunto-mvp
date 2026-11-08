@@ -216,6 +216,8 @@ export {
   esquemaEntradaDelDueno,
   esquemaEntrarComoDuenoPeticion,
   esquemaEntrarComoDuenoRespuesta,
+  esquemaNegocioDelDueno,
+  esquemaPersonaDelEquipo,
   esquemaPromoDelDueno,
 } from './dueno';
 export type {
@@ -223,6 +225,7 @@ export type {
   EntradaDelDueno,
   EntrarComoDuenoPeticion,
   EntrarComoDuenoRespuesta,
+  NegocioDelDueno,
   PromoDelDueno,
 } from './dueno';
 

@@ -24,7 +24,6 @@ import {
   esquemaNegocioCreado,
   esquemaNegociosDelAdmin,
   esquemaProgramaCambiado,
-  esquemaQrCambiado,
 } from '@repunto/contratos';
 
 import { LARGO_QR_DEL_LOCAL, qrDelLocalDesde, rechazo } from '@repunto/dominio';
@@ -37,6 +36,11 @@ import {
   condicionesRecientes,
   versionNuevaDelPrograma,
 } from '../promo/promo';
+import {
+  guardarDatosDelLocal,
+  localesPersonasYTablets,
+  qrNuevoDelLocal,
+} from '../negocio/locales';
 import { guardarRespuestaDeAdmin, reservarIdempotenciaDeAdmin } from './idempotencia';
 
 interface FilaDeNegocio {
@@ -74,38 +78,6 @@ interface FilaDeFicha {
   horas_entre_sellos: number | null;
   pide_monto: boolean | null;
   programa_desde: Date | null;
-}
-
-interface FilaDeLocal {
-  id: string;
-  nombre: string;
-  direccion: string;
-  activo: boolean;
-  qr_slug: string;
-  latitud: number | null;
-  longitud: number | null;
-}
-
-interface FilaDePersona {
-  id: string;
-  nombre: string;
-  rol: string;
-  telefono: string | null;
-  activo: boolean;
-  tiene_pin: boolean;
-  locales: string[];
-  con_historia: boolean;
-}
-
-interface FilaDeTablet {
-  id: string;
-  local_id: string;
-  nombre: string;
-  vinculado_el: Date;
-  revocado_el: Date | null;
-  ultimo_sello: Date | null;
-  ultimo_intento: Date | null;
-  ultimo_rechazo: string | null;
 }
 
 /**
@@ -217,49 +189,7 @@ export class NegociosDeAdminService {
 
     const condiciones = await condicionesRecientes(this.prisma, id);
 
-    const locales = await this.prisma.$queryRaw<FilaDeLocal[]>`
-      SELECT id, nombre, direccion, activo, qr_slug,
-             latitud::float8 AS latitud, longitud::float8 AS longitud
-      FROM local
-      WHERE negocio_id = ${id}::uuid
-      ORDER BY activo DESC, creado_el, id`;
-
-    // Del PIN solo si lo tiene: el hash no sale de aca.
-    const personas = await this.prisma.$queryRaw<FilaDePersona[]>`
-      SELECT u.id, u.nombre, u.rol::text AS rol, u.telefono, u.activo,
-             u.pin_hash IS NOT NULL AS tiene_pin,
-             COALESCE((SELECT array_agg(ul.local_id::text ORDER BY ul.creado_el)
-                       FROM usuario_local ul
-                       WHERE ul.usuario_id = u.id AND ul.activo), '{}') AS locales,
-             -- Lo mismo que pregunta el borrado (personas.service, tieneHistoria).
-             (EXISTS (SELECT 1 FROM turno_caja t WHERE t.usuario_id = u.id)
-              OR EXISTS (SELECT 1 FROM condicion_sello c WHERE c.usuario_id = u.id)
-              OR EXISTS (SELECT 1 FROM vinculacion_pendiente v
-                         WHERE v.creado_por_usuario_id = u.id)) AS con_historia
-      FROM usuario_negocio u
-      WHERE u.negocio_id = ${id}::uuid
-      ORDER BY u.activo DESC,
-               array_position(ARRAY['dueno', 'supervisor', 'cajero'], u.rol::text),
-               lower(u.nombre), u.id`;
-
-    // La salud de cada tablet (CLAUDE.md, seccion 8), lo mismo que
-    // `pnpm tablets salud`: el ultimo sello sale de los turnos de la tablet;
-    // el ultimo intento y el ultimo rechazo, de la bitacora.
-    const tablets = await this.prisma.$queryRaw<FilaDeTablet[]>`
-      SELECT d.id, d.local_id, d.nombre, d.vinculado_el, d.revocado_el,
-             (SELECT max(s.creado_el) FROM sello s
-                JOIN turno_caja t ON t.id = s.turno_id
-               WHERE t.dispositivo_id = d.id) AS ultimo_sello,
-             (SELECT max(i.creado_el) FROM intento_caja i
-               WHERE i.dispositivo_id = d.id) AS ultimo_intento,
-             (SELECT i.resultado FROM intento_caja i
-               WHERE i.dispositivo_id = d.id AND i.resultado <> 'ok'
-               ORDER BY i.creado_el DESC LIMIT 1) AS ultimo_rechazo
-      FROM dispositivo_caja d
-      JOIN local l ON l.id = d.local_id
-      WHERE l.negocio_id = ${id}::uuid
-      ORDER BY d.revocado_el IS NOT NULL, d.vinculado_el, d.id`;
-    const iso = (fecha: Date | null) => fecha?.toISOString() ?? null;
+    const { locales, personas, tablets } = await localesPersonasYTablets(this.prisma, id);
 
     return esquemaFichaDelNegocio.parse({
       id: f.id,
@@ -274,21 +204,9 @@ export class NegociosDeAdminService {
       creado_el: f.creado_el.toISOString(),
       locales_activos: f.locales_activos,
       tarjetas_en_curso: f.tarjetas_en_curso,
-      locales: locales.map(({ latitud, longitud, ...l }) => ({
-        ...l,
-        ubicacion: latitud === null || longitud === null ? null : { latitud, longitud },
-      })),
+      locales,
       personas,
-      tablets: tablets.map((t) => ({
-        id: t.id,
-        local_id: t.local_id,
-        nombre: t.nombre,
-        vinculada_el: t.vinculado_el.toISOString(),
-        revocada_el: iso(t.revocado_el),
-        ultimo_sello: iso(t.ultimo_sello),
-        ultimo_intento: iso(t.ultimo_intento),
-        ultimo_rechazo: t.ultimo_rechazo,
-      })),
+      tablets,
       programa:
         f.version === null
           ? null
@@ -455,12 +373,8 @@ export class NegociosDeAdminService {
     localId: string,
     datos: DatosDelLocal,
   ): Promise<FichaDelNegocio> {
-    const cambiadas = await this.prisma.$executeRaw`
-      UPDATE local SET nombre = ${datos.nombre}, direccion = ${datos.direccion},
-        latitud = ${datos.ubicacion?.latitud ?? null}::numeric,
-        longitud = ${datos.ubicacion?.longitud ?? null}::numeric
-      WHERE id = ${localId}::uuid AND negocio_id = ${negocioId}::uuid`;
-    if (cambiadas === 0) throw await this.localNoEncontrado(negocioId);
+    const cambiado = await guardarDatosDelLocal(this.prisma, negocioId, localId, datos);
+    if (!cambiado) throw await this.localNoEncontrado(negocioId);
     return this.ficha(negocioId);
   }
 
@@ -488,14 +402,9 @@ export class NegociosDeAdminService {
    * al local, no al QR.
    */
   async cambiarQrDelLocal(negocioId: string, localId: string): Promise<QrCambiado> {
-    const qr = qrDelLocalDesde(randomBytes(LARGO_QR_DEL_LOCAL));
-    const filas = await this.prisma.$queryRaw<{ qr_slug: string }[]>`
-      UPDATE local SET qr_slug = ${qr}
-      WHERE id = ${localId}::uuid AND negocio_id = ${negocioId}::uuid
-      RETURNING qr_slug`;
-    const fila = filas[0];
-    if (fila === undefined) throw await this.localNoEncontrado(negocioId);
-    return esquemaQrCambiado.parse(fila);
+    const qr = await qrNuevoDelLocal(this.prisma, negocioId, localId);
+    if (qr === null) throw await this.localNoEncontrado(negocioId);
+    return qr;
   }
 
   /**

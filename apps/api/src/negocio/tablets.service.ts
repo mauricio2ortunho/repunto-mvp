@@ -16,29 +16,34 @@ import {
 } from '@repunto/dominio';
 
 import { errorDeRechazo } from '../caja/errores-http';
+import type { Transaccion } from '../caja/lectura';
 import { PrismaService } from '../prisma/prisma.service';
-import { guardarRespuestaDeAdmin, reservarIdempotenciaDeAdmin } from './idempotencia';
-import { bloquearNegocio, negocioNoEncontrado } from './negocios.service';
+import { bloquearNegocio, negocioNoEncontrado } from '../admin/negocios.service';
+import { type Firmante, guardarRespuesta, reservarIdempotencia } from './firmante';
 
 /** Si choca con otro codigo pendiente, se prueba otro. */
 const INTENTOS_DE_CODIGO = 5;
 
 /**
- * Las tablets de la caja, desde la ficha del admin: el codigo para vincular
- * una nueva y la revocacion de una perdida. Lo mismo que `pnpm tablets`, sin
- * terminal: es lo que se usa en la capacitacion del primer dia.
+ * Las tablets de la caja: el codigo para vincular una nueva y la revocacion
+ * de una perdida. Lo mismo que `pnpm tablets`, sin terminal. Lo usan la
+ * ficha del admin, el dia de la capacitacion, y el panel del dueno.
  *
- * El codigo lo firma el admin (`creado_por_admin_id`): el admin no es de
- * ningun negocio, asi que no entra por la FK a `usuario_local` (CLAUDE.md,
- * seccion 14).
+ * El codigo queda firmado por quien lo pidio. El admin no es de ningun
+ * negocio y firma por `creado_por_admin_id`; el dueno firma por
+ * `creado_por_usuario_id`, que apunta a `usuario_local`: tiene que estar
+ * asignado a ese local (CLAUDE.md, seccion 14).
  */
 @Injectable()
-export class TabletsDeAdminService {
+export class TabletsDelNegocioService {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  /** `POST /admin/negocios/:id/locales/:local/vinculacion`. */
+  /**
+   * `POST /admin/negocios/:id/locales/:local/vinculacion` y
+   * `POST /dueno/locales/:local/vinculacion`.
+   */
   async generarCodigo(
-    adminId: string,
+    firmante: Firmante,
     negocioId: string,
     localId: string,
     clave: string,
@@ -46,14 +51,17 @@ export class TabletsDeAdminService {
     // El local va en la huella: la misma clave para otro local no es un
     // reintento.
     const peticion = {
-      admin_id: adminId,
-      endpoint: 'POST /admin/negocios/:id/locales/:local/vinculacion',
+      firmante,
+      endpoint:
+        firmante.tipo === 'administracion'
+          ? 'POST /admin/negocios/:id/locales/:local/vinculacion'
+          : 'POST /dueno/locales/:local/vinculacion',
       clave,
       cuerpo: { negocio_id: negocioId, local_id: localId },
     };
 
     return this.prisma.$transaction(async (tx) => {
-      const guardada = await reservarIdempotenciaDeAdmin(tx, peticion);
+      const guardada = await reservarIdempotencia(tx, peticion);
       if (guardada !== null) return esquemaCodigoDeVinculacion.parse(guardada);
 
       await bloquearNegocio(tx, negocioId);
@@ -65,6 +73,11 @@ export class TabletsDeAdminService {
       // La vinculacion lo rechazaria igual (decidirVinculacion); decirlo
       // ahora le ahorra al admin dictar un codigo que no va a andar.
       if (!local.activo) throw errorDeRechazo(rechazo('LOCAL_CERRADO'), null);
+      if (firmante.tipo === 'negocio') {
+        await asignarAlDueno(tx, negocioId, localId, firmante.usuario_id);
+      }
+      const adminId = firmante.tipo === 'administracion' ? firmante.admin_id : null;
+      const usuarioId = firmante.tipo === 'negocio' ? firmante.usuario_id : null;
 
       for (let intento = 0; intento < INTENTOS_DE_CODIGO; intento += 1) {
         const codigo = codigoDeVinculacionDesde(randomBytes(LARGO_CODIGO_DE_VINCULACION));
@@ -76,8 +89,9 @@ export class TabletsDeAdminService {
         if (ocupado.length > 0) continue;
 
         const filas = await tx.$queryRaw<{ expira_el: Date }[]>`
-          INSERT INTO vinculacion_pendiente (codigo, local_id, creado_por_admin_id, expira_el)
-          VALUES (${codigo}, ${localId}::uuid, ${adminId}::uuid,
+          INSERT INTO vinculacion_pendiente (codigo, local_id, creado_por_admin_id,
+                                             creado_por_usuario_id, expira_el)
+          VALUES (${codigo}, ${localId}::uuid, ${adminId}::uuid, ${usuarioId}::uuid,
                   now() + make_interval(mins => ${MINUTOS_DE_VINCULACION}::int))
           RETURNING expira_el`;
 
@@ -85,7 +99,7 @@ export class TabletsDeAdminService {
           codigo: formatearCodigoDeVinculacion(codigo),
           expira_el: filas[0]?.expira_el.toISOString(),
         });
-        await guardarRespuestaDeAdmin(tx, peticion, respuesta);
+        await guardarRespuesta(tx, peticion, respuesta);
         return respuesta;
       }
       throw new Error('No se pudo generar un codigo de vinculacion libre.');
@@ -114,4 +128,34 @@ export class TabletsDeAdminService {
     }
     return esquemaTabletRevocada.parse({ revocada_el: fila.revocado_el.toISOString() });
   }
+}
+
+/**
+ * El dueno es de todo su negocio, pero su firma en `vinculacion_pendiente`
+ * apunta a `usuario_local`: para firmar el codigo de un local tiene que
+ * estar asignado a ese local, y activo (la vinculacion lo vuelve a mirar al
+ * usar el codigo). Se lo asigna aca, en la misma transaccion, en lugar de
+ * pedirle un paso aparte que no entenderia.
+ *
+ * Solo al dueno: a un supervisor o un cajero, asignarlo solo le abriria un
+ * local que no es el suyo (INV-3). Si alguna vez firman ellos, tienen que
+ * estar asignados de antes, y la FK lo exige.
+ */
+async function asignarAlDueno(
+  tx: Transaccion,
+  negocioId: string,
+  localId: string,
+  usuarioId: string,
+): Promise<void> {
+  const asignadas = await tx.$executeRaw`
+    INSERT INTO usuario_local (usuario_id, local_id, negocio_id)
+    SELECT u.id, ${localId}::uuid, u.negocio_id
+    FROM usuario_negocio u
+    WHERE u.id = ${usuarioId}::uuid AND u.negocio_id = ${negocioId}::uuid
+      AND u.rol = 'dueno' AND u.activo
+    ON CONFLICT (usuario_id, local_id) DO UPDATE SET activo = true`;
+  if (asignadas === 0)
+    throw new Error(
+      'Codigo de vinculacion pedido por alguien que no es el dueno activo.',
+    );
 }

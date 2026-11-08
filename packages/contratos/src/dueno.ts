@@ -1,6 +1,13 @@
 import { z } from 'zod';
 
-import { esquemaCondicionDelHistorial, esquemaProgramaVigente } from './admin';
+import {
+  esquemaCondicionDelHistorial,
+  esquemaLocalDelAdmin,
+  esquemaPersonaDelAdmin,
+  esquemaPersonaNueva,
+  esquemaProgramaVigente,
+  esquemaTabletDelAdmin,
+} from './admin';
 
 /**
  * El panel del dueño (apps/panel, /dueno). Entra desde su celular con un
@@ -71,3 +78,33 @@ export const esquemaPromoDelDueno = z.object({
 });
 
 export type PromoDelDueno = z.infer<typeof esquemaPromoDelDueno>;
+
+/**
+ * `GET /dueno/negocio`: sus locales, su equipo y sus tablets, igual que en
+ * la ficha del admin. Los ids de la ruta y del cuerpo (el local a editar,
+ * los locales de un cajero) nombran cosas de su negocio; el negocio sale
+ * igual de la sesión, y la api rechaza lo que no sea de él.
+ */
+export const esquemaNegocioDelDueno = z.object({
+  /** Los abiertos primero. El dueño los edita; abrir y cerrar, el admin. */
+  locales: z.array(esquemaLocalDelAdmin),
+  /** Los dueños también, para que se vea quién es quién; no los edita. */
+  personas: z.array(esquemaPersonaDelAdmin),
+  tablets: z.array(esquemaTabletDelAdmin),
+});
+
+export type NegocioDelDueno = z.infer<typeof esquemaNegocioDelDueno>;
+
+/**
+ * `POST /dueno/personas` (con Idempotency-Key) y
+ * `.../personas/:persona/datos`: el mismo cuerpo que en la ficha del admin,
+ * sin dueños. A un dueño lo carga el admin: entra al panel con su teléfono
+ * y ve todo el negocio.
+ */
+export const esquemaPersonaDelEquipo = esquemaPersonaNueva.refine(
+  (p) => p.rol !== 'dueno',
+  {
+    path: ['rol'],
+    message: 'Al dueño lo carga Repunto.',
+  },
+);

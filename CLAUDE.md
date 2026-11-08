@@ -129,6 +129,10 @@ preguntar.
 
 - **INV-1** — Ningún endpoint autenticado acepta `negocio_id`, `local_id` ni
   `cliente_id` desde el body o la query. El alcance sale siempre del token.
+  Un id en la ruta o en el cuerpo puede nombrar sobre qué se actúa —el local
+  que el dueño edita, los locales de un cajero—, nunca el alcance: cada
+  consulta filtra por el negocio del token, y lo de otro negocio contesta
+  que no existe.
 - **INV-2** — El `local_id` de un sello o canje sale del dispositivo de caja
   vinculado, nunca del request.
 - **INV-3** — Un cajero o supervisor solo opera en los locales que tiene asignados.
@@ -583,7 +587,10 @@ Sin columna nueva, el mismo patrón cierra cuatro cosas más:
 - `vinculacion_pendiente` apunta con `(creado_por_usuario_id, local_id)` a
   `usuario_local`: el código de vinculación de una tablet lo genera alguien
   asignado a ESE local, no solo alguien del mismo negocio. Consecuencia: el
-  dueño tiene que estar asignado al local para vincular una tablet.
+  dueño tiene que estar asignado al local para vincular una tablet. Como el
+  dueño es de todo su negocio, la api lo asigna (o lo reactiva) en la misma
+  transacción en que genera el código (`asignarAlDueno`); a un supervisor o
+  un cajero no, porque le abriría un local ajeno (INV-3).
 
   El `admin_plataforma` no pertenece a ningún negocio y por eso no puede entrar
   por esa FK, pero es quien vincula las tablets en la capacitación del primer

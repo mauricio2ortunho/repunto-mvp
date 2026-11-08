@@ -124,6 +124,12 @@ export const CODIGOS_DE_ERROR = [
   /** Se pidio un codigo de entrada al panel para alguien que no es el dueno
    * activo: supervisores y cajeros entran por PIN en la tablet. */
   'PANEL_SOLO_DEL_DUENO',
+
+  // Panel del dueño.
+  /** El dueño quiso cambiar a un dueño (a sí mismo o a un socio): a los
+   * dueños los maneja el admin, porque entran al panel y ven todo el
+   * negocio. */
+  'DUENO_NO_EDITABLE',
 ] as const;
 
 export type CodigoDeError = (typeof CODIGOS_DE_ERROR)[number];

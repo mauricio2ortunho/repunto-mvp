@@ -389,6 +389,23 @@ export class Api {
     });
   }
 
+  negocioDelDueno(token?: string): Promise<Respuesta> {
+    return this.pedir('GET', '/dueno/negocio', { token });
+  }
+
+  /**
+   * Lo que el dueño cambia de sus locales, su equipo y sus tablets:
+   * `ruta` sin el `/dueno`. Sin Idempotency-Key salvo que vaya `clave`.
+   */
+  comoDueno(
+    token: string | undefined,
+    ruta: string,
+    cuerpo?: unknown,
+    clave?: string,
+  ): Promise<Respuesta> {
+    return this.pedir('POST', `/dueno${ruta}`, { token, cuerpo, clave });
+  }
+
   cerrarSesionDeDueno(token?: string): Promise<Respuesta> {
     return this.pedir('POST', '/dueno/sesion/cierre', { token });
   }

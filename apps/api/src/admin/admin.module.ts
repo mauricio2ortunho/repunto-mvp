@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 
+import { PersonasDelNegocioService } from '../negocio/personas.service';
+import { TabletsDelNegocioService } from '../negocio/tablets.service';
 import { GuardDeAdmin } from './admin.guard';
 import { EntradaDelDuenoService } from './entrada-del-dueno.service';
 import { NegociosDeAdminController } from './negocios.controller';
 import { NegociosDeAdminService } from './negocios.service';
-import { PersonasDeAdminService } from './personas.service';
-import { TabletsDeAdminService } from './tablets.service';
 import { SesionDeAdminController } from './sesion.controller';
 import { SesionDeAdminService } from './sesion.service';
 import { TableroDeAdminController } from './tablero.controller';
@@ -21,8 +21,8 @@ import { TableroDeAdminService } from './tablero.service';
   providers: [
     SesionDeAdminService,
     NegociosDeAdminService,
-    PersonasDeAdminService,
-    TabletsDeAdminService,
+    PersonasDelNegocioService,
+    TabletsDelNegocioService,
     TableroDeAdminService,
     EntradaDelDuenoService,
     GuardDeAdmin,
