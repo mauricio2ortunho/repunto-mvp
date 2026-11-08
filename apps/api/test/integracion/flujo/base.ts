@@ -355,6 +355,10 @@ export class Api {
     return this.pedir('GET', '/dueno/yo', { token });
   }
 
+  resumenDelDueno(token?: string, query = ''): Promise<Respuesta> {
+    return this.pedir('GET', `/dueno/resumen${query}`, { token });
+  }
+
   cerrarSesionDeDueno(token?: string): Promise<Respuesta> {
     return this.pedir('POST', '/dueno/sesion/cierre', { token });
   }

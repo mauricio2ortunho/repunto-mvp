@@ -35,9 +35,12 @@ export {
 export type { DiaEnLaPaz } from './tiempo';
 export {
   DIAS_DE_CLIENTE_ACTIVO,
+  DIAS_DE_CLIENTE_ENFRIADO,
   DIAS_DE_LA_SEMANA_QUE_PASO,
   DIAS_DE_LOCAL_SIN_SELLOS,
   DIAS_DEL_MES_QUE_PASO,
+  SELLOS_PARA_ENFRIADO,
+  SELLOS_PARA_VOLVIO,
   inicioDelMesEnLaPaz,
 } from './metricas';
 

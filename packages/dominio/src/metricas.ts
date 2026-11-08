@@ -28,3 +28,18 @@ export function inicioDelMesEnLaPaz(instante: Date): Date {
   const { anio, mes } = diaEnLaPaz(instante);
   return new Date(Date.UTC(anio, mes - 1, 1) - DESFASE_LA_PAZ_MINUTOS * 60_000);
 }
+
+/**
+ * Cliente enfriado (CLAUDE.md, seccion 6): 3 o mas sellos en su historia en
+ * el negocio y ninguno en los ultimos 30 dias. Venia seguido y dejo de venir:
+ * es el unico numero del resumen del dueño que pide una accion.
+ */
+export const SELLOS_PARA_ENFRIADO = 3;
+export const DIAS_DE_CLIENTE_ENFRIADO = 30;
+
+/**
+ * Cliente que volvio: con 2 o mas sellos en el negocio. Cada sello es una
+ * visita aunque caiga el mismo dia: el intervalo minimo del programa ya separa
+ * una visita de otra (decision del 2026-11-08).
+ */
+export const SELLOS_PARA_VOLVIO = 2;

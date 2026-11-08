@@ -308,8 +308,8 @@ como mucho un día de filas de más.
 | Vencer tarjetas cuyo `vence_el` ya pasó | Diaria, 00:15 hora La Paz | Corre |
 | Purgar `codigo_usado`, `peticion_idempotente`, `peticion_idempotente_admin` y `tope_peticion` con más de 24 horas, e `intento_caja` con más de 90 días | Diaria, con la anterior | Corre |
 | Avisar al cliente con sellos en curso y pocos días restantes | Diaria | Espera a WhatsApp |
-| Recalcular clientes enfriados por negocio | Diaria | Espera al panel del dueño |
-| Alerta de local sin sellos en 7 días | Diaria | El admin la ve en el tablero del piloto; falta el aviso al dueño |
+| Recalcular clientes enfriados por negocio | Diaria | No hace falta: el dueño los ve en `/dueno`, calculados al abrirlo; avisarles espera a WhatsApp |
+| Alerta de local sin sellos en 7 días | Diaria | El admin la ve en el tablero del piloto y el dueño en su resumen, al abrirlos; el aviso por mensaje espera a WhatsApp |
 
 ---
 
@@ -720,11 +720,11 @@ es lo que falta terminar, y está acá para que no se pierda.
   de producto.
 
 - **Tres de los trabajos programados de la sección 7.** Vencer tarjetas y
-  purgar ya corren cada noche; faltan el aviso al cliente, que necesita
-  WhatsApp, y los enfriados y la alerta de local sin sellos para el dueño,
-  que no tienen dónde mostrarse hasta que exista su panel. El admin ya ve los
-  locales sin sellos en `/admin/tablero`, calculado al abrirlo y no por cron.
-  Cuando lleguen, son
+  purgar ya corren cada noche; faltan los avisos por mensaje —al cliente, y
+  al dueño por sus enfriados y sus locales sin sellos—, que necesitan
+  WhatsApp. Mientras tanto, los dos se ven al abrir el panel: el admin en
+  `/admin/tablero` y el dueño en su resumen de `/dueno`, calculados en el
+  momento y no por cron. Cuando lleguen los avisos, son
   otra entrada en `crons` detrás del mismo guard. Si alguno necesita correr
   más de una vez por día, hace falta el plan Pro de Vercel. Los
   `registro_pendiente` no se purgan: uno que nadie confirmó es la señal de que

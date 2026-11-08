@@ -219,3 +219,6 @@ export type {
   EntrarComoDuenoPeticion,
   EntrarComoDuenoRespuesta,
 } from './dueno';
+
+export { esquemaLocalEnElResumen, esquemaResumenDelDueno } from './resumen';
+export type { LocalEnElResumen, ResumenDelDueno } from './resumen';
