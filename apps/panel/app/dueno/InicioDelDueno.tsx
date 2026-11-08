@@ -6,6 +6,7 @@ import { Aviso, Boton } from '@repunto/ui';
 
 import * as api from '../../lib/api/dueno';
 import css from './Dueno.module.css';
+import { Resumen } from './Resumen';
 import { useSesionDeDueno } from './usar-sesion';
 
 type Estado =
@@ -14,8 +15,9 @@ type Estado =
   | { tipo: 'error'; mensaje: string };
 
 /**
- * La entrada del panel del dueño. Sin sesión, o con una que la api ya no
- * acepta, manda a /dueno/entrar. El resumen y lo demás llegan en sus etapas.
+ * La entrada del panel del dueño: quién es, de qué negocio, y el resumen de
+ * cómo le va. Sin sesión, o con una que la api ya no acepta, manda a
+ * /dueno/entrar.
  */
 export function InicioDelDueno() {
   const { aEntrar } = useSesionDeDueno();
@@ -80,13 +82,7 @@ export function InicioDelDueno() {
         <Aviso mensaje="Tu negocio está suspendido: tus clientes no pueden juntar sellos ni canjear. Hablá con Repunto." />
       )}
 
-      <section className={css.seccion}>
-        <h2>Tu resumen</h2>
-        <p>
-          Muy pronto vas a ver acá cuántos clientes volvieron, cuántos son nuevos y
-          cuántos premios entregaste.
-        </p>
-      </section>
+      <Resumen aEntrar={aEntrar} />
     </main>
   );
 }

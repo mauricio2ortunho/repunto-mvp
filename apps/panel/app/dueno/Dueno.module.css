@@ -89,22 +89,130 @@
   box-shadow: 0 0 0 var(--ancho-anillo-foco) var(--c-accion-velo);
 }
 
-.seccion {
+/* El resumen: bloques con cifras grandes, de a dos en el celular. */
+
+.contenido {
   display: grid;
-  gap: var(--espacio-2);
-  padding: var(--espacio-5);
-  border: var(--borde-fino) solid var(--c-borde);
-  border-radius: var(--radio-3);
-  background: var(--c-superficie);
+  gap: var(--espacio-7);
 }
 
-.seccion h2 {
+.bloque {
+  display: grid;
+  gap: var(--espacio-3);
+}
+
+.subtitulo {
   margin: 0;
   font-size: var(--texto-5);
   font-weight: var(--peso-fuerte);
 }
 
-.seccion p {
+.cifras {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--espacio-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 600px) {
+  .cifras {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+}
+
+/* Cada cifra ocupa tres filas de la grilla (titulo, valor y pie) y las
+   comparte con sus vecinas: en una misma fila, los valores quedan a la misma
+   altura aunque un titulo o un pie ocupe dos lineas. */
+.cifra {
+  display: grid;
+  grid-row: span 3;
+  grid-template-rows: subgrid;
+  row-gap: var(--espacio-1);
+  align-items: start;
+  padding: var(--espacio-4);
+  border: var(--borde-fino) solid var(--c-borde);
+  border-radius: var(--radio-3);
+  background: var(--c-superficie);
+}
+
+.tituloDeCifra {
+  color: var(--c-texto-suave);
+  font-size: var(--texto-2);
+  font-weight: var(--peso-medio);
+}
+
+.valor {
+  color: var(--c-texto);
+  font-size: var(--texto-7);
+  font-weight: var(--peso-negro);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--interlineado-titulo);
+}
+
+/* Un valor en palabras ("cada 5 dias") va un poco mas chico que un numero. */
+.valorEnPalabras {
+  font-size: var(--texto-6);
+}
+
+.pie {
+  color: var(--c-texto-suave);
+  font-size: var(--texto-1);
+}
+
+.locales {
+  display: grid;
+  gap: var(--espacio-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.local {
+  display: grid;
+  gap: var(--espacio-1);
+  padding: var(--espacio-4);
+  border: var(--borde-fino) solid var(--c-borde);
+  border-radius: var(--radio-3);
+  background: var(--c-superficie);
+}
+
+.local strong {
+  font-size: var(--texto-4);
+}
+
+.detalle {
+  color: var(--c-texto-suave);
+  font-size: var(--texto-2);
+}
+
+/* El aviso lleva un signo y el texto: no depende solo del color. */
+.alerta {
+  display: flex;
+  gap: var(--espacio-2);
+  align-items: baseline;
+  margin-top: var(--espacio-1);
+  color: var(--c-texto);
+  font-size: var(--texto-2);
+  font-weight: var(--peso-medio);
+}
+
+.marcaDeAlerta {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: var(--espacio-5);
+  height: var(--espacio-5);
+  border-radius: var(--radio-pildora);
+  background: var(--c-alerta);
+  color: var(--c-sobre-alerta);
+  font-size: var(--texto-1);
+  font-weight: var(--peso-negro);
+}
+
+.nota {
   margin: 0;
   color: var(--c-texto-suave);
+  font-size: var(--texto-2);
 }

@@ -2,8 +2,10 @@ import {
   type DuenoActual,
   type EntrarComoDuenoPeticion,
   type EntrarComoDuenoRespuesta,
+  type ResumenDelDueno,
   esquemaDuenoActual,
   esquemaEntrarComoDuenoRespuesta,
+  esquemaResumenDelDueno,
 } from '@repunto/contratos';
 
 import { sesionDeDueno } from '../sesion-de-dueno';
@@ -27,6 +29,14 @@ export function duenoActual(senal?: AbortSignal): Promise<Respuesta<DuenoActual>
   return pedir(
     { metodo: 'GET', ruta: '/dueno/yo', senal, token: sesionDeDueno().token() },
     esquemaDuenoActual,
+  );
+}
+
+/** Cómo le va al negocio. El negocio lo pone la sesión, no el pedido. */
+export function resumen(senal?: AbortSignal): Promise<Respuesta<ResumenDelDueno>> {
+  return pedir(
+    { metodo: 'GET', ruta: '/dueno/resumen', senal, token: sesionDeDueno().token() },
+    esquemaResumenDelDueno,
   );
 }
 

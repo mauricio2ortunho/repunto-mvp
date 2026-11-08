@@ -50,7 +50,7 @@ export function localesQuePreocupan(t: TableroDelPiloto): LocalQuePreocupa[] {
   for (const n of t.negocios) {
     if (n.estado !== 'activo') continue;
     for (const l of n.locales) {
-      const motivo = motivoDe(l, ahora, ventana);
+      const motivo = motivoDelLocal(l, ahora, ventana);
       if (motivo !== null) {
         lista.push({ negocio: n.nombre, negocio_id: n.id, local: l.nombre, motivo });
       }
@@ -59,8 +59,12 @@ export function localesQuePreocupan(t: TableroDelPiloto): LocalQuePreocupa[] {
   return lista;
 }
 
-function motivoDe(
-  l: TableroDelPiloto['negocios'][number]['locales'][number],
+/**
+ * Por qué preocupa un local abierto, o null si anda. Lo usan el tablero del
+ * piloto y el resumen del dueño: el mismo local da el mismo aviso en los dos.
+ */
+export function motivoDelLocal(
+  l: { ultimo_sello: string | null; tablets_activas: number },
   ahora: number,
   ventana: number,
 ): string | null {
