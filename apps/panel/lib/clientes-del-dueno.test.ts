@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest';
 import type { ClienteDelDueno } from '@repunto/contratos';
 
 import {
+  chatParaQueVuelva,
   clientesQueSeVen,
   cuantosPorFiltro,
   filtroDesde,
   historiaDelCliente,
+  mensajeParaQueVuelva,
   tarjetaDelCliente,
   tienePremioParaRetirar,
 } from './clientes-del-dueno';
@@ -112,5 +114,40 @@ describe('cómo se dice', () => {
       /premio para retirar/,
     );
     expect(tarjetaDelCliente(cliente({ tarjeta: null }), AHORA)).toBeNull();
+  });
+});
+
+describe('escribirle a quien dejó de venir', () => {
+  const tarjeta = (sellos: number, vence_el: string | null) =>
+    cliente({ tarjeta: { sellos, sellos_requeridos: 10, vence_el } });
+
+  it('lo saluda por su nombre, de parte del negocio', () => {
+    expect(mensajeParaQueVuelva(cliente({ tarjeta: null }), 'Cafe Repunto', AHORA)).toBe(
+      '¡Hola María! Te escribimos de Cafe Repunto. Hace rato que no te vemos por acá. ¡Te esperamos!',
+    );
+  });
+
+  it('le recuerda los sellos que tiene, y hasta cuándo', () => {
+    expect(mensajeParaQueVuelva(tarjeta(4, null), 'X', AHORA)).toContain(
+      'Ya tenés 4 de 10 sellos en tu tarjeta.',
+    );
+    expect(
+      mensajeParaQueVuelva(tarjeta(4, '2026-12-04T03:59:59.999Z'), 'X', AHORA),
+    ).toContain('y te sirven hasta el 3 dic');
+  });
+
+  it('una tarjeta vencida no se menciona; una completa, es el premio', () => {
+    expect(
+      mensajeParaQueVuelva(tarjeta(4, '2026-11-07T03:59:59.999Z'), 'X', AHORA),
+    ).not.toContain('sellos');
+    expect(mensajeParaQueVuelva(tarjeta(10, null), 'X', AHORA)).toContain(
+      'Tenés tu premio esperándote.',
+    );
+  });
+
+  it('el chat va al número sin el +, con el mensaje escrito', () => {
+    const chat = chatParaQueVuelva(cliente({ tarjeta: null }), 'Cafe Repunto', AHORA);
+    expect(chat.startsWith('https://wa.me/59170012345?text=')).toBe(true);
+    expect(decodeURIComponent(chat.split('?text=')[1] ?? '')).toContain('Cafe Repunto');
   });
 });

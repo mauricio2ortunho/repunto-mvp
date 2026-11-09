@@ -1,7 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  type ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import type { DuenoActual } from '@repunto/contratos';
 import { Aviso, Boton } from '@repunto/ui';
 
@@ -24,6 +32,18 @@ const SECCIONES = [
 ] as const;
 
 export type SeccionDelDueno = (typeof SECCIONES)[number]['id'];
+
+const DuenoDelMarco = createContext<DuenoActual | null>(null);
+
+/**
+ * Quién es y de qué negocio, para las secciones: el marco ya lo pidió, y
+ * las secciones se dibujan recién con eso confirmado.
+ */
+export function useDuenoActual(): DuenoActual {
+  const dueno = useContext(DuenoDelMarco);
+  if (dueno === null) throw new Error('useDuenoActual fuera de MarcoDelDueno.');
+  return dueno;
+}
 
 /**
  * Lo común a toda pantalla del panel del dueño: quién es, de qué negocio y
@@ -120,7 +140,7 @@ export function MarcoDelDueno(p: { seccion: SeccionDelDueno; children: ReactNode
         <Aviso mensaje="Tu negocio está suspendido: tus clientes no pueden juntar sellos ni canjear. Hablá con Repunto." />
       )}
 
-      {p.children}
+      <DuenoDelMarco.Provider value={dueno}>{p.children}</DuenoDelMarco.Provider>
     </main>
   );
 }

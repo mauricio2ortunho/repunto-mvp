@@ -222,6 +222,26 @@
   font-weight: var(--peso-medio);
 }
 
+/* Escribirle a quien dejó de venir: un botón de verdad, fácil de tocar. */
+.whatsapp {
+  display: inline-flex;
+  justify-self: start;
+  align-items: center;
+  min-height: var(--toque-minimo);
+  margin-top: var(--espacio-2);
+  padding: 0 var(--espacio-4);
+  border: var(--borde-grueso) solid var(--c-accion);
+  border-radius: var(--radio-pildora);
+  color: var(--c-accion);
+  font-weight: var(--peso-fuerte);
+  text-decoration: none;
+}
+
+.whatsapp:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 var(--ancho-anillo-foco) var(--c-accion-velo);
+}
+
 /* Las pestañas: enlaces, la actual marcada con su fondo y aria-current. */
 .pestanas {
   display: flex;

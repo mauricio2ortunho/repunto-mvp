@@ -7,6 +7,7 @@ import { Aviso, Boton } from '@repunto/ui';
 import * as api from '../../../lib/api/dueno';
 import {
   FILTROS_DE_CLIENTES,
+  chatParaQueVuelva,
   type FiltroDeClientes,
   clientesQueSeVen,
   cuantosPorFiltro,
@@ -16,6 +17,7 @@ import {
 } from '../../../lib/clientes-del-dueno';
 import estilos from '../../admin/negocios/Negocios.module.css';
 import css from '../Dueno.module.css';
+import { useDuenoActual } from '../MarcoDelDueno';
 import { useSesionDeDueno } from '../usar-sesion';
 
 type Estado =
@@ -141,6 +143,7 @@ export function ClientesDelDueno(p: { filtroInicial: FiltroDeClientes }) {
 }
 
 function FilaDeCliente({ cliente: c, ahora }: { cliente: ClienteDelDueno; ahora: Date }) {
+  const { negocio } = useDuenoActual();
   const tarjeta = tarjetaDelCliente(c, ahora);
   return (
     <li className={css.local}>
@@ -157,6 +160,17 @@ function FilaDeCliente({ cliente: c, ahora }: { cliente: ClienteDelDueno; ahora:
           </span>
           Dejó de venir
         </span>
+      )}
+      {/* Lo manda el dueño desde su WhatsApp, y puede cambiar el texto antes. */}
+      {c.enfriado && (
+        <a
+          className={css.whatsapp}
+          href={chatParaQueVuelva(c, negocio.nombre, ahora)}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Escribirle por WhatsApp
+        </a>
       )}
       {c.nuevo_del_mes && <span className={css.detalle}>Nuevo este mes</span>}
     </li>

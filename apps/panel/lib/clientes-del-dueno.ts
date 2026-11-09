@@ -110,3 +110,44 @@ export function tarjetaDelCliente(c: ClienteDelDueno, ahora: Date): string | nul
   const verbo = Date.parse(vence_el) <= ahora.getTime() ? 'venció' : 'vence';
   return `${base} · ${verbo} el ${fecha(vence_el)}`;
 }
+
+/**
+ * Lo que el dueño le escribe a un cliente que dejó de venir, ya armado: lo
+ * edita en WhatsApp antes de mandarlo. Le recuerda lo que tiene en la
+ * tarjeta, si todavía le sirve: una vencida no se menciona.
+ */
+export function mensajeParaQueVuelva(
+  c: ClienteDelDueno,
+  negocio: string,
+  ahora: Date,
+): string {
+  const nombre = c.nombre.trim().split(/\s+/)[0] ?? c.nombre;
+  const partes = [
+    `¡Hola ${nombre}! Te escribimos de ${negocio}. Hace rato que no te vemos por acá.`,
+  ];
+  const t = c.tarjeta;
+  const vigente =
+    t !== null && (t.vence_el === null || Date.parse(t.vence_el) > ahora.getTime());
+  if (t !== null && vigente && t.sellos >= t.sellos_requeridos) {
+    partes.push('Tenés tu premio esperándote.');
+  } else if (t !== null && vigente && t.sellos > 0) {
+    const vence =
+      t.vence_el === null ? '' : `, y te sirven hasta el ${fecha(t.vence_el)}`;
+    partes.push(
+      `Ya tenés ${t.sellos} de ${t.sellos_requeridos} sellos en tu tarjeta${vence}.`,
+    );
+  }
+  partes.push('¡Te esperamos!');
+  return partes.join(' ');
+}
+
+/** El chat de WhatsApp con ese cliente, con el mensaje escrito. Lo abre su celular. */
+export function chatParaQueVuelva(
+  c: ClienteDelDueno,
+  negocio: string,
+  ahora: Date,
+): string {
+  const digitos = c.telefono.replace(/\D/g, '');
+  const texto = encodeURIComponent(mensajeParaQueVuelva(c, negocio, ahora));
+  return `https://wa.me/${digitos}?text=${texto}`;
+}
