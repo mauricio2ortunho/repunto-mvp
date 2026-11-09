@@ -389,6 +389,10 @@ export class Api {
     });
   }
 
+  clientesDelDueno(token?: string): Promise<Respuesta> {
+    return this.pedir('GET', '/dueno/clientes', { token });
+  }
+
   negocioDelDueno(token?: string): Promise<Respuesta> {
     return this.pedir('GET', '/dueno/negocio', { token });
   }

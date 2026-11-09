@@ -114,3 +114,56 @@ export const esquemaPersonaDelEquipo = esquemaPersonaNueva.refine(
     message: 'Al dueño lo carga Repunto.',
   },
 );
+
+/** Cuántos clientes trae la lista, los de visita más reciente primero. */
+export const CLIENTES_EN_LA_LISTA = 1000;
+
+const cantidad = z.int().nonnegative();
+
+/**
+ * Un cliente del negocio del dueño. Solo su historia acá: el mismo cliente en
+ * otro negocio no se ve. Un sello anulado no cuenta.
+ */
+export const esquemaClienteDelDueno = z.object({
+  nombre: z.string(),
+  /** Completo, en E.164 (INV-20): el dueño ve a sus clientes. */
+  telefono: z.string(),
+  /** En toda su historia en el negocio. */
+  sellos: cantidad,
+  /** Null si tiene tarjeta pero ningún sello todavía. */
+  primer_sello: z.iso.datetime().nullable(),
+  ultimo_sello: z.iso.datetime().nullable(),
+  /** Premios entregados. */
+  premios: cantidad,
+  /** La tarjeta en curso; null si no tiene una activa. */
+  tarjeta: z
+    .object({
+      sellos: cantidad,
+      /** Los que pide SU programa, que puede no ser el vigente (INV-6). */
+      sellos_requeridos: z.int().positive(),
+      /** Null mientras no tenga sellos (INV-12) o si el programa no vence. */
+      vence_el: z.iso.datetime().nullable(),
+    })
+    .nullable(),
+  /** Las definiciones de la sección 6 de CLAUDE.md, las mismas del resumen. */
+  activo: z.boolean(),
+  enfriado: z.boolean(),
+  nuevo_del_mes: z.boolean(),
+});
+
+export type ClienteDelDueno = z.infer<typeof esquemaClienteDelDueno>;
+
+/** `GET /dueno/clientes`: sus clientes, los de visita más reciente primero. */
+export const esquemaClientesDelDueno = z.object({
+  generado_el: z.iso.datetime(),
+  /** Todos los que tienen tarjeta en el negocio, aunque la lista traiga menos. */
+  total: cantidad,
+  ventanas: z.object({
+    cliente_activo_dias: z.int().positive(),
+    enfriado_dias: z.int().positive(),
+    sellos_para_enfriado: z.int().positive(),
+  }),
+  clientes: z.array(esquemaClienteDelDueno).max(CLIENTES_EN_LA_LISTA),
+});
+
+export type ClientesDelDueno = z.infer<typeof esquemaClientesDelDueno>;

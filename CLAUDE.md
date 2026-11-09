@@ -203,7 +203,8 @@ preguntar.
 | `cliente` | Sus propias tarjetas. | Teléfono + código, o confirmación presencial |
 
 Un cajero nunca ve la base de clientes, no cambia el programa y no envía
-notificaciones. Los guards se testean por rol, no se revisan a ojo.
+notificaciones. El dueño sí la ve: sus clientes con el teléfono completo
+(`GET /dueno/clientes`), y solo su historia en su negocio. Los guards se testean por rol, no se revisan a ojo.
 
 **Caja: se autentica el equipo, no la persona.** La tablet se vincula una vez con
 un código de vinculación y su sesión no vence hasta que se revoque. Sobre ella,

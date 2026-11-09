@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 
 import { PersonasDelNegocioService } from '../negocio/personas.service';
 import { TabletsDelNegocioService } from '../negocio/tablets.service';
+import { ClientesDelDuenoController } from './clientes.controller';
+import { ClientesDelDuenoService } from './clientes.service';
 import { GuardDeDueno } from './dueno.guard';
 import { NegocioDelDuenoController } from './negocio.controller';
 import { NegocioDelDuenoService } from './negocio.service';
@@ -19,12 +21,14 @@ import { SesionDeDuenoService } from './sesion.service';
     ResumenDelDuenoController,
     PromoDelDuenoController,
     NegocioDelDuenoController,
+    ClientesDelDuenoController,
   ],
   providers: [
     SesionDeDuenoService,
     ResumenDelDuenoService,
     PromoDelDuenoService,
     NegocioDelDuenoService,
+    ClientesDelDuenoService,
     PersonasDelNegocioService,
     TabletsDelNegocioService,
     GuardDeDueno,

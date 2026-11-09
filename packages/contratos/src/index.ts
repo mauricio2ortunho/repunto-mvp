@@ -212,6 +212,9 @@ export {
 export type { LocalEnElTablero, NegocioEnElTablero, TableroDelPiloto } from './tablero';
 
 export {
+  CLIENTES_EN_LA_LISTA,
+  esquemaClienteDelDueno,
+  esquemaClientesDelDueno,
   esquemaDuenoActual,
   esquemaEntradaDelDueno,
   esquemaEntrarComoDuenoPeticion,
@@ -221,6 +224,8 @@ export {
   esquemaPromoDelDueno,
 } from './dueno';
 export type {
+  ClienteDelDueno,
+  ClientesDelDueno,
   DuenoActual,
   EntradaDelDueno,
   EntrarComoDuenoPeticion,
