@@ -26,3 +26,11 @@ next-env.d.ts
 # Cliente de Prisma: se regenera con pnpm db:generate
 apps/api/src/generated/
 *.tsbuildinfo
+
+# Guias de Prisma para asistentes de IA (skills), instaladas en esta
+# maquina: son de las herramientas, no de Repunto. `.claude/` entera no:
+# ahi puede ir configuracion del proyecto que si se commitea.
+.agents/
+.claude/skills/
+.windsurf/
+skills-lock.json
