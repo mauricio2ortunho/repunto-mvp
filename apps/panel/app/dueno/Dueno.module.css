@@ -217,6 +217,11 @@
   font-size: var(--texto-2);
 }
 
+.enlace {
+  color: var(--c-accion);
+  font-weight: var(--peso-medio);
+}
+
 /* Las pestañas: enlaces, la actual marcada con su fondo y aria-current. */
 .pestanas {
   display: flex;
@@ -235,15 +240,23 @@
   text-decoration: none;
 }
 
-/* En el celular, las cuatro pestañas en una sola fila. */
+/*
+ * En el celular, las pestañas en una sola fila que se desliza de costado:
+ * no entran las cinco. La actual se trae a la vista al abrir (MarcoDelDueno).
+ */
 @media (max-width: 599px) {
   .pestanas {
+    flex-wrap: nowrap;
     gap: var(--espacio-1);
+    overflow-x: auto;
+    scrollbar-width: none;
   }
 
   .pestana {
+    flex: none;
     padding-inline: var(--espacio-2);
     font-size: var(--texto-2);
+    white-space: nowrap;
   }
 }
 

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import type { ResumenDelDueno } from '@repunto/contratos';
 import { Aviso, Boton } from '@repunto/ui';
@@ -91,7 +92,10 @@ export function Resumen() {
         </ul>
         {clientes.enfriados > 0 && (
           <p className={css.nota}>
-            Pronto vas a poder mandarles un mensaje a los que dejaron de venir.
+            <Link className={css.enlace} href="/dueno/clientes?ver=enfriados">
+              Ver quiénes dejaron de venir
+            </Link>
+            , con su teléfono.
           </p>
         )}
       </section>

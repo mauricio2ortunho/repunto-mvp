@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { type ReactNode, useCallback, useEffect, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import type { DuenoActual } from '@repunto/contratos';
 import { Aviso, Boton } from '@repunto/ui';
 
@@ -17,6 +17,7 @@ type Estado =
 /** Las pestañas del panel del dueño, en el orden en que se muestran. */
 const SECCIONES = [
   { id: 'resumen', ruta: '/dueno', titulo: 'Resumen' },
+  { id: 'clientes', ruta: '/dueno/clientes', titulo: 'Clientes' },
   { id: 'promo', ruta: '/dueno/promo', titulo: 'Tu promo' },
   { id: 'locales', ruta: '/dueno/locales', titulo: 'Locales' },
   { id: 'equipo', ruta: '/dueno/equipo', titulo: 'Equipo' },
@@ -33,6 +34,7 @@ export type SeccionDelDueno = (typeof SECCIONES)[number]['id'];
 export function MarcoDelDueno(p: { seccion: SeccionDelDueno; children: ReactNode }) {
   const { aEntrar } = useSesionDeDueno();
   const [estado, setEstado] = useState<Estado>({ tipo: 'cargando' });
+  const pestanas = useRef<HTMLElement>(null);
 
   const consultar = useCallback(
     async (senal?: AbortSignal) => {
@@ -50,6 +52,18 @@ export function MarcoDelDueno(p: { seccion: SeccionDelDueno; children: ReactNode
     void consultar(control.signal);
     return () => control.abort();
   }, [consultar]);
+
+  // En el celular la fila de pestañas se desliza: la actual, al centro. Sin
+  // scrollIntoView, que movería también la página.
+  const listo = estado.tipo === 'listo';
+  useEffect(() => {
+    const nav = pestanas.current;
+    const actual = nav?.querySelector('[aria-current="page"]');
+    if (!listo || nav == null || actual == null) return;
+    const n = nav.getBoundingClientRect();
+    const a = actual.getBoundingClientRect();
+    nav.scrollLeft += a.left - n.left - (n.width - a.width) / 2;
+  }, [listo]);
 
   const salir = async () => {
     // Si no llega, la sesión igual vence sola; lo importante es que este
@@ -89,7 +103,7 @@ export function MarcoDelDueno(p: { seccion: SeccionDelDueno; children: ReactNode
         </Boton>
       </header>
 
-      <nav className={css.pestanas} aria-label="Secciones">
+      <nav ref={pestanas} className={css.pestanas} aria-label="Secciones">
         {SECCIONES.map((s) => (
           <Link
             key={s.id}

@@ -1,4 +1,5 @@
 import {
+  type ClientesDelDueno,
   type CodigoDeVinculacion,
   type CondicionCambiada,
   type CondicionNueva,
@@ -13,6 +14,7 @@ import {
   type ProgramaNuevo,
   type PromoDelDueno,
   type ResumenDelDueno,
+  esquemaClientesDelDueno,
   esquemaCodigoDeVinculacion,
   esquemaCondicionCambiada,
   esquemaDuenoActual,
@@ -107,6 +109,14 @@ export function cambiarCondicion(
       token: sesionDeDueno().token(),
     },
     esquemaCondicionCambiada,
+  );
+}
+
+/** Sus clientes, con el teléfono completo: los de visita más reciente primero. */
+export function clientes(senal?: AbortSignal): Promise<Respuesta<ClientesDelDueno>> {
+  return pedir(
+    { metodo: 'GET', ruta: '/dueno/clientes', senal, token: sesionDeDueno().token() },
+    esquemaClientesDelDueno,
   );
 }
 

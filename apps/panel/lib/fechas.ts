@@ -30,3 +30,15 @@ const SOLO_HORA = new Intl.DateTimeFormat('es-BO', {
 export function hora(iso: string): string {
   return SOLO_HORA.format(new Date(iso));
 }
+
+const SOLO_FECHA = new Intl.DateTimeFormat('es-BO', {
+  timeZone: ZONA,
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+});
+
+/** "12 dic 2026": el día en La Paz, aunque en UTC ya sea el siguiente. */
+export function fecha(iso: string): string {
+  return SOLO_FECHA.format(new Date(iso));
+}
