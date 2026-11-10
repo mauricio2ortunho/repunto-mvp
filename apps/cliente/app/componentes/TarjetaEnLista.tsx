@@ -39,6 +39,7 @@ export function TarjetaEnLista(p: { tarjeta: TarjetaDelCliente; ahora: number })
         <AparienciaDeTarjeta
           icono={tarjeta.negocio.icono_sello}
           plantilla={tarjeta.negocio.plantilla_tarjeta}
+          logo={tarjeta.negocio.logo_url}
         >
           <Sellos progreso={tarjeta.progreso} faltan={tarjeta.faltan} nuevo={null} />
         </AparienciaDeTarjeta>

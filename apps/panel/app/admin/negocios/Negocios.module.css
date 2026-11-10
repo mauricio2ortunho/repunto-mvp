@@ -264,6 +264,19 @@
   color: var(--c-sello);
 }
 
+/* El logo como opción de sello: redondo, como se va a estampar. */
+.miniaturaDeLogo {
+  width: var(--espacio-6);
+  height: var(--espacio-6);
+  border-radius: var(--radio-pildora);
+  background: var(--c-fondo-logo);
+  object-fit: contain;
+}
+
+.opcion[aria-disabled='true'] {
+  opacity: 0.55;
+}
+
 .casilla {
   display: flex;
   gap: var(--espacio-3);

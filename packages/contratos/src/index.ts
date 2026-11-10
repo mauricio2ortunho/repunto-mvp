@@ -153,12 +153,15 @@ export {
   esPlantillaDeTarjeta,
   esRubroDeNegocio,
   iconoDeSelloDe,
+  selloQueSeDibuja,
   plantillaDeTarjetaDe,
   tituloDeRubro,
 } from './diseno';
 export type {
   ColorDeTexto,
   IconoDeSello,
+  IconoDibujado,
+  SelloQueSeDibuja,
   PlantillaDeTarjeta,
   RubroDeNegocio,
 } from './diseno';

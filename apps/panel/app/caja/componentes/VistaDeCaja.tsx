@@ -73,6 +73,7 @@ export function VistaDeCaja() {
     <AparienciaDeTarjeta
       icono={caja.datos?.negocio.icono_sello}
       plantilla={caja.datos?.negocio.plantilla_tarjeta}
+      logo={caja.datos?.negocio.logo_url}
     >
       <div
         className={css.pantalla}

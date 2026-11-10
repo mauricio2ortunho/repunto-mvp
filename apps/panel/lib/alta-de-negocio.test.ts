@@ -191,7 +191,7 @@ describe('borradorDesde', () => {
   });
 
   it('un rubro o un icono que este panel no conoce no rompe el formulario', () => {
-    const b = borradorDesde({ ...ficha, categoria: 'nuevo', icono_sello: 'logo' });
+    const b = borradorDesde({ ...ficha, categoria: 'nuevo', icono_sello: 'cupcake' });
     expect([b.categoria, b.icono]).toEqual(['otro', 'estrella']);
   });
 });

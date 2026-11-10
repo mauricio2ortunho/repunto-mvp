@@ -263,6 +263,7 @@ export const TITULOS_DE_ICONO: Readonly<Record<IconoDeSello, string>> = {
   estrella: 'Estrella',
   corazon: 'Corazón',
   huella: 'Huella',
+  logo: 'Tu logo',
 };
 
 export const TITULOS_DE_PLANTILLA: Readonly<Record<PlantillaDeTarjeta, string>> = {

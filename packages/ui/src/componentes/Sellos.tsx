@@ -1,5 +1,5 @@
-import type { CSSProperties } from 'react';
-import type { IconoDeSello } from '@repunto/contratos';
+import { type CSSProperties, useId } from 'react';
+import type { SelloQueSeDibuja } from '@repunto/contratos';
 import { useApariencia } from '../apariencia';
 import { DIBUJO_DE_SELLO } from './IconosDeSello';
 import css from './Sellos.module.css';
@@ -91,7 +91,7 @@ interface Props {
 }
 
 export function Sellos({ progreso, faltan, nuevo }: Props) {
-  const { icono, plantilla } = useApariencia();
+  const { sello, plantilla } = useApariencia();
   const total = progreso + faltan;
   if (total === 0 || total > MAXIMO_DIBUJABLE) {
     return <p className={css.cuentaDeSellos}>{progreso} sellos</p>;
@@ -105,7 +105,7 @@ export function Sellos({ progreso, faltan, nuevo }: Props) {
     >
       {Array.from({ length: total }, (_, i) =>
         i < progreso ? (
-          <Sello key={i} indice={i} nuevo={i === nuevo} icono={icono} />
+          <Sello key={i} indice={i} nuevo={i === nuevo} sello={sello} />
         ) : (
           <Casilla key={i} indice={i} esElPremio={i === total - 1} />
         ),
@@ -114,8 +114,10 @@ export function Sellos({ progreso, faltan, nuevo }: Props) {
   );
 }
 
-function Sello(p: { indice: number; nuevo: boolean; icono: IconoDeSello }) {
+function Sello(p: { indice: number; nuevo: boolean; sello: SelloQueSeDibuja }) {
   const { indice, nuevo } = p;
+  // Un recorte por sello: dos con el mismo id en la pagina se pisan.
+  const recorte = useId();
   const estilo = { '--giro': `${GIROS[indice % GIROS.length] ?? 0}deg` } as CSSProperties;
   return (
     <svg
@@ -135,18 +137,41 @@ function Sello(p: { indice: number; nuevo: boolean; icono: IconoDeSello }) {
           stroke="currentColor"
           strokeWidth="3.5"
         />
-        <circle cx="32" cy="32" r="21.5" fill="currentColor" />
+        {p.sello.tipo === 'icono' && (
+          <circle cx="32" cy="32" r="21.5" fill="currentColor" />
+        )}
       </g>
       {/*
        * El icono va afuera del filtro: la tinta gasta el borde, pero un dibujo
        * de 24 unidades erosionado deja de leerse. Centrado en el disco.
        */}
-      <g
-        transform="translate(18.2 18.2) scale(1.15)"
-        style={{ color: 'var(--c-sobre-sello)' }}
-      >
-        {DIBUJO_DE_SELLO[p.icono]}
-      </g>
+      {p.sello.tipo === 'icono' ? (
+        <g
+          transform="translate(18.2 18.2) scale(1.15)"
+          style={{ color: 'var(--c-sobre-sello)' }}
+        >
+          {DIBUJO_DE_SELLO[p.sello.icono]}
+        </g>
+      ) : (
+        // El logo, sobre blanco y recortado en círculo dentro del anillo de
+        // tinta: cualquier logo se lee, tenga el fondo que tenga.
+        <>
+          <clipPath id={recorte}>
+            <circle cx="32" cy="32" r="22" />
+          </clipPath>
+          <circle cx="32" cy="32" r="22" fill="var(--c-fondo-logo)" />
+          {/* 31 de lado: un logo cuadrado entra entero en el círculo de 22. */}
+          <image
+            href={p.sello.url}
+            x="16.5"
+            y="16.5"
+            width="31"
+            height="31"
+            preserveAspectRatio="xMidYMid meet"
+            clipPath={`url(#${recorte})`}
+          />
+        </>
+      )}
     </svg>
   );
 }

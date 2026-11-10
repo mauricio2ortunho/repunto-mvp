@@ -91,7 +91,7 @@ export function NuevoNegocio() {
         >
           <fieldset className={estilos.grupo} disabled={enviando}>
             <legend>El negocio y cómo se ve</legend>
-            <CamposDeDatos f={f} />
+            <CamposDeDatos f={f} logo={null} />
           </fieldset>
 
           <fieldset className={estilos.grupo} disabled={enviando}>

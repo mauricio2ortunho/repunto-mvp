@@ -25,12 +25,18 @@
  * migracion, una en `docs/garantias-de-la-base.md` y una aca, y el test avisa
  * si falta alguna.
  */
-export const ICONOS_DE_SELLO = ['cafe', 'estrella', 'corazon', 'huella'] as const;
+export const ICONOS_DE_SELLO = ['cafe', 'estrella', 'corazon', 'huella', 'logo'] as const;
 
 export type IconoDeSello = (typeof ICONOS_DE_SELLO)[number];
 
+/**
+ * Los que tienen dibujo propio. `logo` no: se estampa la imagen del negocio,
+ * y sin logo se cae al de por defecto (`selloQueSeDibuja`).
+ */
+export type IconoDibujado = Exclude<IconoDeSello, 'logo'>;
+
 /** Con el que se dibuja un valor que esta app todavia no conoce. */
-export const ICONO_DE_SELLO_POR_DEFECTO: IconoDeSello = 'estrella';
+export const ICONO_DE_SELLO_POR_DEFECTO: IconoDibujado = 'estrella';
 
 /** La traza de la tarjeta del cliente. PROVISIONAL, mismo criterio. */
 export const PLANTILLAS_DE_TARJETA = ['clasica', 'moderna', 'minima'] as const;
@@ -125,6 +131,26 @@ export const COLORES_SUGERIDOS_DE_NEGOCIO = [
 /** El icono que corresponde dibujar, conocido o no. */
 export function iconoDeSelloDe(valor: string): IconoDeSello {
   return esIconoDeSello(valor) ? valor : ICONO_DE_SELLO_POR_DEFECTO;
+}
+
+/** Lo que lleva adentro cada sello estampado. */
+export type SelloQueSeDibuja =
+  { tipo: 'logo'; url: string } | { tipo: 'icono'; icono: IconoDibujado };
+
+/**
+ * Qué se estampa, con lo que vino de la API: el logo si el negocio lo eligió
+ * y lo tiene; si no, su ícono. Un negocio que eligió el logo y después lo
+ * quitó se ve con el de por defecto: nunca un sello vacío.
+ */
+export function selloQueSeDibuja(
+  icono: string | null | undefined,
+  logoUrl: string | null | undefined,
+): SelloQueSeDibuja {
+  const elegido = icono == null ? ICONO_DE_SELLO_POR_DEFECTO : iconoDeSelloDe(icono);
+  if (elegido !== 'logo') return { tipo: 'icono', icono: elegido };
+  return logoUrl == null || logoUrl === ''
+    ? { tipo: 'icono', icono: ICONO_DE_SELLO_POR_DEFECTO }
+    : { tipo: 'logo', url: logoUrl };
 }
 
 export function plantillaDeTarjetaDe(valor: string): PlantillaDeTarjeta {

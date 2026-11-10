@@ -59,7 +59,7 @@ describe('esquemaNegocioNuevo', () => {
     ['un nombre demasiado largo', con({ nombre: 'x'.repeat(61) })],
     ['un rubro fuera de la lista', con({ categoria: 'ferreteria' })],
     ['un color que no es #RRGGBB', con({ color_principal: 'rojo' })],
-    ['un icono que no existe', con({ icono_sello: 'logo' })],
+    ['un icono que no existe', con({ icono_sello: 'cupcake' })],
     ['una plantilla que no existe', con({ plantilla_tarjeta: 'neon' })],
     ['cero sellos', conPrograma({ sellos_requeridos: 0 })],
     ['mas sellos de los que se dibujan', conPrograma({ sellos_requeridos: 31 })],

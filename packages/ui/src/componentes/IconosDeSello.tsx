@@ -1,18 +1,18 @@
 import type { ReactElement } from 'react';
-import type { IconoDeSello } from '@repunto/contratos';
+import type { IconoDibujado } from '@repunto/contratos';
 
 /**
  * El dibujo de cada icono de sello, en una caja de 24 x 24, en currentColor.
  *
  * La lista de iconos no se repite aca: vive en contratos (y un test la compara
- * con el CHECK de la base). Este mapa es un `Record<IconoDeSello, ...>`, asi
+ * con el CHECK de la base). Este mapa es un `Record<IconoDibujado, ...>`, asi
  * que el dia que contratos agregue un icono el panel no compila hasta que
- * alguien lo dibuje. Un valor que llega de la API y esta app no conoce no
+ * alguien lo dibuje. `logo` no esta: se estampa la imagen del negocio. Un valor que llega de la API y esta app no conoce no
  * llega hasta aca: `iconoDeSelloDe` ya lo cambio por el de por defecto.
  *
  * PROVISIONALES, como la lista: los reemplaza el trabajo de diseno.
  */
-export const DIBUJO_DE_SELLO: Record<IconoDeSello, ReactElement> = {
+export const DIBUJO_DE_SELLO: Record<IconoDibujado, ReactElement> = {
   cafe: (
     <g>
       <path

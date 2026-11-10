@@ -48,7 +48,7 @@ export function VistaPrevia({
           <h2>{nombre}</h2>
         </header>
         <div className={estilos.cuerpo}>
-          <AparienciaDeTarjeta icono={b.icono} plantilla={b.plantilla}>
+          <AparienciaDeTarjeta icono={b.icono} plantilla={b.plantilla} logo={logoUrl}>
             <Sellos progreso={puestos} faltan={total - puestos} nuevo={null} />
           </AparienciaDeTarjeta>
           <p className={estilos.faltan}>Te faltan {total - puestos} para tu premio</p>

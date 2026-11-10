@@ -261,7 +261,7 @@ function SeccionDatos(p: PropsDeSeccion & { alGuardar: (f: FichaDelNegocio) => v
           }}
         >
           <fieldset className={estilos.sinMarco} disabled={guardando}>
-            <CamposDeDatos f={f} />
+            <CamposDeDatos f={f} logo={p.ficha.logo_url} />
           </fieldset>
           <p className={estilos.ayuda}>
             Se aplica al instante a todas las tarjetas, también a las que ya están en

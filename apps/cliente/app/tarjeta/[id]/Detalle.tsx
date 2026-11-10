@@ -116,6 +116,7 @@ function ConSesion(p: { id: string; token: string }) {
           <AparienciaDeTarjeta
             icono={tarjeta.negocio.icono_sello}
             plantilla={tarjeta.negocio.plantilla_tarjeta}
+            logo={tarjeta.negocio.logo_url}
           >
             <Sellos progreso={tarjeta.progreso} faltan={tarjeta.faltan} nuevo={null} />
           </AparienciaDeTarjeta>

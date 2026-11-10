@@ -16,6 +16,7 @@ import {
   esColorHex,
   esIconoDeSello,
   iconoDeSelloDe,
+  selloQueSeDibuja,
   plantillaDeTarjetaDe,
   tituloDeRubro,
 } from './diseno';
@@ -155,5 +156,38 @@ describe('los colores sugeridos del alta', () => {
         CONTRASTE_MINIMO,
       );
     }
+  });
+});
+
+describe('selloQueSeDibuja', () => {
+  it('un ícono dibujado se estampa tal cual', () => {
+    expect(selloQueSeDibuja('corazon', 'https://r2/logo.webp')).toEqual({
+      tipo: 'icono',
+      icono: 'corazon',
+    });
+  });
+
+  it('el logo, si el negocio lo eligió y lo tiene', () => {
+    expect(selloQueSeDibuja('logo', 'https://r2/logo.webp')).toEqual({
+      tipo: 'logo',
+      url: 'https://r2/logo.webp',
+    });
+  });
+
+  it('eligió el logo pero no tiene: el de por defecto, nunca vacío', () => {
+    for (const url of [null, undefined, '']) {
+      expect(selloQueSeDibuja('logo', url)).toEqual({
+        tipo: 'icono',
+        icono: ICONO_DE_SELLO_POR_DEFECTO,
+      });
+    }
+  });
+
+  it('un valor que no conoce, o que todavía no llegó: el de por defecto', () => {
+    expect(selloQueSeDibuja('cupcake', null)).toEqual({
+      tipo: 'icono',
+      icono: ICONO_DE_SELLO_POR_DEFECTO,
+    });
+    expect(selloQueSeDibuja(null, null).tipo).toBe('icono');
   });
 });

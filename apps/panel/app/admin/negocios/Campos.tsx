@@ -71,10 +71,18 @@ interface PropsDeCampos {
   f: Formulario;
 }
 
+interface PropsDeDatos extends PropsDeCampos {
+  /**
+   * El logo del negocio, ya subido o recién elegido: el sello puede ser el
+   * logo solo si hay uno. Null si todavía no tiene.
+   */
+  logo: string | null;
+}
+
 const L = LIMITES_DEL_NEGOCIO;
 
 /** Nombre, rubro, color, icono, plantilla y donde se canjea. */
-export function CamposDeDatos({ f }: PropsDeCampos) {
+export function CamposDeDatos({ f, logo }: PropsDeDatos) {
   const { b, poner, problemas } = f;
   return (
     <>
@@ -142,23 +150,40 @@ export function CamposDeDatos({ f }: PropsDeCampos) {
         <span className={css.etiqueta}>Ícono del sello</span>
         <div className={estilos.opciones} role="radiogroup" aria-label="Ícono">
           {ICONOS_DE_SELLO.map((i) => (
-            <label key={i} className={estilos.opcion}>
+            <label
+              key={i}
+              className={estilos.opcion}
+              aria-disabled={i === 'logo' && logo === null ? true : undefined}
+            >
               <input
                 type="radio"
                 name="icono"
                 checked={b.icono === i}
+                // Sin logo no se puede elegir; si ya estaba elegido, queda
+                // marcado y el aviso de abajo dice qué se ve.
+                disabled={i === 'logo' && logo === null && b.icono !== 'logo'}
                 onChange={() => poner('icono', i)}
               />
-              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                {DIBUJO_DE_SELLO[i]}
-              </svg>
+              {i === 'logo' ? (
+                logo !== null && (
+                  <img className={estilos.miniaturaDeLogo} src={logo} alt="" />
+                )
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  {DIBUJO_DE_SELLO[i]}
+                </svg>
+              )}
               {TITULOS_DE_ICONO[i]}
             </label>
           ))}
         </div>
-        <p className={estilos.ayuda}>
-          El logo como sello llega cuando se puedan subir imágenes.
-        </p>
+        {logo === null && (
+          <p className={b.icono === 'logo' ? estilos.advertencia : estilos.ayuda}>
+            {b.icono === 'logo'
+              ? 'Sin logo, los sellos se dibujan con la estrella hasta que subas uno.'
+              : 'Para usar tu logo como sello, primero subí el logo.'}
+          </p>
+        )}
       </div>
 
       <div className={estilos.etiquetado}>
