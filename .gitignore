@@ -34,3 +34,6 @@ apps/api/src/generated/
 .claude/skills/
 .windsurf/
 skills-lock.json
+# Copia de CLAUDE.md que una herramienta de la maquina regenera sola (se
+# borro y volvio). La fuente es CLAUDE.md.
+AGENTS.md
