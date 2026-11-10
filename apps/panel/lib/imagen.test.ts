@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { ACEPTA, medidasAchicadas, tipoDeRespaldo } from './imagen';
+import {
+  ACEPTA,
+  avisoDeImagenesQueFaltan,
+  imagenesQueFaltan,
+  medidasAchicadas,
+  tipoDeRespaldo,
+} from './imagen';
 
 describe('medidasAchicadas', () => {
   it('lleva el lado más largo al máximo y conserva la proporción', () => {
@@ -25,5 +31,22 @@ describe('formatos', () => {
   it('sin WebP: el logo en PNG por la transparencia, la portada en JPG', () => {
     expect(tipoDeRespaldo('logo')).toBe('image/png');
     expect(tipoDeRespaldo('portada')).toBe('image/jpeg');
+  });
+});
+
+describe('imágenes que no subieron en el alta', () => {
+  it('lee la dirección: solo logo y portada, en orden', () => {
+    expect(imagenesQueFaltan('portada,logo')).toEqual(['logo', 'portada']);
+    expect(imagenesQueFaltan('logo,otra')).toEqual(['logo']);
+    expect(imagenesQueFaltan(null)).toEqual([]);
+  });
+
+  it('dice cuál falta', () => {
+    expect(avisoDeImagenesQueFaltan([])).toBeNull();
+    expect(avisoDeImagenesQueFaltan(['logo'])).toContain('el logo no se subió');
+    expect(avisoDeImagenesQueFaltan(['portada'])).toContain('la portada no se subió');
+    expect(avisoDeImagenesQueFaltan(['logo', 'portada'])).toContain(
+      'el logo y la portada no se subieron',
+    );
   });
 });

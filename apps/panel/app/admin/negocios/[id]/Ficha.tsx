@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type FichaDelNegocio, tituloDeRubro } from '@repunto/contratos';
 import { Aviso, Boton, BotonDeDosToques } from '@repunto/ui';
@@ -17,6 +17,7 @@ import * as api from '../../../../lib/api/admin';
 import type { Fallo } from '../../../../lib/api/http';
 import { crearGestorDeIdempotencia } from '../../../../lib/api/idempotencia';
 import { fechaYHora } from '../../../../lib/fechas';
+import { avisoDeImagenesQueFaltan, imagenesQueFaltan } from '../../../../lib/imagen';
 import {
   autorDe,
   avisoDeTarjetasEnCurso,
@@ -50,6 +51,8 @@ type Estado =
  */
 export function Ficha() {
   const { id } = useParams<{ id: string }>();
+  // El alta manda `?faltan=logo` si una imagen no subió.
+  const busqueda = useSearchParams();
   const { aEntrar } = useSesionDeAdmin();
   const [estado, setEstado] = useState<Estado>({ tipo: 'cargando' });
   const ops = useMemo(() => api.operacionesDelAdmin(id), [id]);
@@ -113,10 +116,19 @@ export function Ficha() {
 
   const { ficha } = estado;
   const poner = (f: FichaDelNegocio) => setEstado({ tipo: 'listo', ficha: f });
-  const avisos = avisosDelNegocio({
-    ...ficha,
-    condicion: ficha.condiciones[0] ?? null,
-  });
+  // Solo mientras sigan faltando: subida desde la ficha, el aviso se va.
+  const sinSubir = avisoDeImagenesQueFaltan(
+    imagenesQueFaltan(busqueda.get('faltan')).filter(
+      (i) => (i === 'logo' ? ficha.logo_url : ficha.portada_url) === null,
+    ),
+  );
+  const avisos = [
+    ...(sinSubir === null ? [] : [sinSubir]),
+    ...avisosDelNegocio({
+      ...ficha,
+      condicion: ficha.condiciones[0] ?? null,
+    }),
+  ];
 
   return (
     <main className={css.pantalla}>

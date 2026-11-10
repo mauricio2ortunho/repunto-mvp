@@ -1,4 +1,5 @@
 import {
+  IMAGENES_DEL_NEGOCIO,
   LIMITES_DE_IMAGEN,
   TIPOS_DE_IMAGEN,
   type ImagenDelNegocio,
@@ -82,4 +83,27 @@ export async function achicarImagen(
     return { ok: false, mensaje: 'La imagen sigue siendo muy pesada. Probá con otra.' };
   }
   return { ok: true, archivo: resultado, ancho, alto };
+}
+
+/**
+ * El alta crea el negocio y después sube las imágenes elegidas. Si alguna
+ * no subió, la ficha lo dice: viajan en la dirección, `?faltan=logo,portada`.
+ */
+export function imagenesQueFaltan(texto: string | null): ImagenDelNegocio[] {
+  if (texto === null) return [];
+  const pedidas = texto.split(',');
+  return IMAGENES_DEL_NEGOCIO.filter((i) => pedidas.includes(i));
+}
+
+export function avisoDeImagenesQueFaltan(
+  faltan: readonly ImagenDelNegocio[],
+): string | null {
+  if (faltan.length === 0) return null;
+  const cuales =
+    faltan.length === 2
+      ? 'el logo y la portada'
+      : faltan[0] === 'logo'
+        ? 'el logo'
+        : 'la portada';
+  return `El negocio se creó, pero ${cuales} no se ${faltan.length === 2 ? 'subieron' : 'subió'}. ${faltan.length === 2 ? 'Subilos' : 'Subilo'} de nuevo en "Logo y portada".`;
 }

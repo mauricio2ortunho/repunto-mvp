@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { IMAGENES_DEL_NEGOCIO, type ImagenDelNegocio } from '@repunto/contratos';
 import { Aviso, Boton } from '@repunto/ui';
 
 import { BORRADOR_INICIAL, revisar } from '../../../../lib/alta-de-negocio';
@@ -17,12 +18,24 @@ import {
   useFormulario,
 } from '../Campos';
 import estilos from '../Negocios.module.css';
+import {
+  BotonDeArchivo,
+  type Eleccion,
+  TEXTOS_DE_IMAGEN,
+  elegirImagen,
+} from '../[id]/Imagenes';
 import { VistaPrevia } from './VistaPrevia';
 
+type Elegidas = Record<ImagenDelNegocio, Eleccion>;
+
 /**
- * El alta de un negocio: datos, apariencia, promo y condicion, todo junto, con
- * la tarjeta a la vista. Que se pueda dar de alta lo decide la api; aca solo
- * se avisa que corregir antes de mandar (`revisar`).
+ * El alta de un negocio: datos, apariencia, logo y portada, promo y
+ * condicion, todo junto, con la tarjeta a la vista. Que se pueda dar de alta
+ * lo decide la api; aca solo se avisa que corregir antes de mandar
+ * (`revisar`).
+ *
+ * Las imagenes necesitan el negocio ya creado: se suben despues del alta.
+ * Si una no sube, el negocio queda igual y la ficha dice cual falta.
  */
 export function NuevoNegocio() {
   const router = useRouter();
@@ -37,6 +50,7 @@ export function NuevoNegocio() {
   // Una clave por alta: si la respuesta no llega y se vuelve a tocar, viaja
   // la misma y la api no crea dos negocios.
   const idempotencia = useRef(crearGestorDeIdempotencia());
+  const [imagenes, setImagenes] = useState<Elegidas>({ logo: null, portada: null });
 
   const enviar = async () => {
     if (enviando) return;
@@ -56,7 +70,15 @@ export function NuevoNegocio() {
     );
     if (r.ok) {
       idempotencia.current.olvidar(firma);
-      router.push(`/admin/negocios/${r.datos.id}`);
+      const faltan: ImagenDelNegocio[] = [];
+      for (const imagen of IMAGENES_DEL_NEGOCIO) {
+        const elegida = imagenes[imagen];
+        if (elegida === null) continue;
+        const subida = await api.subirImagen(r.datos.id, imagen, elegida.archivo);
+        if (!subida.ok) faltan.push(imagen);
+      }
+      const consulta = faltan.length === 0 ? '' : `?faltan=${faltan.join(',')}`;
+      router.push(`/admin/negocios/${r.datos.id}${consulta}`);
       return;
     }
     setEnviando(false);
@@ -91,7 +113,27 @@ export function NuevoNegocio() {
         >
           <fieldset className={estilos.grupo} disabled={enviando}>
             <legend>El negocio y cómo se ve</legend>
-            <CamposDeDatos f={f} logo={null} />
+            <CamposDeDatos f={f} logo={imagenes.logo?.vista ?? null} />
+          </fieldset>
+
+          <fieldset className={estilos.grupo} disabled={enviando}>
+            <legend>Logo y portada</legend>
+            <p className={estilos.ayuda}>
+              Opcionales: se pueden subir después desde la ficha.
+            </p>
+            <div className={estilos.imagenes}>
+              {IMAGENES_DEL_NEGOCIO.map((imagen) => (
+                <ImagenDelAlta
+                  key={imagen}
+                  imagen={imagen}
+                  eleccion={imagenes[imagen]}
+                  deshabilitado={enviando}
+                  alCambiar={(eleccion) =>
+                    setImagenes((actuales) => ({ ...actuales, [imagen]: eleccion }))
+                  }
+                />
+              ))}
+            </div>
           </fieldset>
 
           <fieldset className={estilos.grupo} disabled={enviando}>
@@ -114,8 +156,70 @@ export function NuevoNegocio() {
           </Boton>
         </form>
 
-        <VistaPrevia borrador={f.b} />
+        <VistaPrevia borrador={f.b} logoUrl={imagenes.logo?.vista ?? null} />
       </div>
     </main>
+  );
+}
+
+/** Elegir el logo o la portada antes del alta: se ve, se cambia o se saca. */
+function ImagenDelAlta(p: {
+  imagen: ImagenDelNegocio;
+  eleccion: Eleccion;
+  deshabilitado: boolean;
+  alCambiar: (eleccion: Eleccion) => void;
+}) {
+  const textos = TEXTOS_DE_IMAGEN[p.imagen];
+  const [preparando, setPreparando] = useState(false);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const { eleccion } = p;
+
+  // La vista previa es una dirección del navegador: se libera al cambiarla.
+  useEffect(() => {
+    if (eleccion === null) return;
+    return () => URL.revokeObjectURL(eleccion.vista);
+  }, [eleccion]);
+
+  const elegir = async (archivo: File) => {
+    setAviso(null);
+    setPreparando(true);
+    const r = await elegirImagen(archivo, p.imagen);
+    setPreparando(false);
+    if (!r.ok) return setAviso(r.mensaje);
+    p.alCambiar(r.eleccion);
+  };
+
+  return (
+    <div className={estilos.imagen} data-imagen={p.imagen}>
+      <h3 className={estilos.subtitulo}>{textos.titulo}</h3>
+      <p className={estilos.ayuda}>{textos.ayuda}</p>
+      <div className={estilos.marcoDeImagen}>
+        {eleccion === null ? (
+          <p className={estilos.ayuda}>{textos.vacia}</p>
+        ) : (
+          <img src={eleccion.vista} alt={textos.alt} />
+        )}
+      </div>
+      <div className={estilos.acciones}>
+        <BotonDeArchivo
+          id={`alta-${p.imagen}`}
+          texto={
+            preparando ? 'Preparando…' : eleccion === null ? 'Elegir imagen' : 'Cambiar'
+          }
+          deshabilitado={preparando || p.deshabilitado}
+          alElegir={(archivo) => void elegir(archivo)}
+        />
+        {eleccion !== null && (
+          <Boton
+            variante="texto"
+            disabled={p.deshabilitado}
+            onClick={() => p.alCambiar(null)}
+          >
+            Sacar
+          </Boton>
+        )}
+      </div>
+      {aviso !== null && <Aviso mensaje={aviso} />}
+    </div>
   );
 }

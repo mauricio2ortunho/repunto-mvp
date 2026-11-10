@@ -16,7 +16,7 @@ interface Props {
   alCambiar: () => void;
 }
 
-const TEXTOS: Record<
+export const TEXTOS_DE_IMAGEN: Record<
   ImagenDelNegocio,
   { titulo: string; ayuda: string; vacia: string; alt: string }
 > = {
@@ -50,10 +50,65 @@ export function SeccionImagenes(p: Props) {
   );
 }
 
-type Eleccion = { archivo: Blob; vista: string } | null;
+/** Una imagen elegida y ya achicada, con su dirección del navegador para verla. */
+export type Eleccion = { archivo: Blob; vista: string } | null;
+
+/**
+ * Lo común a la ficha y al alta: elegir el archivo y achicarlo. Devuelve la
+ * imagen lista, o el texto de por qué no sirve.
+ */
+export async function elegirImagen(
+  archivo: File,
+  imagen: ImagenDelNegocio,
+): Promise<
+  { ok: true; eleccion: NonNullable<Eleccion> } | { ok: false; mensaje: string }
+> {
+  const achicada = await achicarImagen(archivo, imagen);
+  if (!achicada.ok) return achicada;
+  return {
+    ok: true,
+    eleccion: { archivo: achicada.archivo, vista: URL.createObjectURL(achicada.archivo) },
+  };
+}
+
+/**
+ * El botón que abre el selector de archivos: una etiqueta con el campo
+ * oculto, para que se vea como los demás botones.
+ */
+export function BotonDeArchivo(p: {
+  id: string;
+  texto: string;
+  deshabilitado: boolean;
+  alElegir: (archivo: File) => void;
+}) {
+  return (
+    <>
+      <label
+        htmlFor={p.id}
+        className={estilos.enlaceDeAccion}
+        aria-disabled={p.deshabilitado}
+      >
+        {p.texto}
+      </label>
+      <input
+        id={p.id}
+        className={estilos.oculto}
+        type="file"
+        accept={ACEPTA}
+        disabled={p.deshabilitado}
+        onChange={(e) => {
+          const archivo = e.target.files?.[0];
+          // Elegir el mismo archivo otra vez también tiene que avisar.
+          e.target.value = '';
+          if (archivo !== undefined) p.alElegir(archivo);
+        }}
+      />
+    </>
+  );
+}
 
 function CampoDeImagen(p: Props & { imagen: ImagenDelNegocio; actual: string | null }) {
-  const textos = TEXTOS[p.imagen];
+  const textos = TEXTOS_DE_IMAGEN[p.imagen];
   const [eleccion, setEleccion] = useState<Eleccion>(null);
   const [trabajando, setTrabajando] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -65,17 +120,13 @@ function CampoDeImagen(p: Props & { imagen: ImagenDelNegocio; actual: string | n
     return () => URL.revokeObjectURL(eleccion.vista);
   }, [eleccion]);
 
-  const elegir = async (archivo: File | undefined) => {
-    if (archivo === undefined) return;
+  const elegir = async (archivo: File) => {
     setAviso(null);
     setTrabajando(true);
-    const achicada = await achicarImagen(archivo, p.imagen);
+    const r = await elegirImagen(archivo, p.imagen);
     setTrabajando(false);
-    if (!achicada.ok) return setAviso(achicada.mensaje);
-    setEleccion({
-      archivo: achicada.archivo,
-      vista: URL.createObjectURL(achicada.archivo),
-    });
+    if (!r.ok) return setAviso(r.mensaje);
+    setEleccion(r.eleccion);
   };
 
   const guardar = async () => {
@@ -125,25 +176,13 @@ function CampoDeImagen(p: Props & { imagen: ImagenDelNegocio; actual: string | n
         </div>
       ) : (
         <div className={estilos.acciones}>
-          {/* El botón es la etiqueta del campo de archivo: se ve como los demás. */}
-          <label
-            htmlFor={id}
-            className={estilos.enlaceDeAccion}
-            aria-disabled={trabajando}
-          >
-            {trabajando ? 'Preparando…' : p.actual === null ? 'Elegir imagen' : 'Cambiar'}
-          </label>
-          <input
+          <BotonDeArchivo
             id={id}
-            className={estilos.oculto}
-            type="file"
-            accept={ACEPTA}
-            disabled={trabajando}
-            onChange={(e) => {
-              void elegir(e.target.files?.[0]);
-              // Elegir el mismo archivo otra vez también tiene que avisar.
-              e.target.value = '';
-            }}
+            texto={
+              trabajando ? 'Preparando…' : p.actual === null ? 'Elegir imagen' : 'Cambiar'
+            }
+            deshabilitado={trabajando}
+            alElegir={(archivo) => void elegir(archivo)}
           />
           {p.actual !== null && (
             <BotonDeDosToques
