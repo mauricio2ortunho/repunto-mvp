@@ -86,11 +86,11 @@ Importar `mauricio2ortunho/repunto-mvp` tres veces, cambiando solo la carpeta
 raíz. Cada `vercel.json` ya trae el comando de build correcto, que instala
 desde la raíz del monorepo y compila los paquetes compartidos antes de la app.
 
-| Proyecto          | Root Directory | Framework | Variables                                                                                                                         |
-| ----------------- | -------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `repunto-api`     | `apps/api`     | Other     | `DATABASE_URL`, `CLAVE_CIFRADO_SEMILLAS`, `ORIGENES_PERMITIDOS`, `APP_VERSION`, `CRON_SECRET`, `SENTRY_DSN`, `SENTRY_ENVIRONMENT` |
-| `repunto-cliente` | `apps/cliente` | Next.js   | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_ENVIRONMENT`, `SENTRY_AUTH_TOKEN`                            |
-| `repunto-panel`   | `apps/panel`   | Next.js   | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_URL_CLIENTE`, `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_ENVIRONMENT`, `SENTRY_AUTH_TOKEN` |
+| Proyecto          | Root Directory | Framework | Variables                                                                                                                                           |
+| ----------------- | -------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `repunto-api`     | `apps/api`     | Other     | `DATABASE_URL`, `CLAVE_CIFRADO_SEMILLAS`, `ORIGENES_PERMITIDOS`, `APP_VERSION`, `CRON_SECRET`, `SENTRY_DSN`, `SENTRY_ENVIRONMENT`, las cinco `R2_*` |
+| `repunto-cliente` | `apps/cliente` | Next.js   | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_ENVIRONMENT`, `SENTRY_AUTH_TOKEN`                                              |
+| `repunto-panel`   | `apps/panel`   | Next.js   | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_URL_CLIENTE`, `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_ENVIRONMENT`, `SENTRY_AUTH_TOKEN`                   |
 
 Detalles que importan:
 
@@ -120,6 +120,14 @@ Detalles que importan:
   cada local (`<url>/r/<qr>`). Sin ella, la hoja del QR no dibuja nada y
   avisa que falta: un cartel impreso con otra dirección no se corrige
   después. Se lee al compilar, así que cambiarla exige redesplegar el panel.
+- **Las cinco `R2_*`** son el bucket de Cloudflare R2 donde viven el logo y
+  la portada: `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`,
+  `R2_SECRET_ACCESS_KEY` y `R2_URL_PUBLICA` (la `https://pub-….r2.dev` del
+  bucket, o el dominio propio cuando lo haya). Las dos claves salen de un
+  token "Object Read & Write" limitado a ese bucket, y son secretas. Sin
+  alguna de las cinco la API anda, pero subir una imagen contesta
+  `IMAGENES_NO_CONFIGURADAS`. Se leen al arrancar: cambiarlas exige
+  redesplegar la API.
 - **`SENTRY_DSN`** es el DSN del proyecto `repunto-api` en Sentry (Settings →
   Client Keys). No es un secreto. Sin ella la API anda igual, pero sin
   avisar de sus errores. **`SENTRY_ENVIRONMENT`** dice de qué entorno es cada

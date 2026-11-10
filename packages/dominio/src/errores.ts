@@ -130,6 +130,14 @@ export const CODIGOS_DE_ERROR = [
    * dueños los maneja el admin, porque entran al panel y ven todo el
    * negocio. */
   'DUENO_NO_EDITABLE',
+
+  // Imágenes (logo y portada).
+  /** No es PNG, JPG ni WebP, o el tipo que dice no es el que tiene. */
+  'IMAGEN_INVALIDA',
+  /** Pasa del tope de bytes: el panel la achica antes, así que no debería. */
+  'IMAGEN_DEMASIADO_GRANDE',
+  /** Faltan las variables de R2 en este entorno: no hay dónde guardarla. */
+  'IMAGENES_NO_CONFIGURADAS',
 ] as const;
 
 export type CodigoDeError = (typeof CODIGOS_DE_ERROR)[number];

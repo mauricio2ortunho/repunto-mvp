@@ -160,6 +160,42 @@ export class Api {
     return this.pedir('GET', '/admin/tablero', { token });
   }
 
+  /** El logo o la portada: el cuerpo son los bytes, con su Content-Type. */
+  async subirImagen(
+    token: string | undefined,
+    negocio: string,
+    imagen: string,
+    bytes: Uint8Array,
+    tipo: string,
+  ): Promise<Respuesta> {
+    const cabeceras: Record<string, string> = { 'content-type': tipo };
+    if (token !== undefined) cabeceras['authorization'] = `Bearer ${token}`;
+    const respuesta = await fetch(
+      `${this.url}/admin/negocios/${negocio}/imagenes/${imagen}`,
+      {
+        method: 'POST',
+        headers: cabeceras,
+        body: bytes,
+      },
+    );
+    const texto = await respuesta.text();
+    return {
+      estado: respuesta.status,
+      cuerpo: texto === '' ? {} : (JSON.parse(texto) as Record<string, unknown>),
+      cabeceras: Object.fromEntries(respuesta.headers.entries()),
+    };
+  }
+
+  quitarImagen(
+    token: string | undefined,
+    negocio: string,
+    imagen: string,
+  ): Promise<Respuesta> {
+    return this.pedir('POST', `/admin/negocios/${negocio}/imagenes/${imagen}/quitar`, {
+      token,
+    });
+  }
+
   fichaDelNegocio(token: string | undefined, id: string): Promise<Respuesta> {
     return this.pedir('GET', `/admin/negocios/${id}`, { token });
   }

@@ -57,6 +57,9 @@ export const CODIGOS_DE_ERROR_DE_CAJA = [
   'LOCAL_CERRADO',
   'PANEL_SOLO_DEL_DUENO',
   'DUENO_NO_EDITABLE',
+  'IMAGEN_INVALIDA',
+  'IMAGEN_DEMASIADO_GRANDE',
+  'IMAGENES_NO_CONFIGURADAS',
 ] as const;
 
 export type CodigoDeErrorDeCaja = (typeof CODIGOS_DE_ERROR_DE_CAJA)[number];
@@ -182,6 +185,12 @@ export function mensajeParaElCajero(
       return 'Ese local está cerrado. Reabrilo para vincularle una tablet.';
     case 'PANEL_SOLO_DEL_DUENO':
       return 'Solo el dueño activo entra al panel. Supervisores y cajeros entran con su PIN en la tablet.';
+    case 'IMAGEN_INVALIDA':
+      return 'Esa imagen no sirve: tiene que ser una foto o un dibujo en PNG, JPG o WebP.';
+    case 'IMAGEN_DEMASIADO_GRANDE':
+      return 'La imagen es demasiado pesada. Probá con otra más chica.';
+    case 'IMAGENES_NO_CONFIGURADAS':
+      return 'Falta configurar el almacenamiento de imágenes (Cloudflare R2) en este entorno.';
     case 'DUENO_NO_EDITABLE':
       return 'A los dueños los maneja Repunto. Escribinos si hay que cambiar algo.';
     case 'ROL_NO_CAMBIABLE':

@@ -445,6 +445,8 @@ export const esquemaFichaDelNegocio = esquemaNegocioDelAdmin
   .omit({ programa: true, condicion: true })
   .extend({
     canje_cualquier_local: z.boolean(),
+    /** La foto grande del detalle de la tarjeta, en la app. */
+    portada_url: z.string().nullable(),
     /** La version vigente. */
     programa: esquemaProgramaVigente.nullable(),
     /**
@@ -495,3 +497,36 @@ export const esquemaEstadoDelNegocio = z.object({
 });
 
 export type EstadoDelNegocio = z.infer<typeof esquemaEstadoDelNegocio>;
+
+// ---------------------------------------------------------------------------
+// Imágenes: logo y portada
+// ---------------------------------------------------------------------------
+
+/**
+ * Las imágenes del negocio. Viven en R2 y en la base solo su dirección
+ * (INV-22). Las sube el admin: el dueño no cambia su apariencia.
+ */
+export const IMAGENES_DEL_NEGOCIO = ['logo', 'portada'] as const;
+
+export type ImagenDelNegocio = (typeof IMAGENES_DEL_NEGOCIO)[number];
+
+/** Lo que la api acepta, mirando los bytes y no solo lo que dice el pedido. SVG no: puede llevar código. */
+export const TIPOS_DE_IMAGEN = ['image/png', 'image/jpeg', 'image/webp'] as const;
+
+export type TipoDeImagen = (typeof TIPOS_DE_IMAGEN)[number];
+
+/**
+ * `POST /admin/negocios/:id/imagenes/:imagen`: el cuerpo son los bytes de
+ * la imagen, con su Content-Type. El panel la achica antes al lado máximo
+ * (el logo se ve chico; la portada, a lo ancho del teléfono), así que el
+ * tope de bytes solo frena lo que no pasó por el panel.
+ */
+export const LIMITES_DE_IMAGEN = {
+  bytes: 2 * 1024 * 1024,
+  ladoMaximo: { logo: 512, portada: 1600 },
+} as const satisfies { bytes: number; ladoMaximo: Record<ImagenDelNegocio, number> };
+
+/** La dirección pública de la imagen, o null si se quitó. */
+export const esquemaImagenGuardada = z.object({ url: z.string().nullable() });
+
+export type ImagenGuardada = z.infer<typeof esquemaImagenGuardada>;

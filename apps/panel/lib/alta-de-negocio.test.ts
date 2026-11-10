@@ -133,6 +133,7 @@ describe('borradorDesde', () => {
     estado: 'activo',
     color_principal: '#7A3E1D',
     logo_url: null,
+    portada_url: null,
     icono_sello: 'corazon',
     plantilla_tarjeta: 'moderna',
     canje_cualquier_local: false,

@@ -65,6 +65,7 @@ interface FilaDeFicha {
   estado: string;
   color_principal: string;
   logo_url: string | null;
+  portada_url: string | null;
   icono_sello: string;
   plantilla_tarjeta: string;
   canje_cualquier_local: boolean;
@@ -173,8 +174,8 @@ export class NegociosDeAdminService {
   async ficha(id: string): Promise<FichaDelNegocio> {
     const filas = await this.prisma.$queryRaw<FilaDeFicha[]>`
       SELECT n.id, n.nombre, n.categoria, n.estado::text AS estado,
-             n.color_principal, n.logo_url, n.icono_sello, n.plantilla_tarjeta,
-             n.canje_cualquier_local, n.creado_el,
+             n.color_principal, n.logo_url, n.portada_url, n.icono_sello,
+             n.plantilla_tarjeta, n.canje_cualquier_local, n.creado_el,
              (SELECT count(*)::int FROM local l
               WHERE l.negocio_id = n.id AND l.activo) AS locales_activos,
              (SELECT count(*)::int FROM tarjeta t
@@ -198,6 +199,7 @@ export class NegociosDeAdminService {
       estado: f.estado,
       color_principal: f.color_principal,
       logo_url: f.logo_url,
+      portada_url: f.portada_url,
       icono_sello: f.icono_sello,
       plantilla_tarjeta: f.plantilla_tarjeta,
       canje_cualquier_local: f.canje_cualquier_local,
