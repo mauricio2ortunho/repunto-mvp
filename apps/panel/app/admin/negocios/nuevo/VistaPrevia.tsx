@@ -21,7 +21,14 @@ import estilos from '../Negocios.module.css';
  * Muestra unos sellos ya puestos para que se vea el icono; el logo, hasta
  * que exista la subida, es la inicial.
  */
-export function VistaPrevia({ borrador: b }: { borrador: Borrador }) {
+export function VistaPrevia({
+  borrador: b,
+  logoUrl = null,
+}: {
+  borrador: Borrador;
+  /** El logo ya subido; en el alta todavía no hay. */
+  logoUrl?: string | null;
+}) {
   const total = sellosParaDibujar(b.sellos);
   const puestos = Math.min(3, total - 1);
   const nombre = b.nombre.trim() === '' ? 'Tu negocio' : b.nombre.trim();
@@ -37,7 +44,7 @@ export function VistaPrevia({ borrador: b }: { borrador: Borrador }) {
           data-superficie="marca"
           style={variablesDeMarca(b.color)}
         >
-          <LogoDelNegocio nombre={nombre} url={null} />
+          <LogoDelNegocio nombre={nombre} url={logoUrl} />
           <h2>{nombre}</h2>
         </header>
         <div className={estilos.cuerpo}>

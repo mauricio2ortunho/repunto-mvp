@@ -54,6 +54,8 @@ export interface Pedido {
   metodo: 'GET' | 'POST';
   ruta: string;
   cuerpo?: unknown;
+  /** Un archivo en lugar de JSON: viaja tal cual, con su tipo. */
+  archivo?: Blob;
   claveDeIdempotencia?: string;
   cabeceras?: Record<string, string>;
   /** Para cortar una consulta que ya no importa, como al desmontar. */
@@ -98,12 +100,14 @@ export async function pedirCrudo(
     cabeceras['Idempotency-Key'] = pedido.claveDeIdempotencia;
   }
   if (pedido.cuerpo !== undefined) cabeceras['Content-Type'] = 'application/json';
+  if (pedido.archivo !== undefined) cabeceras['Content-Type'] = pedido.archivo.type;
 
   try {
     const res = await fetch(`${urlDeLaApi}${pedido.ruta}`, {
       method: pedido.metodo,
       headers: cabeceras,
       ...(pedido.cuerpo !== undefined && { body: JSON.stringify(pedido.cuerpo) }),
+      ...(pedido.archivo !== undefined && { body: pedido.archivo }),
       // Sin cache del navegador: revalidaria con If-None-Match, y un 304 que
       // pasa por Vercel llega sin el permiso de CORS (ver registrosPendientes).
       cache: 'no-store',

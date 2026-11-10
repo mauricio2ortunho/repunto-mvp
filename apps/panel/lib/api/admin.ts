@@ -7,6 +7,8 @@ import {
   type CondicionNueva,
   type DatosDelLocal,
   type EntradaDelDueno,
+  type ImagenDelNegocio,
+  type ImagenGuardada,
   type DatosDelNegocio,
   type EstadoDelLocal,
   type EstadoDelNegocio,
@@ -31,6 +33,7 @@ import {
   esquemaCondicionCambiada,
   esquemaEntrarComoAdminRespuesta,
   esquemaEntradaDelDueno,
+  esquemaImagenGuardada,
   esquemaEstadoDelLocal,
   esquemaEstadoDelNegocio,
   esquemaFichaDelNegocio,
@@ -435,6 +438,42 @@ export function operacionesDelAdmin(negocio: string): OperacionesDelNegocio {
     reactivarPersona: (persona, telefono) => reactivarPersona(negocio, persona, telefono),
     borrarPersona: (persona) => borrarPersona(negocio, persona),
   };
+}
+
+/**
+ * El logo o la portada, ya achicados (lib/imagen). El nombre del archivo en
+ * R2 sale del contenido: reintentar con la misma imagen deja lo mismo, así
+ * que no lleva clave. Más tiempo que un pedido común: es una subida.
+ */
+export function subirImagen(
+  negocio: string,
+  imagen: ImagenDelNegocio,
+  archivo: Blob,
+): Promise<Respuesta<ImagenGuardada>> {
+  return pedir(
+    {
+      metodo: 'POST',
+      ruta: `/admin/negocios/${encodeURIComponent(negocio)}/imagenes/${imagen}`,
+      archivo,
+      tiempoMaximoMs: 30_000,
+      token: sesionDeAdmin().token(),
+    },
+    esquemaImagenGuardada,
+  );
+}
+
+export function quitarImagen(
+  negocio: string,
+  imagen: ImagenDelNegocio,
+): Promise<Respuesta<ImagenGuardada>> {
+  return pedir(
+    {
+      metodo: 'POST',
+      ruta: `/admin/negocios/${encodeURIComponent(negocio)}/imagenes/${imagen}/quitar`,
+      token: sesionDeAdmin().token(),
+    },
+    esquemaImagenGuardada,
+  );
 }
 
 /** La api dijo que esta sesion ya no sirve: hay que volver a entrar. */

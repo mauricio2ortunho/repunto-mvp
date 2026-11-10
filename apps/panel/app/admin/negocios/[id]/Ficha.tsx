@@ -34,6 +34,7 @@ import {
 } from '../Campos';
 import estilos from '../Negocios.module.css';
 import { VistaPrevia } from '../nuevo/VistaPrevia';
+import { SeccionImagenes } from './Imagenes';
 import { SeccionLocales } from './Locales';
 import { SeccionPersonas } from './Personas';
 
@@ -145,6 +146,7 @@ export function Ficha() {
       )}
 
       <SeccionDatos ficha={ficha} fallo={fallo} alGuardar={poner} />
+      <SeccionImagenes ficha={ficha} fallo={fallo} alCambiar={() => void cargar()} />
       <SeccionPromo
         key={`promo-${ficha.programa?.version ?? 0}`}
         ficha={ficha}
@@ -273,6 +275,7 @@ function SeccionDatos(p: PropsDeSeccion & { alGuardar: (f: FichaDelNegocio) => v
         </form>
         {/* La promo se cambia en su propia seccion: la tarjeta muestra la vigente. */}
         <VistaPrevia
+          logoUrl={p.ficha.logo_url}
           borrador={{
             ...f.b,
             sellos: String(p.ficha.programa?.sellos_requeridos ?? f.b.sellos),

@@ -566,3 +566,76 @@
   color: var(--c-accion);
   font-weight: var(--peso-medio);
 }
+
+/* ---------- Logo y portada ---------- */
+
+.imagenes {
+  display: grid;
+  gap: var(--espacio-5);
+}
+
+@media (min-width: 720px) {
+  .imagenes {
+    grid-template-columns: 1fr 2fr;
+  }
+}
+
+.imagen {
+  display: grid;
+  align-content: start;
+  gap: var(--espacio-3);
+}
+
+/* La imagen entera a la vista: el logo sin recortar, la portada como se ve. */
+.marcoDeImagen {
+  display: grid;
+  place-items: center;
+  min-height: 8rem;
+  padding: var(--espacio-3);
+  border: var(--borde-fino) dashed var(--c-borde);
+  border-radius: var(--radio-2);
+  background: var(--c-fondo-logo);
+}
+
+.marcoDeImagen img {
+  display: block;
+  max-width: 100%;
+  border-radius: var(--radio-1);
+}
+
+.imagen[data-imagen='logo'] .marcoDeImagen img {
+  width: 8rem;
+  height: 8rem;
+  object-fit: contain;
+}
+
+.imagen[data-imagen='portada'] .marcoDeImagen img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+/* El campo de archivo va oculto: lo abre su etiqueta, que se ve como botón. */
+.oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.enlaceDeAccion[aria-disabled='true'] {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+label.enlaceDeAccion {
+  cursor: pointer;
+}
+
+/* El foco del teclado llega al campo oculto: se marca su etiqueta. */
+.oculto:focus-visible + .enlaceDeAccion,
+.enlaceDeAccion:has(+ .oculto:focus-visible) {
+  box-shadow: 0 0 0 var(--ancho-anillo-foco) var(--c-accion-velo);
+}
