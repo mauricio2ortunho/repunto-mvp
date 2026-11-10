@@ -42,12 +42,12 @@ beforeAll(async () => {
     void leer(peticion).then((bytes) => {
       const firma = String(peticion.headers['authorization'] ?? '');
       const huella = createHash('sha256').update(bytes).digest('hex');
-      // aws4fetch firma sin la huella del contenido; R2 lo acepta así.
+      // La huella firmada tiene que ser la del contenido que llegó.
       const contenido = peticion.headers['x-amz-content-sha256'];
       const firmada =
         firma.startsWith('AWS4-HMAC-SHA256 ') &&
         firma.includes(`Credential=${CLAVE}/`) &&
-        (contenido === 'UNSIGNED-PAYLOAD' || contenido === huella);
+        contenido === huella;
       if (peticion.method !== 'PUT' || !firmada) return respuesta.writeHead(403).end();
       if (falla) return respuesta.writeHead(500).end();
       subidas.push({

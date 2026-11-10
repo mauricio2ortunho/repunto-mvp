@@ -1,12 +1,16 @@
-import { AwsClient } from 'aws4fetch';
+import { request as requestHttp } from 'node:http';
+import { request as requestHttps } from 'node:https';
+
 import type { TipoDeImagen } from '@repunto/contratos';
+
+import { firmar, sha256Hex } from './firma';
 
 /**
  * Dónde viven las imágenes: Cloudflare R2 (INV-22). En la base va solo la
  * dirección pública que devuelve `guardar`.
  *
- * Se habla con R2 por su API compatible con S3, firmando con `aws4fetch`:
- * pesa unos KB contra los MB del SDK de Amazon, y en serverless eso es
+ * Se habla con R2 por su API compatible con S3, con la firma de `firma.ts`
+ * y `node:https`: sin el SDK de Amazon, que pesa MB y en serverless es
  * tiempo de arranque en cada instancia fría.
  */
 export interface AlmacenDeImagenes {
@@ -59,35 +63,66 @@ export function configDeR2(entorno: NodeJS.ProcessEnv): ConfigDeR2 | null {
 }
 
 export class AlmacenR2 implements AlmacenDeImagenes {
-  private readonly cliente: AwsClient;
-
-  constructor(private readonly config: ConfigDeR2) {
-    this.cliente = new AwsClient({
-      accessKeyId: config.accessKeyId,
-      secretAccessKey: config.secretAccessKey,
-      service: 's3',
-      region: 'auto',
-    });
-  }
+  constructor(private readonly config: ConfigDeR2) {}
 
   async guardar(clave: string, bytes: Uint8Array, tipo: TipoDeImagen): Promise<string> {
-    const respuesta = await this.cliente.fetch(
-      `${this.config.endpoint}/${this.config.bucket}/${clave}`,
+    const url = new URL(`${this.config.endpoint}/${this.config.bucket}/${clave}`);
+    const cabeceras = firmar(
       {
-        method: 'PUT',
-        body: bytes,
-        headers: {
+        metodo: 'PUT',
+        url,
+        cabeceras: {
           'content-type': tipo,
           // La clave sale del contenido: la misma dirección nunca cambia de
           // imagen, así que el navegador la puede guardar para siempre.
           'cache-control': 'public, max-age=31536000, immutable',
         },
+        huellaDelCuerpo: sha256Hex(bytes),
       },
+      {
+        accessKeyId: this.config.accessKeyId,
+        secretAccessKey: this.config.secretAccessKey,
+        region: 'auto',
+        servicio: 's3',
+      },
+      new Date(),
     );
-    if (!respuesta.ok) {
-      // Sin el cuerpo: puede repetir la firma del pedido.
-      throw new Error(`R2 no guardó la imagen: respondió ${respuesta.status}.`);
+    const estado = await enviar(url, cabeceras, bytes);
+    if (estado < 200 || estado >= 300) {
+      // Sin el cuerpo de la respuesta: puede repetir datos del pedido firmado.
+      throw new Error(`R2 no guardó la imagen: respondió ${estado}.`);
     }
     return `${this.config.urlPublica}/${clave}`;
   }
+}
+
+/** Tiempo máximo para que R2 conteste: la función de Vercel corta a los 15 s. */
+const TIEMPO_MAXIMO_MS = 10_000;
+
+/** Un PUT con `node:https` (o `http`, en los tests): devuelve el estado. */
+function enviar(
+  url: URL,
+  cabeceras: Record<string, string>,
+  cuerpo: Uint8Array,
+): Promise<number> {
+  const pedir = url.protocol === 'http:' ? requestHttp : requestHttps;
+  return new Promise((resolver, rechazar) => {
+    const pedido = pedir(
+      url,
+      {
+        method: 'PUT',
+        headers: { ...cabeceras, 'content-length': String(cuerpo.byteLength) },
+        timeout: TIEMPO_MAXIMO_MS,
+      },
+      (respuesta) => {
+        // Se lee y se descarta: si no, el socket queda abierto.
+        respuesta.resume();
+        respuesta.on('end', () => resolver(respuesta.statusCode ?? 0));
+        respuesta.on('error', rechazar);
+      },
+    );
+    pedido.on('timeout', () => pedido.destroy(new Error('R2 no contestó a tiempo.')));
+    pedido.on('error', rechazar);
+    pedido.end(cuerpo);
+  });
 }
