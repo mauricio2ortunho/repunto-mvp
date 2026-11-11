@@ -464,6 +464,13 @@ preflight contra el handler que se despliega, y no contra una copia de prueba.
 Ni siquiera ese ve lo que hace Vercel en el camino: lo del 304 apareció recién
 en un navegador, contra staging.
 
+**La conexión a Supabase verifica el certificado.** La api lleva en el código
+la CA raíz de Supabase (`apps/api/src/prisma/ca-de-supabase.ts`, pública,
+vence en 2031) y `opcionesDeConexion` la usa con todo host `*.supabase.com` o
+`*.supabase.co`, sacando de la cadena los `ssl*` —un `sslmode=no-verify`
+cargado en Vercel la apagaría—. Los scripts que corren desde la máquina
+(`prisma migrate`, el seed) siguen con su `sslmode` de la cadena.
+
 **Secretos.** `CLAVE_CIFRADO_SEMILLAS` son 32 bytes en base64 y cifra las
 semillas TOTP de los clientes en reposo (AES-256-GCM). Es distinta en cada
 entorno, y perderla en producción es perder todos los códigos de todos los
@@ -709,13 +716,6 @@ es lo que falta terminar, y está acá para que no se pierda.
   tabla todavía no tiene columna de revocación, y `/mi/codigo` tendría que
   dejar de aceptar una sesión revocada. Hace falta una migración
   (`revocada_el`) y el filtro, no solo un `UPDATE`.
-
-- **El certificado de Supabase no se verifica.** Las cadenas de conexión usan
-  `sslmode=no-verify` porque el certificado del pooler no valida contra las CA
-  del sistema. Acepta cualquier certificado, así que en el camino alguien
-  podría hacerse pasar por la base. Para staging con datos de demo es
-  aceptable; antes de que haya teléfonos de clientes reales, hay que instalar
-  la CA de Supabase en lugar de apagar la verificación.
 
 - **Fuga conocida y aceptada.** `GET /registros/mio` le revela a quien tiene el
   ticket que ese teléfono ya tenía cuenta: responde `verificacion_requerida` en

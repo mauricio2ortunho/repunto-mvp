@@ -40,9 +40,12 @@ Probado con una conexión real, no leyendo el panel:
 - **El certificado no valida contra las CA del sistema.** Node corta con
   `SELF_SIGNED_CERT_IN_CHAIN`, así que las cadenas que usa la aplicación y el
   seed van con **`sslmode=no-verify`**. El motor de `prisma migrate` no verifica
-  la cadena y acepta `sslmode=require`. Está anotado como deuda en `CLAUDE.md`
-  sección 15: para producción hay que instalar la CA de Supabase en lugar de
-  apagar la verificación.
+  la cadena y acepta `sslmode=require`. **La api sí verifica**: lleva la CA de
+  Supabase en el código (`apps/api/src/prisma/ca-de-supabase.ts`) y saca de
+  la cadena el `sslmode`, así que el `no-verify` de Vercel no la apaga. Si
+  Supabase cambia su CA (la actual vence en 2031), la api no conecta hasta
+  reemplazar ese archivo: se descarga en Project Settings > Database > SSL
+  Configuration.
 - **Supabase corre PostgreSQL 17.11** y no se elige. El Docker local usa
   `postgres:17-alpine` para que los tests corran contra la misma versión
   mayor (alineado el 2026-11-11). Si Supabase pasa a 18, el Docker sigue: el
@@ -247,7 +250,6 @@ el teléfono pide su código a `/mi/codigo` y la tablet lo tipea en
   endpoint detrás del mismo guard.
 - **Arranque frío.** La primera petición de una instancia arranca Nest entero.
   Para el cajero son unos cientos de milisegundos de más, cada tanto.
-- **El certificado de la base no se verifica.** `sslmode=no-verify` acepta
-  cualquier certificado, así que alguien en el camino podría hacerse pasar por
-  la base. Para staging con datos de demo es aceptable; antes de que haya
-  teléfonos de clientes reales hay que instalar la CA de Supabase.
+- **El seed y las migraciones no verifican el certificado.** Corren desde la
+  máquina con `sslmode=no-verify`; la api sí lo verifica contra la CA de
+  Supabase.
