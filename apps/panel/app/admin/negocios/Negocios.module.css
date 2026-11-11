@@ -652,3 +652,19 @@ label.enlaceDeAccion {
 .enlaceDeAccion:has(+ .oculto:focus-visible) {
   box-shadow: 0 0 0 var(--ancho-anillo-foco) var(--c-accion-velo);
 }
+
+/* El alta que viene de una solicitud: quién la pidió y qué falta después. */
+.deUnaSolicitud {
+  display: grid;
+  gap: var(--espacio-1);
+  margin: var(--espacio-2) 0 0;
+  padding: var(--espacio-3) var(--espacio-4);
+  border-radius: var(--radio-1);
+  background: var(--c-accion-velo);
+  color: var(--c-texto);
+  font-size: var(--texto-2);
+}
+
+.deUnaSolicitud p {
+  margin: 0;
+}

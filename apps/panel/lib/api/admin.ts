@@ -26,6 +26,8 @@ import {
   type ProgramaCambiado,
   type ProgramaNuevo,
   type QrCambiado,
+  type SolicitudDelAdmin,
+  type SolicitudesDelAdmin,
   type TableroDelPiloto,
   type TabletRevocada,
   esquemaAdminActual,
@@ -46,6 +48,8 @@ import {
   esquemaNegociosDelAdmin,
   esquemaProgramaCambiado,
   esquemaQrCambiado,
+  esquemaSolicitudDelAdmin,
+  esquemaSolicitudesDelAdmin,
   esquemaTableroDelPiloto,
   esquemaTabletRevocada,
 } from '@repunto/contratos';
@@ -473,6 +477,47 @@ export function quitarImagen(
       token: sesionDeAdmin().token(),
     },
     esquemaImagenGuardada,
+  );
+}
+
+/** Las solicitudes de negocio: las pendientes primero. */
+export function solicitudes(
+  senal?: AbortSignal,
+): Promise<Respuesta<SolicitudesDelAdmin>> {
+  return pedir(
+    { metodo: 'GET', ruta: '/admin/solicitudes', senal, token: sesionDeAdmin().token() },
+    esquemaSolicitudesDelAdmin,
+  );
+}
+
+export function solicitud(
+  id: string,
+  senal?: AbortSignal,
+): Promise<Respuesta<SolicitudDelAdmin>> {
+  return pedir(
+    {
+      metodo: 'GET',
+      ruta: `/admin/solicitudes/${encodeURIComponent(id)}`,
+      senal,
+      token: sesionDeAdmin().token(),
+    },
+    esquemaSolicitudDelAdmin,
+  );
+}
+
+/** Sin clave: rechazar dos veces contesta SOLICITUD_YA_RESUELTA. */
+export function rechazarSolicitud(
+  id: string,
+  motivo: string | null,
+): Promise<Respuesta<SolicitudDelAdmin>> {
+  return pedir(
+    {
+      metodo: 'POST',
+      ruta: `/admin/solicitudes/${encodeURIComponent(id)}/rechazo`,
+      cuerpo: { motivo },
+      token: sesionDeAdmin().token(),
+    },
+    esquemaSolicitudDelAdmin,
   );
 }
 

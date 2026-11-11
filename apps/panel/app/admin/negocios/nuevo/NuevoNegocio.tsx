@@ -1,14 +1,23 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { IMAGENES_DEL_NEGOCIO, type ImagenDelNegocio } from '@repunto/contratos';
+import {
+  IMAGENES_DEL_NEGOCIO,
+  type ImagenDelNegocio,
+  type SolicitudDelAdmin,
+} from '@repunto/contratos';
 import { Aviso, Boton } from '@repunto/ui';
 
 import { BORRADOR_INICIAL, revisar } from '../../../../lib/alta-de-negocio';
 import * as api from '../../../../lib/api/admin';
 import { crearGestorDeIdempotencia } from '../../../../lib/api/idempotencia';
+import { telefonoParaVer } from '../../../../lib/personas-del-admin';
+import {
+  borradorDesdeSolicitud,
+  pasoSiguienteDelAlta,
+} from '../../../../lib/solicitudes-del-admin';
 import css from '../../Admin.module.css';
 import { useSesionDeAdmin } from '../../usar-sesion';
 import {
@@ -51,6 +60,26 @@ export function NuevoNegocio() {
   // la misma y la api no crea dos negocios.
   const idempotencia = useRef(crearGestorDeIdempotencia());
   const [imagenes, setImagenes] = useState<Elegidas>({ logo: null, portada: null });
+  // `?solicitud=<id>`: el alta viene de una solicitud de la app. Se completa
+  // con lo que se sabe y, al darlo de alta, la solicitud queda aprobada.
+  const idDeSolicitud = useSearchParams().get('solicitud');
+  const [solicitud, setSolicitud] = useState<SolicitudDelAdmin | null>(null);
+  const { reiniciar } = f;
+  useEffect(() => {
+    if (idDeSolicitud === null) return;
+    const control = new AbortController();
+    void api.solicitud(idDeSolicitud, control.signal).then((r) => {
+      if (control.signal.aborted) return;
+      if (r.ok) {
+        setSolicitud(r.datos);
+        reiniciar(borradorDesdeSolicitud(r.datos));
+        return;
+      }
+      if (api.sesionPerdida(r)) return aEntrar();
+      setAviso(api.mensajeParaElAdmin(r));
+    });
+    return () => control.abort();
+  }, [idDeSolicitud, reiniciar, aEntrar]);
 
   const enviar = async () => {
     if (enviando) return;
@@ -63,11 +92,9 @@ export function NuevoNegocio() {
     }
     f.setProblemas({});
     setEnviando(true);
-    const firma = `alta:${JSON.stringify(revision.peticion)}`;
-    const r = await api.crearNegocio(
-      revision.peticion,
-      idempotencia.current.clavePara(firma),
-    );
+    const peticion = { ...revision.peticion, solicitud_id: solicitud?.id ?? null };
+    const firma = `alta:${JSON.stringify(peticion)}`;
+    const r = await api.crearNegocio(peticion, idempotencia.current.clavePara(firma));
     if (r.ok) {
       idempotencia.current.olvidar(firma);
       const faltan: ImagenDelNegocio[] = [];
@@ -100,6 +127,17 @@ export function NuevoNegocio() {
           ‹ Negocios
         </Link>
         <h1 className={css.titulo}>Nuevo negocio</h1>
+        {solicitud !== null && (
+          <div className={estilos.deUnaSolicitud}>
+            <p>
+              Viene de la solicitud de <strong>{solicitud.contacto}</strong> (
+              {telefonoParaVer(solicitud.telefono)}). Al darlo de alta, la solicitud queda
+              aprobada.
+            </p>
+            {solicitud.mensaje !== null && <p>“{solicitud.mensaje}”</p>}
+            <p>{pasoSiguienteDelAlta(solicitud)}</p>
+          </div>
+        )}
       </header>
 
       <div className={estilos.alta}>

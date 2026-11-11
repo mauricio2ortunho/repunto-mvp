@@ -114,6 +114,11 @@ const SECCIONES: readonly { titulo: string; texto: string; ruta: string | null }
     ruta: '/admin/negocios',
   },
   {
+    titulo: 'Solicitudes',
+    texto: 'Negocios que pidieron sumarse desde la app: darlos de alta o rechazarlos.',
+    ruta: '/admin/solicitudes',
+  },
+  {
     titulo: 'Tablero del piloto',
     texto: 'Sellos, clientes y premios de cada negocio, y los locales que no sellan.',
     ruta: '/admin/tablero',
