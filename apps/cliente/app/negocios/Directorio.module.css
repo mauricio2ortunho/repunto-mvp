@@ -117,3 +117,24 @@
 .yaTiene {
   color: var(--c-acento);
 }
+
+/* El pedido de un negocio para sumarse, al final de la lista. */
+.sumar {
+  display: grid;
+  justify-items: start;
+  gap: var(--espacio-2);
+  margin-top: var(--espacio-6);
+  padding-top: var(--espacio-5);
+  border-top: var(--borde-fino) solid var(--c-borde);
+}
+
+.sumar h2 {
+  margin: 0;
+  font-size: var(--texto-5);
+  font-weight: var(--peso-fuerte);
+}
+
+.sumar p {
+  margin: 0;
+  color: var(--c-texto-suave);
+}

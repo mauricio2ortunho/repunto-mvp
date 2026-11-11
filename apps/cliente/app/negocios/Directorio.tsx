@@ -23,7 +23,8 @@ import css from './Directorio.module.css';
 /**
  * "Dónde juntar sellos": los negocios adheridos, para mirar. No hay boton de
  * alta a proposito: anotarse exige el QR del mostrador (especificacion,
- * seccion 10). Se ve sin conexion, como las tarjetas.
+ * seccion 10). Se ve sin conexion, como las tarjetas. Al final, el enlace
+ * para que un negocio pida sumarse (especificacion, seccion 1).
  */
 export function Directorio() {
   const router = useRouter();
@@ -70,6 +71,14 @@ export function Directorio() {
           )}
         </>
       )}
+
+      <section className={css.sumar}>
+        <h2>¿Tenés un negocio?</h2>
+        <p>Tus clientes pueden juntar sellos acá, en lugar de la tarjeta de cartón.</p>
+        <Boton variante="secundario" onClick={() => router.push('/negocios/sumar')}>
+          Sumá tu negocio a Repunto
+        </Boton>
+      </section>
     </Pantalla>
   );
 }

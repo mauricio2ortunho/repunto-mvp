@@ -6,12 +6,15 @@ import {
   type MisTarjetas,
   type RegistroPeticion,
   type RegistroRespuesta,
+  type SolicitudNueva,
+  type SolicitudRecibida,
   esquemaCodigoDelCliente,
   esquemaDetalleDeTarjeta,
   esquemaDirectorio,
   esquemaEstadoDelRegistro,
   esquemaMisTarjetas,
   esquemaRegistroRespuesta,
+  esquemaSolicitudRecibida,
 } from '@repunto/contratos';
 
 import { type Respuesta, pedir } from './http';
@@ -96,5 +99,21 @@ export function miCodigo(
     token,
     senal,
     esquema: esquemaCodigoDelCliente,
+  });
+}
+
+/**
+ * `POST /solicitudes`: pedir sumar un negocio. Público y sin clave: el
+ * reenvío no crea otra, porque la base admite una sola pendiente por
+ * teléfono.
+ */
+export function pedirSumarNegocio(
+  cuerpo: SolicitudNueva,
+): Promise<Respuesta<SolicitudRecibida>> {
+  return pedir({
+    metodo: 'POST',
+    ruta: '/solicitudes',
+    cuerpo,
+    esquema: esquemaSolicitudRecibida,
   });
 }

@@ -1,0 +1,83 @@
+/* "Sumá tu negocio": los mismos campos que el registro del mostrador. */
+
+.formulario {
+  display: grid;
+  gap: var(--espacio-5);
+}
+
+.cabeza {
+  display: grid;
+  gap: var(--espacio-2);
+}
+
+.cabeza h1,
+.listo h1 {
+  margin: 0;
+  font-size: var(--texto-8);
+  font-weight: var(--peso-negro);
+  line-height: var(--interlineado-titulo);
+}
+
+.cabeza p,
+.listo p {
+  margin: 0;
+  color: var(--c-texto-suave);
+}
+
+.campo {
+  display: grid;
+  gap: var(--espacio-2);
+}
+
+.campo > span:first-child {
+  font-size: var(--texto-2);
+  font-weight: var(--peso-fuerte);
+}
+
+.campo input,
+.campo select,
+.campo textarea {
+  min-height: var(--alto-control);
+  padding: 0 var(--espacio-4);
+  border: var(--borde-grueso) solid var(--c-borde-fuerte);
+  border-radius: var(--radio-1);
+  background: var(--c-superficie);
+  color: var(--c-texto);
+  font-family: inherit;
+  font-size: var(--texto-5);
+}
+
+.campo textarea {
+  padding: var(--espacio-3) var(--espacio-4);
+  resize: vertical;
+}
+
+.campo input::placeholder,
+.campo textarea::placeholder {
+  color: var(--c-texto-suave);
+}
+
+.campo input:focus-visible,
+.campo select:focus-visible,
+.campo textarea:focus-visible {
+  outline: none;
+  border-color: var(--c-accion);
+  box-shadow: 0 0 0 var(--ancho-anillo-foco) var(--c-accion-velo);
+}
+
+.campo[data-problema] input,
+.campo[data-problema] select,
+.campo[data-problema] textarea {
+  border-color: var(--c-alerta);
+}
+
+.problema {
+  color: var(--c-alerta);
+  font-size: var(--texto-2);
+  font-weight: var(--peso-medio);
+}
+
+.listo {
+  display: grid;
+  gap: var(--espacio-4);
+}
