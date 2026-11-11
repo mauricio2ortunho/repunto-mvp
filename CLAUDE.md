@@ -32,7 +32,7 @@ Si una tarea pide algo de esa lista, detenerse y preguntar antes de escribir có
 
 | Capa | Elección |
 |---|---|
-| Base de datos | PostgreSQL 16 en local, 17.11 en Supabase (desalineado, ver sección 15) |
+| Base de datos | PostgreSQL 17 (17.11), la misma versión en local y en Supabase |
 | ORM / migraciones | Prisma |
 | API | NestJS (TypeScript, `strict: true`) |
 | PWA cliente | Next.js App Router, con service worker |
@@ -40,7 +40,7 @@ Si una tarea pide algo de esa lista, detenerse y preguntar antes de escribir có
 | Validación | Zod, compartido vía `packages/contratos` |
 | Tests | Vitest; integración contra Postgres real |
 | Monorepo | pnpm workspaces + Turborepo |
-| Base de datos manejada | Supabase (Postgres 16) |
+| Base de datos manejada | Supabase (Postgres 17.11, no se elige) |
 | Hosting API | Vercel, como funcion serverless |
 | Hosting frontends | Vercel |
 | Trabajos programados | Vercel Cron, una vez por día, contra un endpoint de la API con secreto |
@@ -691,15 +691,6 @@ es lo que falta terminar, y está acá para que no se pierda.
   tabla todavía no tiene columna de revocación, y `/mi/codigo` tendría que
   dejar de aceptar una sesión revocada. Hace falta una migración
   (`revocada_el`) y el filtro, no solo un `UPDATE`.
-
-- **Dev y staging corren versiones distintas de Postgres.** Local es 16, el
-  Docker del repo; Supabase da 17.11 y no se elige. Las migraciones aplican en
-  las dos y los tests corren contra la 16, así que hoy nadie ve el desajuste
-  —que es justamente el problema—. Alinear significa pasar el
-  `docker-compose.yml` a `postgres:17-alpine`, y eso obliga a borrar el volumen
-  local: Postgres no arranca sobre datos de otra versión mayor. Son datos de
-  demo y de test, recreables con `pnpm db:seed`, pero es una decisión que se
-  toma a propósito y no de paso.
 
 - **El certificado de Supabase no se verifica.** Las cadenas de conexión usan
   `sslmode=no-verify` porque el certificado del pooler no valida contra las CA

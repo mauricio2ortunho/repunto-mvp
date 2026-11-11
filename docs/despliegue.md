@@ -43,9 +43,11 @@ Probado con una conexión real, no leyendo el panel:
   la cadena y acepta `sslmode=require`. Está anotado como deuda en `CLAUDE.md`
   sección 15: para producción hay que instalar la CA de Supabase en lugar de
   apagar la verificación.
-- **Supabase corre PostgreSQL 17.11**, no 16 como el Docker local. Las
-  migraciones se aplican igual, pero dev y staging quedaron en versiones
-  distintas. Ver la deuda en `CLAUDE.md` sección 15.
+- **Supabase corre PostgreSQL 17.11** y no se elige. El Docker local usa
+  `postgres:17-alpine` para que los tests corran contra la misma versión
+  mayor (alineado el 2026-11-11). Si Supabase pasa a 18, el Docker sigue: el
+  volumen local se borra, porque Postgres no arranca sobre datos de otra
+  versión mayor, y se restaura un `pg_dump` o se vuelve a sembrar.
 
 ## 2. Migrar y sembrar, desde tu máquina
 
