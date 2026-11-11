@@ -19,6 +19,7 @@ const REGISTRO: RegistroEnEspera = {
   qr: 'demo-equipetrol',
   nombre: 'Ana',
   telefono_final: '4521',
+  numero: 47,
 };
 
 describe('la sesion del telefono', () => {
@@ -41,6 +42,22 @@ describe('la sesion del telefono', () => {
 
     // Otra instancia sobre el mismo almacen: es la pagina recargada.
     expect(crearSesion(crearGuardado(afuera)).registro()).toEqual(REGISTRO);
+  });
+
+  it('un registro de la version anterior, sin número, sigue sirviendo', () => {
+    const afuera = almacen();
+    const sinNumero = {
+      ticket: REGISTRO.ticket,
+      clave: REGISTRO.clave,
+      qr: REGISTRO.qr,
+      nombre: REGISTRO.nombre,
+      telefono_final: REGISTRO.telefono_final,
+    };
+    afuera.datos.set('repunto:cliente:registro', JSON.stringify(sinNumero));
+    expect(crearSesion(crearGuardado(afuera)).registro()).toEqual({
+      ...REGISTRO,
+      numero: null,
+    });
   });
 
   it('un registro guardado roto se descarta en lugar de romper la app', () => {

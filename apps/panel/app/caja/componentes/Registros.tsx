@@ -78,6 +78,12 @@ function Fila(p: {
         <span className={css.nombre}>{r.nombre}</span>
         <span className={css.hace}>{haceCuanto(r.creado_el, p.ahora)}</span>
       </div>
+      {/* El numero de emparejamiento: el cliente ve el mismo en su telefono.
+          Si no coincide, la fila no es de quien esta en el mostrador. */}
+      <p className={css.numero}>
+        <span>Preguntale qué número le sale</span>
+        <strong>{r.numero}</strong>
+      </p>
       <p className={css.terminado}>
         <span>terminado en</span>
         <strong>{r.telefono_final}</strong>

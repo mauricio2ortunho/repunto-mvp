@@ -33,3 +33,18 @@ export function ticketDeRegistro(
     .update(JSON.stringify([qr_slug, telefono, clave]), 'utf8')
     .digest('base64url');
 }
+
+/**
+ * El numero de emparejamiento del alta: dos digitos, del 10 al 99, que
+ * muestran el telefono del cliente y la lista del cajero. Sale del ticket con
+ * la clave del servidor: el reintento ve el mismo numero, y nadie lo calcula
+ * sin la clave. No es un secreto —el cliente lo dice en voz alta—: es lo que
+ * le permite al cajero saber que la fila que confirma es de quien tiene
+ * enfrente (CLAUDE.md, seccion 5).
+ */
+export function numeroDeEmparejamiento(ticket: string): number {
+  const bytes = createHmac('sha256', claveDerivada('numero-de-emparejamiento'))
+    .update(ticket, 'utf8')
+    .digest();
+  return 10 + (bytes.readUInt32BE(0) % 90);
+}

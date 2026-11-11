@@ -12,6 +12,36 @@ const REGISTRO = `
   INSERT INTO registro_pendiente (local_id, telefono, nombre, ticket_hash, expira_el)
   VALUES ($1, $2, 'Juan', $3, now() + interval '30 minutes')`;
 
+const CON_NUMERO = `
+  INSERT INTO registro_pendiente (local_id, telefono, nombre, numero, ticket_hash, expira_el)
+  VALUES ($1, $2, 'Juan', $3, $4, now() + interval '30 minutes')`;
+
+describe('Seccion 5 · numero de emparejamiento', () => {
+  test('dos digitos: ni 9 ni 100', async ({ db }) => {
+    const a = await crearNegocio(db);
+    for (const numero of [9, 100]) {
+      await esperarRechazo(db, 'registro_pendiente_numero_chk', CON_NUMERO, [
+        a.local,
+        telefono(),
+        numero,
+        unico('ticket'),
+      ]);
+    }
+    await esperarAceptacion(db, CON_NUMERO, [a.local, telefono(), 47, unico('ticket')]);
+  });
+
+  test('sin numero, la base pone uno de dos digitos', async ({ db }) => {
+    const a = await crearNegocio(db);
+    const { rows } = await db.query<{ numero: number }>(`${REGISTRO} RETURNING numero`, [
+      a.local,
+      telefono(),
+      unico('ticket'),
+    ]);
+    const numero = rows[0]?.numero ?? 0;
+    if (numero < 10 || numero > 99) throw new Error(`numero fuera de rango: ${numero}`);
+  });
+});
+
 describe('Seccion 3 · registro pendiente', () => {
   test('rechaza dos pendientes del mismo telefono en el mismo local', async ({ db }) => {
     const a = await crearNegocio(db);

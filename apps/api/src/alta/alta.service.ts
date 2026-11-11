@@ -37,7 +37,7 @@ import {
   TOPE_POR_TELEFONO,
   TopeDePeticiones,
 } from '../seguridad/tope';
-import { ticketDeRegistro } from '../seguridad/ticket';
+import { numeroDeEmparejamiento, ticketDeRegistro } from '../seguridad/ticket';
 import { hashDeToken, nuevoToken } from '../seguridad/token';
 import { type EstadoDeAlta, leerEstadoParaAlta } from './lectura';
 
@@ -107,6 +107,8 @@ export class AltaService {
     // ticket sin que la base guarde nada en claro (ver `ticketDeRegistro`).
     const ticket = ticketDeRegistro(peticion.qr_slug, telefono, clave);
     const ticketHash = hashDeToken(ticket);
+    // Sale del ticket: el reintento muestra los mismos dos digitos.
+    const numero = numeroDeEmparejamiento(ticket);
 
     // Una sola consulta: resuelve el local, cuenta los pendientes que ya hay e
     // inserta si entra.
@@ -131,8 +133,9 @@ export class AltaService {
         WHERE r.local_id = loc.id AND r.estado = 'pendiente'
           AND r.expira_el > now() AND r.telefono <> ${telefono}
       ), ins AS (
-        INSERT INTO registro_pendiente (local_id, telefono, nombre, ticket_hash, expira_el)
-        SELECT loc.id, ${telefono}, ${peticion.nombre}, ${ticketHash},
+        INSERT INTO registro_pendiente (local_id, telefono, nombre, numero, ticket_hash,
+                                        expira_el)
+        SELECT loc.id, ${telefono}, ${peticion.nombre}, ${numero}, ${ticketHash},
                now() + make_interval(mins => ${MINUTOS_DE_VIDA})
         FROM loc, cupo
         WHERE cupo.n < ${PENDIENTES_POR_LOCAL}
@@ -142,6 +145,8 @@ export class AltaService {
                         THEN EXCLUDED.nombre ELSE registro_pendiente.nombre END,
           ticket_hash = CASE WHEN registro_pendiente.expira_el <= now()
                              THEN EXCLUDED.ticket_hash ELSE registro_pendiente.ticket_hash END,
+          numero = CASE WHEN registro_pendiente.expira_el <= now()
+                        THEN EXCLUDED.numero ELSE registro_pendiente.numero END,
           creado_el = CASE WHEN registro_pendiente.expira_el <= now()
                            THEN now() ELSE registro_pendiente.creado_el END,
           expira_el = CASE WHEN registro_pendiente.expira_el <= now()
@@ -161,7 +166,7 @@ export class AltaService {
 
     // Si el local llego al tope, la respuesta es la misma de siempre: quien
     // esta llenando la lista no tiene por que enterarse de que dejo de entrar.
-    if (fila.registro_id === null) return { estado: 'pendiente', ticket };
+    if (fila.registro_id === null) return { estado: 'pendiente', ticket, numero };
 
     // La fila es de otro equipo: el registro de esa persona sigue intacto.
     if (fila.ticket_hash !== ticketHash) {
@@ -170,7 +175,7 @@ export class AltaService {
     // Misma clave con otro nombre: no es un reintento (CLAUDE.md, seccion 9).
     if (fila.nombre !== peticion.nombre) throw errorDeApi('IDEMPOTENCIA_DISTINTA');
 
-    return { estado: 'pendiente', ticket };
+    return { estado: 'pendiente', ticket, numero };
   }
 
   /**
@@ -227,10 +232,10 @@ export class AltaService {
   async pendientes(tokenHash: string): Promise<RegistrosPendientes> {
     await exigirTablet(this.prisma, tokenHash);
     const filas = await this.prisma.$queryRaw<
-      { id: string; nombre: string; telefono: string; creado_el: Date }[]
+      { id: string; nombre: string; telefono: string; numero: number; creado_el: Date }[]
     >`
       WITH ${cteDeCaja(tokenHash)}
-      SELECT r.id, r.nombre, r.telefono, r.creado_el
+      SELECT r.id, r.nombre, r.telefono, r.numero, r.creado_el
       FROM registro_pendiente r, loc
       WHERE r.local_id = loc.id AND r.estado = 'pendiente' AND r.expira_el > now()
       ORDER BY r.creado_el
@@ -243,6 +248,7 @@ export class AltaService {
         // Nunca el telefono entero: con tres personas registrandose a la vez,
         // el cajero pregunta "terminado en 4521?" y con eso alcanza.
         telefono_final: ultimosCuatro(fila.telefono),
+        numero: fila.numero,
         creado_el: fila.creado_el.toISOString(),
       })),
     });

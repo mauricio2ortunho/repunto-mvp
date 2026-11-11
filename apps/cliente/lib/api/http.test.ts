@@ -26,10 +26,13 @@ describe('pedir', () => {
   it('una respuesta que cumple el contrato pasa', async () => {
     const r = await pedir(
       REGISTRAR,
-      responder(202, { estado: 'pendiente', ticket: 't' }),
+      responder(202, { estado: 'pendiente', ticket: 't', numero: 47 }),
       BASE,
     );
-    expect(r).toEqual({ ok: true, datos: { estado: 'pendiente', ticket: 't' } });
+    expect(r).toEqual({
+      ok: true,
+      datos: { estado: 'pendiente', ticket: 't', numero: 47 },
+    });
   });
 
   it('un 2xx que no cumple el contrato es un bug, no un exito', async () => {
@@ -98,9 +101,12 @@ describe('pedir', () => {
     const espia: typeof fetch = async (destino, init) => {
       url = String(destino);
       cabeceras = init?.headers as Record<string, string>;
-      return new Response(JSON.stringify({ estado: 'pendiente', ticket: 't' }), {
-        status: 202,
-      });
+      return new Response(
+        JSON.stringify({ estado: 'pendiente', ticket: 't', numero: 47 }),
+        {
+          status: 202,
+        },
+      );
     };
 
     await pedir({ ...REGISTRAR, token: 'secreto', clave: 'la-clave' }, espia, BASE);

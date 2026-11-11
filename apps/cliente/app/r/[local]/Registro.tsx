@@ -118,6 +118,7 @@ function Formulario(p: {
       qr: p.qr,
       nombre: cuerpo.nombre,
       telefono_final: ultimosCuatroDe(cuerpo.telefono),
+      numero: respuesta.datos.numero,
     });
   }
 
@@ -241,11 +242,22 @@ function Esperando(p: {
 
       <div className={css.ficha}>
         <p className={css.nombre}>{p.registro.nombre}</p>
+        {p.registro.numero !== null && (
+          // El cajero ve el mismo numero en su lista y te pregunta cual te
+          // sale: asi confirma tu registro y no el de otro con tu telefono.
+          <p className={css.numero}>
+            <span>Tu número</span>
+            <strong>{p.registro.numero}</strong>
+          </p>
+        )}
         <p className={css.digitos}>
           <span>terminado en</span>
           <strong>{p.registro.telefono_final}</strong>
         </p>
       </div>
+      {p.registro.numero !== null && (
+        <p className={css.pregunta}>El cajero te va a preguntar qué número te sale.</p>
+      )}
 
       <p className={css.estado} data-sin-conexion={sinConexion || undefined}>
         <span className={css.latido} aria-hidden="true" />

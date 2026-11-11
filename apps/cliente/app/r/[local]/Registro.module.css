@@ -87,6 +87,32 @@
   overflow-wrap: anywhere;
 }
 
+/* El numero de emparejamiento: lo mas grande de la pantalla, porque es lo
+   que el cliente le dice al cajero. */
+.numero {
+  display: grid;
+  gap: var(--espacio-1);
+  margin: 0;
+}
+
+.numero span {
+  color: var(--c-texto-suave);
+}
+
+.numero strong {
+  font-family: var(--f-codigo);
+  font-size: var(--texto-11);
+  font-weight: var(--peso-negro);
+  letter-spacing: 0.12em;
+  color: var(--c-accion);
+}
+
+.pregunta {
+  margin: 0;
+  color: var(--c-texto-suave);
+  text-align: center;
+}
+
 .digitos {
   display: grid;
   gap: var(--espacio-1);
@@ -99,7 +125,7 @@
 
 .digitos strong {
   font-family: var(--f-codigo);
-  font-size: var(--texto-11);
+  font-size: var(--texto-8);
   font-weight: var(--peso-negro);
   letter-spacing: 0.12em;
 }

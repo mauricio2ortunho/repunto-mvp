@@ -278,6 +278,11 @@ export const esquemaRegistroEnCaja = z.object({
   id: z.uuid(),
   nombre: z.string(),
   telefono_final: z.string().length(4),
+  /**
+   * Los dos digitos que el cliente ve en su telefono. El cajero le pregunta
+   * cual le sale antes de confirmar: si no coincide, la fila no es suya.
+   */
+  numero: z.int().min(10).max(99),
   creado_el: z.iso.datetime(),
 });
 

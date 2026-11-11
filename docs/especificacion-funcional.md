@@ -54,7 +54,9 @@ El registro ocurre en el mostrador. Flujo principal:
 1. El cliente escanea el QR impreso del local y escribe su teléfono y nombre en su
    propio equipo.
 2. Queda como registro pendiente y aparece al instante en el panel del local.
-3. El cajero confirma. Esa confirmación presencial reemplaza al código de
+   El teléfono del cliente y la fila del panel muestran el mismo número de dos
+   dígitos.
+3. El cajero le pregunta "¿qué número te sale?" y, si coincide, confirma. Esa confirmación presencial reemplaza al código de
    verificación y ahorra el costo del mensaje.
 4. El panel ofrece dos botones: **confirmar y sellar**, cuando la compra califica,
    y **solo confirmar**, para quien se registra sin comprar. Lo decide el cajero,

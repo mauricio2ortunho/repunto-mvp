@@ -72,6 +72,12 @@ export const esquemaRegistroRespuesta = z.object({
    * respuesta y nunca en la URL: en la URL terminaria en los logs.
    */
   ticket: z.string().min(1),
+  /**
+   * El numero de emparejamiento: la app lo muestra grande y el cajero ve el
+   * mismo en su lista. Le pregunta "que numero te sale?" antes de
+   * confirmar: asi sabe que la fila es de quien tiene enfrente.
+   */
+  numero: z.int().min(10).max(99),
 });
 
 export type RegistroRespuesta = z.infer<typeof esquemaRegistroRespuesta>;

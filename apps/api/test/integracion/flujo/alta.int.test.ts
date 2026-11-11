@@ -231,6 +231,62 @@ describe('POST /registros · el cliente se anota desde su teléfono', () => {
   });
 });
 
+describe('POST /registros · el número de emparejamiento', () => {
+  test('el teléfono y la lista del cajero ven los mismos dos dígitos', async ({
+    api,
+    db,
+  }) => {
+    const negocio = await crearNegocio(db);
+    const qr = await qrDe(db, negocio);
+
+    const r = await api.registrar({ qr_slug: qr, telefono: '70124521', nombre: 'Ana' });
+
+    const numero = r.cuerpo['numero'];
+    expect(numero).toBeGreaterThanOrEqual(10);
+    expect(numero).toBeLessThanOrEqual(99);
+    const lista = await api.registros(negocio.token);
+    const [fila] = lista.cuerpo['registros'] as { numero: number }[];
+    expect(fila?.numero).toBe(numero);
+  });
+
+  test('el reintento ve el mismo número', async ({ api, db }) => {
+    const negocio = await crearNegocio(db);
+    const qr = await qrDe(db, negocio);
+    const clave = randomUUID();
+    const cuerpo = { qr_slug: qr, telefono: '70124521', nombre: 'Ana' };
+
+    const primero = await api.registrar(cuerpo, clave);
+    const segundo = await api.registrar(cuerpo, clave);
+
+    expect(segundo.cuerpo['numero']).toBe(primero.cuerpo['numero']);
+  });
+
+  test('quien se coló no recibe número: el cajero ve uno que la persona no tiene', async ({
+    api,
+    db,
+  }) => {
+    const negocio = await crearNegocio(db);
+    const qr = await qrDe(db, negocio);
+    // El que se coló se anotó antes con el teléfono de Ana.
+    const colado = await api.registrar({
+      qr_slug: qr,
+      telefono: '70124521',
+      nombre: 'Ana',
+    });
+
+    // Ana, en el mostrador, recibe REGISTRO_EN_CURSO y ningún número: cuando
+    // el cajero le pregunte cuál le sale, no va a coincidir con el de la fila.
+    const ana = await api.registrar({ qr_slug: qr, telefono: '70124521', nombre: 'Ana' });
+
+    expect(ana.cuerpo['codigo']).toBe('REGISTRO_EN_CURSO');
+    expect(ana.cuerpo['numero']).toBeUndefined();
+    const [fila] = (await api.registros(negocio.token)).cuerpo['registros'] as {
+      numero: number;
+    }[];
+    expect(fila?.numero).toBe(colado.cuerpo['numero']);
+  });
+});
+
 describe('POST /registros · nadie se queda con el registro de otro', () => {
   test('otro equipo con el mismo teléfono recibe REGISTRO_EN_CURSO y no toca nada', async ({
     api,

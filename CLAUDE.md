@@ -235,6 +235,16 @@ el ticket se deriva de su `Idempotency-Key` (`ticketDeRegistro`), así que
 recibe el mismo ticket sin que la base lo guarde en claro. Solo se retoma un
 registro vencido, cuyo dueño ya no está esperando.
 
+**El número de emparejamiento cierra el último ataque al alta.** Si alguien
+se registra ANTES con el teléfono de otra persona —sabiendo que va a ir a ese
+local—, la persona real recibe `REGISTRO_EN_CURSO` y la fila del cajero es la
+del atacante. Por eso cada registro tiene un número de dos dígitos
+(`registro_pendiente.numero`, del 10 al 99) que muestran el teléfono del
+cliente y la lista del cajero, y el cajero pregunta "¿qué número te sale?"
+antes de confirmar: el atacante no está en el mostrador, y la persona real no
+tiene ese número. Sale del ticket con la clave del servidor
+(`numeroDeEmparejamiento`), así que el reintento ve el mismo.
+
 **Una tablet, un turno abierto.** El turno de un sello sale del dispositivo y no
 del request (INV-2), así que "el turno abierto de esta tablet" tiene que resolver
 a uno solo. Lo garantiza un índice único parcial sobre `turno_caja(dispositivo_id)`
@@ -717,16 +727,6 @@ es lo que falta terminar, y está acá para que no se pierda.
   La misma lógica vale para `REGISTRO_EN_CURSO`: le dice a quien anota un
   teléfono que ese teléfono ya está esperando en ese local. Es el precio de no
   reemplazar el registro, y es chico al lado del agujero que cierra.
-
-- **Queda un ataque, más difícil, contra el alta.** No reemplazar protege a
-  quien se registró primero. Si el atacante se registra ANTES con el teléfono
-  de alguien —tiene que saber que esa persona va a ir a ese local en la próxima
-  media hora—, la persona real recibe `REGISTRO_EN_CURSO`, y si el cajero
-  confirma la fila del atacante en lugar de descartarla, la sesión es del
-  atacante. Lo cierra de verdad un número de emparejamiento: la app muestra dos
-  dígitos, la lista del cajero los mismos, y el cajero pregunta "¿qué número te
-  sale?" antes de confirmar. Cambia la pantalla del cajero, así que es decisión
-  de producto.
 
 - **Tres de los trabajos programados de la sección 7.** Vencer tarjetas y
   purgar ya corren cada noche; faltan los avisos por mensaje —al cliente, y

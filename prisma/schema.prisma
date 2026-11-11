@@ -739,6 +739,11 @@ model RegistroPendiente {
   /// se muestran solo los ultimos cuatro digitos.
   telefono            String
   nombre              String
+  /// El numero de emparejamiento: dos digitos que muestran el telefono del
+  /// cliente y la lista del cajero, que pregunta "que numero te sale?" antes
+  /// de confirmar. Sale del ticket (numeroDeEmparejamiento): el reintento ve
+  /// el mismo. CHECK registro_pendiente_numero_chk, entre 10 y 99.
+  numero              Int            @default(dbgenerated("((10)::double precision + floor((random() * (90)::double precision)))")) @db.SmallInt
   /// Hash del secreto con el que la PWA vuelve a preguntar si ya lo
   /// confirmaron. Nunca viaja en una URL.
   ticket_hash         String         @unique

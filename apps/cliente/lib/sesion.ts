@@ -23,6 +23,12 @@ export interface RegistroEnEspera {
   nombre: string;
   /** Lo que el cajero ve en su lista: "terminado en 4521". */
   telefono_final: string;
+  /**
+   * El numero de emparejamiento: el cajero ve el mismo y pregunta "que
+   * numero te sale?". Null en un registro guardado por una version
+   * anterior de la app, que no lo tenia.
+   */
+  numero: number | null;
 }
 
 export interface Sesion {
@@ -49,7 +55,10 @@ export function crearSesion(guardado: Guardado): Sesion {
           typeof leido.qr === 'string' &&
           typeof leido.nombre === 'string' &&
           typeof leido.telefono_final === 'string'
-          ? (leido as RegistroEnEspera)
+          ? {
+              ...(leido as RegistroEnEspera),
+              numero: typeof leido.numero === 'number' ? leido.numero : null,
+            }
           : null;
       } catch {
         return null;
