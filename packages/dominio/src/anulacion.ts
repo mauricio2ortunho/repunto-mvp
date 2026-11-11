@@ -54,6 +54,13 @@ export interface EntradaDeAnulacion extends Caja {
 
 export interface EfectoDeAnulacion {
   sello_id: string;
+  tarjeta_id: string;
+  /**
+   * Era el unico sello que quedaba: la tarjeta vuelve a no tener reloj, porque
+   * una tarjeta sin sellos no vence (INV-12). El proximo sello lo arranca de
+   * nuevo desde su fecha, como en una tarjeta recien abierta.
+   */
+  reiniciarReloj: boolean;
   /** El turno desde el que se anula. De ahi salen el usuario y el equipo. */
   anulado_turno_id: string;
   /** Como queda la tarjeta despues de anular. */
@@ -94,6 +101,8 @@ export function decidirAnulacion(entrada: EntradaDeAnulacion): DecisionDeAnulaci
     tipo: 'anular',
     efecto: {
       sello_id: sello.id,
+      tarjeta_id: sello.tarjeta_id,
+      reiniciarReloj: progreso === 0 && tarjeta.tarjeta.reloj_desde !== null,
       anulado_turno_id: caja.turno.id,
       aviso: {
         nombre: entrada.nombreDelCliente,

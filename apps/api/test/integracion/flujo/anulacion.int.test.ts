@@ -258,3 +258,52 @@ describe('GET /caja/sellos/recientes', () => {
     expect(respuesta.cuerpo['sellos']).toBeUndefined();
   });
 });
+
+describe('POST /caja/sellos/:id/anulacion · el reloj de la tarjeta (INV-12)', () => {
+  async function relojDe(db: Db, tarjeta: string) {
+    return una<{ reloj_desde: Date | null; vence_el: Date | null }>(
+      db,
+      'SELECT reloj_desde, vence_el FROM tarjeta WHERE id = $1',
+      [tarjeta],
+    );
+  }
+
+  test('anular el único sello deja la tarjeta sin vencimiento', async ({ api, db }) => {
+    const negocio = await crearNegocio(db);
+    const cliente = await crearClienteEnCaja(db);
+    const sellado = await api.sellar({
+      token: negocio.token,
+      cuerpo: { codigo: codigoDe(cliente) },
+    });
+    expect(sellado.estado).toBe(200);
+    const { id: tarjeta } = await una<{ id: string }>(
+      db,
+      'SELECT id FROM tarjeta WHERE cliente_id = $1',
+      [cliente.id],
+    );
+    // El primer sello arrancó el reloj (INV-13).
+    expect((await relojDe(db, tarjeta)).vence_el).not.toBeNull();
+
+    const anulada = await api.anular(negocio.token, String(sellado.cuerpo['sello_id']));
+
+    expect(anulada.estado).toBe(200);
+    expect(anulada.cuerpo['progreso']).toBe(0);
+    expect(await relojDe(db, tarjeta)).toEqual({ reloj_desde: null, vence_el: null });
+  });
+
+  test('si quedan sellos, el reloj no se toca', async ({ api, db }) => {
+    const { negocio, tarjeta, sello } = await conUnSelloReciente(db);
+    await db.query(
+      `UPDATE tarjeta SET reloj_desde = now() - interval '2 days',
+                          vence_el = now() + interval '28 days'
+       WHERE id = $1`,
+      [tarjeta],
+    );
+    const antes = await relojDe(db, tarjeta);
+
+    const anulada = await api.anular(negocio.token, sello);
+
+    expect(anulada.estado).toBe(200);
+    expect(await relojDe(db, tarjeta)).toEqual(antes);
+  });
+});

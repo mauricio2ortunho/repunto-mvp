@@ -162,7 +162,8 @@ preguntar.
 - **INV-11** — Existe como máximo una tarjeta `activa` por `(cliente, negocio)`.
   Índice único parcial.
 - **INV-12** — Una tarjeta sin sellos no vence: `reloj_desde` y `vence_el` son
-  nulos hasta el primer sello.
+  nulos hasta el primer sello. Anular el único sello que le quedaba la vuelve
+  a dejar sin reloj, y el próximo sello lo arranca de nuevo desde su fecha.
 - **INV-13** — Con el primer sello, `vence_el` = fin del día en `America/La_Paz`
   del mismo día del mes siguiente. Mes calendario, no 30 días.
 - **INV-14** — Al canjear, la tarjeta nueva reinicia el reloj: `reloj_desde` es la

@@ -106,6 +106,19 @@ export class AnulacionService {
         WHERE id = ${decision.efecto.sello_id}::uuid AND NOT anulado`;
       if (anulados === 0) throw errorDeRechazo(rechazo('SELLO_YA_ANULADO'), null);
 
+      // Era el unico sello: la tarjeta vuelve a no vencer (INV-12), y el
+      // proximo sello arranca el reloj de nuevo. La condicion va en la base:
+      // si alguien sello entre la lectura y aca, ese sello cuenta y el reloj
+      // queda como estaba.
+      const { tarjeta_id: tarjetaId, reiniciarReloj } = decision.efecto;
+      if (reiniciarReloj) {
+        await tx.$executeRaw`
+          UPDATE tarjeta SET reloj_desde = NULL, vence_el = NULL
+          WHERE id = ${tarjetaId}::uuid AND estado = 'activa'
+            AND NOT EXISTS (SELECT 1 FROM sello s
+                            WHERE s.tarjeta_id = ${tarjetaId}::uuid AND NOT s.anulado)`;
+      }
+
       const respuesta = esquemaAnularRespuesta.parse(decision.efecto.aviso);
       await guardarRespuesta(tx, peticion, respuesta);
       return respuesta;

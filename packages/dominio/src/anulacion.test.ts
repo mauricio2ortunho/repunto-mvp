@@ -181,3 +181,37 @@ describe('decidirAnulacion · el efecto', () => {
     expect(efecto.aviso).toMatchObject({ progreso: 9, faltan: 1, completa: false });
   });
 });
+
+describe('decidirAnulacion · el reloj de la tarjeta (INV-12)', () => {
+  it('quedan sellos: el reloj sigue como estaba', () => {
+    expect(efectoDe().reiniciarReloj).toBe(false);
+  });
+
+  it('era el único sello: la tarjeta vuelve a no vencer', () => {
+    const sellos = unosSellos(1, { hasta: new Date(AHORA.getTime() - MINUTO) });
+    const unico = sellos[0];
+    const efecto = efectoDe({
+      sello: unSelloParaAnular({ id: unico?.id ?? 'sello-1' }),
+      tarjeta: unaTarjetaEnCurso({ sellos }),
+      ultimoSelloDelUsuario: unico ?? null,
+    });
+    expect(efecto).toMatchObject({
+      tarjeta_id: 'tarjeta-1',
+      reiniciarReloj: true,
+      aviso: { progreso: 0 },
+    });
+  });
+
+  it('los otros sellos ya estaban anulados: también vuelve a no vencer', () => {
+    const sellos = unosSellos(2, { hasta: new Date(AHORA.getTime() - MINUTO) }).map(
+      (s, i) => (i === 0 ? { ...s, anulado: true } : s),
+    );
+    const ultimo = sellos[1];
+    const efecto = efectoDe({
+      sello: unSelloParaAnular({ id: ultimo?.id ?? 'sello-2' }),
+      tarjeta: unaTarjetaEnCurso({ sellos }),
+      ultimoSelloDelUsuario: ultimo ?? null,
+    });
+    expect(efecto.reiniciarReloj).toBe(true);
+  });
+});
