@@ -60,6 +60,8 @@ export const CODIGOS_DE_ERROR_DE_CAJA = [
   'IMAGEN_INVALIDA',
   'IMAGEN_DEMASIADO_GRANDE',
   'IMAGENES_NO_CONFIGURADAS',
+  'SOLICITUD_NO_ENCONTRADA',
+  'SOLICITUD_YA_RESUELTA',
 ] as const;
 
 export type CodigoDeErrorDeCaja = (typeof CODIGOS_DE_ERROR_DE_CAJA)[number];
@@ -185,6 +187,10 @@ export function mensajeParaElCajero(
       return 'Ese local está cerrado. Reabrilo para vincularle una tablet.';
     case 'PANEL_SOLO_DEL_DUENO':
       return 'Solo el dueño activo entra al panel. Supervisores y cajeros entran con su PIN en la tablet.';
+    case 'SOLICITUD_NO_ENCONTRADA':
+      return 'Esa solicitud no está. Volvé a la lista de solicitudes.';
+    case 'SOLICITUD_YA_RESUELTA':
+      return 'Esa solicitud ya se resolvió (aprobada o rechazada). Volvé a la lista.';
     case 'IMAGEN_INVALIDA':
       return 'Esa imagen no sirve: tiene que ser una foto o un dibujo en PNG, JPG o WebP.';
     case 'IMAGEN_DEMASIADO_GRANDE':

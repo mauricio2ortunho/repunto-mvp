@@ -64,6 +64,16 @@ enum OrigenSesion {
   @@map("origen_sesion")
 }
 
+/// Una solicitud de negocio: la pide alguien desde la app y la resuelve el
+/// admin. Aprobada es que se dio de alta el negocio; rechazada queda guardada.
+enum EstadoSolicitud {
+  pendiente
+  aprobada
+  rechazada
+
+  @@map("estado_solicitud")
+}
+
 enum EstadoTarjeta {
   activa
   canjeada
@@ -103,6 +113,7 @@ model AdminPlataforma {
   entradas_de_duenos    EntradaDueno[]
   condiciones_escritas  CondicionSello[]
   peticiones            PeticionIdempotenteAdmin[]
+  solicitudes_resueltas SolicitudNegocio[]
 
   @@map("admin_plataforma")
 }
@@ -195,6 +206,7 @@ model Negocio {
   programas      Programa[]
   condiciones    CondicionSello[]
   codigos_usados CodigoUsado[]
+  solicitud      SolicitudNegocio?
 
   @@index([estado])
   @@map("negocio")
@@ -893,3 +905,37 @@ model TopePeticion {
 // contra el catalogo de una base recien migrada: si una restriccion falta, o
 // sobra sin estar documentada, pnpm test:integration falla.
 // ---------------------------------------------------------------------------
+
+/// Un negocio que pide sumarse a Repunto desde la app del cliente. No crea
+/// nada solo: el admin la aprueba dando de alta el negocio (que queda en
+/// negocio_id) o la rechaza. Nunca se borra: es el registro de quien pidio.
+///
+/// Una sola pendiente por telefono (solicitud_negocio_una_pendiente_por_telefono,
+/// SQL crudo): el doble toque y el reenvio no crean dos. Que la resolucion
+/// este completa lo exigen CHECKs (solicitud_negocio_resolucion_chk,
+/// solicitud_negocio_aprobada_con_negocio_chk, solicitud_negocio_motivo_solo_rechazada_chk).
+model SolicitudNegocio {
+  id                    String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre_negocio        String
+  /// Un rubro de RUBROS_DE_NEGOCIO; lo valida el contrato, como el alta.
+  categoria             String
+  /// Quien pide, para hablarle.
+  contacto              String
+  /// E.164, normalizado en el borde (INV-20). No es unico: el mismo telefono
+  /// puede volver a pedir despues de un rechazo.
+  telefono              String
+  mensaje               String?
+  estado                EstadoSolicitud @default(pendiente)
+  motivo_rechazo        String?
+  /// El negocio que se dio de alta al aprobarla. Uno por solicitud.
+  negocio_id            String?         @unique @db.Uuid
+  resuelta_por_admin_id String?         @db.Uuid
+  resuelta_el           DateTime?       @db.Timestamptz(3)
+  creado_el             DateTime        @default(now()) @db.Timestamptz(3)
+
+  negocio            Negocio?         @relation(fields: [negocio_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  resuelta_por_admin AdminPlataforma? @relation(fields: [resuelta_por_admin_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([estado, creado_el])
+  @@map("solicitud_negocio")
+}

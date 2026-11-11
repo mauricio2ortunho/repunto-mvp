@@ -41,6 +41,7 @@ import {
   localesPersonasYTablets,
   qrNuevoDelLocal,
 } from '../negocio/locales';
+import { aprobarSolicitud } from '../solicitudes/solicitudes.service';
 import { guardarRespuestaDeAdmin, reservarIdempotenciaDeAdmin } from './idempotencia';
 
 interface FilaDeNegocio {
@@ -163,6 +164,13 @@ export class NegociosDeAdminService {
                                      creado_por_admin_id)
         VALUES (${negocio.id}::uuid, ${condicion.texto},
                 ${condicion.monto_minimo}::numeric, now(), ${adminId}::uuid)`;
+
+      // Viene de una solicitud de la app: queda aprobada con este negocio, en
+      // la misma transaccion. Si ya no estaba pendiente, el alta se deshace.
+      const solicitudId = alta.solicitud_id ?? null;
+      if (solicitudId !== null) {
+        await aprobarSolicitud(tx, adminId, solicitudId, negocio.id);
+      }
 
       const respuesta = esquemaNegocioCreado.parse({ id: negocio.id });
       await guardarRespuestaDeAdmin(tx, peticion, respuesta);

@@ -160,6 +160,27 @@ export class Api {
     return this.pedir('GET', '/admin/tablero', { token });
   }
 
+  /** La solicitud de negocio, desde la app: publica, sin clave. */
+  pedirSolicitud(cuerpo: unknown): Promise<Respuesta> {
+    return this.pedir('POST', '/solicitudes', { cuerpo });
+  }
+
+  solicitudes(token?: string): Promise<Respuesta> {
+    return this.pedir('GET', '/admin/solicitudes', { token });
+  }
+
+  solicitud(token: string | undefined, id: string): Promise<Respuesta> {
+    return this.pedir('GET', `/admin/solicitudes/${id}`, { token });
+  }
+
+  rechazarSolicitud(
+    token: string | undefined,
+    id: string,
+    cuerpo: unknown = {},
+  ): Promise<Respuesta> {
+    return this.pedir('POST', `/admin/solicitudes/${id}/rechazo`, { token, cuerpo });
+  }
+
   /** El logo o la portada: el cuerpo son los bytes, con su Content-Type. */
   async subirImagen(
     token: string | undefined,

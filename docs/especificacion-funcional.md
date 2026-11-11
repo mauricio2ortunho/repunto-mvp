@@ -21,6 +21,14 @@ No hay auto-registro de negocios. El alta manual es deliberada: con quince
 negocios revisar cada logo y cada portada antes de que salgan en vivo toma un
 minuto y evita sorpresas.
 
+Un negocio sí puede **pedir** sumarse: desde "Dónde juntar sellos", en la app
+del cliente, deja el nombre del negocio, su rubro, quién es y su teléfono.
+La solicitud le llega al administrador, que la aprueba dando de alta el
+negocio —con el formulario ya completo— o la rechaza, con un motivo si
+quiere. No se crea nada sin que el administrador lo revise, y ninguna
+solicitud se borra. Una sola pendiente por teléfono, con tope por teléfono y
+por conexión.
+
 ---
 
 ## 2. Acceso al panel

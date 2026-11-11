@@ -112,6 +112,11 @@ export type CondicionNueva = z.infer<typeof esquemaCondicionNueva>;
 export const esquemaNegocioNuevo = esquemaApariencia.extend({
   programa: esquemaProgramaNuevo,
   condicion: esquemaCondicionNueva,
+  /**
+   * La solicitud de la app que este alta aprueba, si viene de una. Se marca
+   * aprobada en la misma transacción que crea el negocio.
+   */
+  solicitud_id: z.uuid().nullable().optional(),
 });
 
 export type NegocioNuevo = z.infer<typeof esquemaNegocioNuevo>;

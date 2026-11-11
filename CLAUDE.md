@@ -22,7 +22,9 @@ progreso en el teléfono.
 - Puntos por monto gastado, referidos, pagos o facturación dentro de la app.
 - Calendario de condiciones programadas por fecha.
 - App nativa, i18n.
-- Auto-registro de negocios: el alta es manual.
+- Auto-registro de negocios: el alta es manual. Un negocio puede **pedir**
+  sumarse desde la app (`POST /solicitudes`), pero eso no crea nada: el admin
+  la aprueba dándolo de alta él, o la rechaza.
 
 Si una tarea pide algo de esa lista, detenerse y preguntar antes de escribir código.
 
@@ -412,6 +414,11 @@ Misma clave con otro cuerpo se rechaza, porque no es un reintento.
 arriba se indexa por dispositivo. Ahí la clave no se guarda: el ticket se
 deriva de ella, y el reintento la recalcula. Eso la convierte en parte de la
 credencial, y por eso se le exigen 32 caracteres en lugar de 8.
+
+`POST /solicitudes` (la solicitud de negocio) tampoco lleva clave: el doble
+toque lo frena la base, con una sola solicitud pendiente por teléfono
+(`solicitud_negocio_una_pendiente_por_telefono`), y la respuesta es siempre
+la misma.
 
 Lo que crea el panel de administración tampoco tiene tablet: su clave va a
 `peticion_idempotente_admin`, la misma mecánica con el admin en lugar del

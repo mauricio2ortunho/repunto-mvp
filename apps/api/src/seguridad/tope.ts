@@ -23,6 +23,9 @@ import { claveDerivada } from './cifrado';
 /** Minutos de la ventana por defecto: la hora del reloj. */
 const UNA_HORA = 60;
 
+/** Un dia, en UTC: el tramo de los topes diarios. */
+export const UN_DIA = 24 * 60;
+
 /** El codigo que muestra el cliente: dos ventanas por pedido. */
 export const TOPE_DEL_CODIGO = 120;
 
@@ -58,8 +61,8 @@ export class TopeDePeticiones {
    * Va fuera de cualquier transaccion a proposito: si la peticion despues se
    * rechaza y su transaccion se deshace, el intento igual cuenta.
    */
-  async exigir(clave: string, tope: number): Promise<void> {
-    if ((await this.sumar(clave)) > tope) throw errorDeApi('TOPE_SUPERADO');
+  async exigir(clave: string, tope: number, minutos: number = UNA_HORA): Promise<void> {
+    if ((await this.sumar(clave, minutos)) > tope) throw errorDeApi('TOPE_SUPERADO');
   }
 
   /**

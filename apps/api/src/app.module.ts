@@ -8,6 +8,7 @@ import { DuenoModule } from './dueno/dueno.module';
 import { ObservabilidadModule } from './observabilidad/observabilidad.module';
 import { PedidoMiddleware } from './observabilidad/pedido.middleware';
 import { PrismaModule } from './prisma/prisma.module';
+import { SolicitudesModule } from './solicitudes/solicitudes.module';
 import { SaludModule } from './salud/salud.module';
 import { SeguridadModule } from './seguridad/seguridad.module';
 import { TareasModule } from './tareas/tareas.module';
@@ -24,6 +25,7 @@ import { TareasModule } from './tareas/tareas.module';
     AdminModule,
     DuenoModule,
     TareasModule,
+    SolicitudesModule,
   ],
 })
 export class AppModule implements NestModule {

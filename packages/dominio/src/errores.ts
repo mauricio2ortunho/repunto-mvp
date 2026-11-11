@@ -138,6 +138,12 @@ export const CODIGOS_DE_ERROR = [
   'IMAGEN_DEMASIADO_GRANDE',
   /** Faltan las variables de R2 en este entorno: no hay dónde guardarla. */
   'IMAGENES_NO_CONFIGURADAS',
+
+  // Solicitudes de negocio.
+  /** La solicitud de la ruta no existe. */
+  'SOLICITUD_NO_ENCONTRADA',
+  /** Ya se aprobó o se rechazó: no se resuelve dos veces. */
+  'SOLICITUD_YA_RESUELTA',
 ] as const;
 
 export type CodigoDeError = (typeof CODIGOS_DE_ERROR)[number];

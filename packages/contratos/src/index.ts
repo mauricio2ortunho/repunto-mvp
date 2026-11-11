@@ -246,3 +246,23 @@ export type {
 
 export { esquemaLocalEnElResumen, esquemaResumenDelDueno } from './resumen';
 export type { LocalEnElResumen, ResumenDelDueno } from './resumen';
+
+export {
+  ESTADOS_DE_SOLICITUD,
+  LIMITES_DE_SOLICITUD,
+  SOLICITUDES_RESUELTAS_EN_LA_LISTA,
+  TOPES_DE_SOLICITUD,
+  esquemaRechazoDeSolicitud,
+  esquemaSolicitudDelAdmin,
+  esquemaSolicitudesDelAdmin,
+  esquemaSolicitudNueva,
+  esquemaSolicitudRecibida,
+} from './solicitud';
+export type {
+  EstadoDeSolicitud,
+  RechazoDeSolicitud,
+  SolicitudDelAdmin,
+  SolicitudesDelAdmin,
+  SolicitudNueva,
+  SolicitudRecibida,
+} from './solicitud';
